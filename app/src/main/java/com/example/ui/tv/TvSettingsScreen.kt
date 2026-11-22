@@ -614,15 +614,18 @@ internal fun TvSettingsScreen(
 
                         item(key = "tv_set_gyro_enabled") {
                             TvSettingToggleRow(
-                                title = config.tr("🎯 Con quay hồi chuyển (Bắn súng / VR / Đua xe)", "🎯 Gyroscope Control (Shooter / VR / Racing)"),
+                                title = config.tr(
+                                    "🧭 Con quay hồi chuyển (Theo game / Đua xe)",
+                                    "Gyroscope (Game Native / Racing)"
+                                ),
                                 subtitle = config.tr(
-                                    "Mặc định tắt — bật để nghiêng máy điều khiển cần tay cầm.",
-                                    "Off by default — turn on to tilt and control stick."
+                                    "Mặc định tắt — bật để dùng theo game hỗ trợ hoặc nghiêng lái xe thủ công.",
+                                    "Off by default — turn on for game-supported gyro or manual racing tilt."
                                 ),
                                 checked = config.gyroEnabled,
                                 onCheckedChange = { enabled ->
                                     SettingsRepository.updateGyroEnabled(enabled)
-                                    if (enabled) {
+                                    if (enabled && config.gyroMode == GyroControlMode.RACING_STEER) {
                                         com.example.cloudplay.GyroscopeController.requestRecenterNow()
                                     }
                                 },
@@ -637,12 +640,17 @@ internal fun TvSettingsScreen(
                                 val modes = GyroControlMode.entries
                                 val curIdx = modes.indexOf(config.gyroMode).coerceAtLeast(0)
                                 TvSettingSegmentRow(
-                                    title = config.tr("Chế độ con quay theo thể loại game", "Gyro Mode by Game Genre"),
-                                    subtitle = modes[curIdx].localizedDesc(isEn),
-                                    options = modes.map { it.localizedShort(isEn) },
+                                    title = config.tr("Chế độ con quay hồi chuyển", "Gyroscope Mode"),
+                                    subtitle = config.tr(modes[curIdx].descVi, modes[curIdx].descEn),
+                                    options = modes.map { config.tr(it.shortVi, it.shortEn) },
                                     selectedIndex = curIdx,
                                     onSelect = { idx ->
-                                        modes.getOrNull(idx)?.let { SettingsRepository.updateGyroMode(it) }
+                                        modes.getOrNull(idx)?.let {
+                                            SettingsRepository.updateGyroMode(it)
+                                            if (it == GyroControlMode.RACING_STEER) {
+                                                com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                                            }
+                                        }
                                     },
                                     scale = scale,
                                     onMoveLeftToCategory = moveFocusToCategory,
@@ -650,52 +658,44 @@ internal fun TvSettingsScreen(
                                 )
                             }
 
-                            item(key = "tv_set_gyro_sens_x") {
-                                val pctX = (config.gyroSensitivityX * 100).roundToInt()
-                                TvSettingSliderRow(
-                                    title = config.tr("Độ nhạy ngang con quay (Qua lại)", "Gyro Horizontal Sensitivity (Left/Right)"),
-                                    subtitle = config.tr("Tốc độ quay ngang hoặc đánh lái qua lại (10% – 300%).", "Horizontal rotation or steering speed (10% – 300%)."),
-                                    valueText = "$pctX%",
-                                    fraction = ((config.gyroSensitivityX - 0.10f) / 2.90f).coerceIn(0f, 1f),
-                                    onStep = { dir ->
-                                        val next = (config.gyroSensitivityX + dir * 0.10f).coerceIn(0.10f, 3.00f)
-                                        SettingsRepository.updateGyroSensitivityX(next)
-                                    },
-                                    scale = scale,
-                                    onMoveLeftToCategory = moveFocusToCategory,
-                                    testTag = "tv_setting_gyro_sens_x_row"
-                                )
-                            }
-
-                            if (config.gyroMode != GyroControlMode.RACING_STEER) {
-                                item(key = "tv_set_gyro_sens_y") {
-                                    val pctY = (config.gyroSensitivityY * 100).roundToInt()
+                            if (config.gyroMode == GyroControlMode.RACING_STEER) {
+                                item(key = "tv_set_gyro_sens_x") {
+                                    val pctX = (config.gyroSensitivityX * 100).roundToInt()
                                     TvSettingSliderRow(
-                                        title = config.tr("Độ nhạy dọc con quay (Lên xuống)", "Gyro Vertical Sensitivity (Up/Down)"),
-                                        subtitle = config.tr("Tốc độ ngắm lên xuống trong game bắn súng / VR (10% – 300%).", "Vertical aiming speed in shooters / VR (10% – 300%)."),
-                                        valueText = "$pctY%",
-                                        fraction = ((config.gyroSensitivityY - 0.10f) / 2.90f).coerceIn(0f, 1f),
+                                        title = config.tr(
+                                            "Độ nhạy nghiêng vô-lăng (Trái / Phải)",
+                                            "Steering Sensitivity (Left / Right)"
+                                        ),
+                                        subtitle = config.tr(
+                                            "Tốc độ nghiêng trái/phải khi đánh lái đua xe (10% – 300%).",
+                                            "Left/right steering speed for racing games (10% – 300%)."
+                                        ),
+                                        valueText = "$pctX%",
+                                        fraction = ((config.gyroSensitivityX - 0.10f) / 2.90f).coerceIn(0f, 1f),
                                         onStep = { dir ->
-                                            val next = (config.gyroSensitivityY + dir * 0.10f).coerceIn(0.10f, 3.00f)
-                                            SettingsRepository.updateGyroSensitivityY(next)
+                                            val next = (config.gyroSensitivityX + dir * 0.10f).coerceIn(0.10f, 3.00f)
+                                            SettingsRepository.updateGyroSensitivityX(next)
                                         },
                                         scale = scale,
                                         onMoveLeftToCategory = moveFocusToCategory,
-                                        testTag = "tv_setting_gyro_sens_y_row"
+                                        testTag = "tv_setting_gyro_sens_x_row"
                                     )
                                 }
-                            }
 
-                            item(key = "tv_set_gyro_hold_lt") {
-                                TvSettingToggleRow(
-                                    title = config.tr("Chỉ bật con quay khi giữ cò ngắm (LT)", "Activate Gyro Only While Holding LT (ADS)"),
-                                    subtitle = config.tr("Tắt: luôn quay theo góc nghiêng · Bật: chỉ quay khi giữ cò trái LT.", "Off: always active · On: only active while holding LT."),
-                                    checked = config.gyroHoldLtOnly,
-                                    onCheckedChange = { SettingsRepository.updateGyroHoldLtOnly(it) },
-                                    scale = scale,
-                                    onMoveLeftToCategory = moveFocusToCategory,
-                                    testTag = "tv_setting_gyro_hold_lt_row"
-                                )
+                                item(key = "tv_set_gyro_invert_x") {
+                                    TvSettingToggleRow(
+                                        title = config.tr("Đảo chiều ngang (Trái ↔ Phải)", "Invert Horizontal Axis"),
+                                        subtitle = config.tr(
+                                            "Đảo ngược hướng nghiêng trái / phải",
+                                            "Reverse left / right tilt direction"
+                                        ),
+                                        checked = config.gyroInvertX,
+                                        onCheckedChange = { SettingsRepository.updateGyroInvertX(it) },
+                                        scale = scale,
+                                        onMoveLeftToCategory = moveFocusToCategory,
+                                        testTag = "tv_setting_gyro_invert_x_row"
+                                    )
+                                }
                             }
                         }
 

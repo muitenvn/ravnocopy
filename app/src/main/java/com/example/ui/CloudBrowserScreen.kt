@@ -942,21 +942,25 @@ fun CloudBrowserScreen(
         }
     }
 
-    // Bộ điều khiển Con quay hồi chuyển (Gyroscope) - Mặc định TẮT hoàn toàn nếu người dùng không bật
-    val currentHoldLtOnly by androidx.compose.runtime.rememberUpdatedState(config.gyroHoldLtOnly)
+    // Bộ điều khiển Con quay hồi chuyển (Gyroscope) - Mặc định TẮT hoàn toàn:
+    // + GAME_NATIVE: mở cảm biến gốc trình duyệt cho game hỗ trợ, không giả lập cần tay cầm.
+    // + RACING_STEER: người chơi tự bật để nghiêng trái/phải lái xe trên Cần Trái (L - trục X).
     val currentWebViewForGyro by androidx.compose.runtime.rememberUpdatedState(webViewInstance)
     val currentLifecycleResumedForGyro by androidx.compose.runtime.rememberUpdatedState(isLifecycleResumed)
     val gyroController = remember(context) {
-        com.example.cloudplay.GyroscopeController(context) { targetRightStick, outX, outY ->
+        com.example.cloudplay.GyroscopeController(context) { _, outX, _ ->
             val wv = currentWebViewForGyro ?: return@GyroscopeController
             val rx = if (outX.isFinite()) (outX.coerceIn(-1f, 1f) * 100f).let { kotlin.math.round(it) / 100f } else 0f
-            val ry = if (outY.isFinite()) (outY.coerceIn(-1f, 1f) * 100f).let { kotlin.math.round(it) / 100f } else 0f
             wv.post {
-                if (!SettingsRepository.config.value.gyroEnabled || !currentLifecycleResumedForGyro) {
+                val curCfg = SettingsRepository.config.value
+                val allowRacing = curCfg.gyroEnabled &&
+                    curCfg.gyroMode == com.example.data.GyroControlMode.RACING_STEER &&
+                    currentLifecycleResumedForGyro
+                if (!allowRacing) {
                     wv.evaluateJavascript("if(window.__cpGyroClear)window.__cpGyroClear();", null)
                 } else {
                     wv.evaluateJavascript(
-                        "if(window.__cpGyro)window.__cpGyro($targetRightStick,$rx,$ry,$currentHoldLtOnly);",
+                        "if(window.__cpGyro)window.__cpGyro(false,$rx,0,false);",
                         null
                     )
                 }
@@ -968,26 +972,34 @@ fun CloudBrowserScreen(
         config.gyroEnabled,
         config.gyroMode,
         config.gyroSensitivityX,
-        config.gyroSensitivityY,
         config.gyroDeadzone,
         config.gyroInvertX,
-        config.gyroInvertY,
-        config.gyroHoldLtOnly,
         isLifecycleResumed,
         isPageLoading,
         webViewInstance
     ) {
+        val nativeAllowed = config.gyroEnabled &&
+            config.gyroMode == com.example.data.GyroControlMode.GAME_NATIVE &&
+            isLifecycleResumed
+        val racingActive = config.gyroEnabled &&
+            config.gyroMode == com.example.data.GyroControlMode.RACING_STEER &&
+            isLifecycleResumed
+
         gyroController.setPaused(!isLifecycleResumed)
         gyroController.updateConfiguration(
             enabled = config.gyroEnabled,
             mode = config.gyroMode,
             sensitivityXPercent = kotlin.math.round(config.gyroSensitivityX * 100f).toInt(),
-            sensitivityYPercent = kotlin.math.round(config.gyroSensitivityY * 100f).toInt(),
+            sensitivityYPercent = 100,
             deadzonePercent = kotlin.math.round(config.gyroDeadzone * 100f).toInt(),
             invertX = config.gyroInvertX,
-            invertY = config.gyroInvertY
+            invertY = false
         )
-        if (!config.gyroEnabled || !isLifecycleResumed) {
+        webViewInstance?.evaluateJavascript(
+            "if(window.__setNativeGyroAllowed)window.__setNativeGyroAllowed($nativeAllowed);",
+            null
+        )
+        if (!racingActive) {
             webViewInstance?.evaluateJavascript("if(window.__cpGyroClear)window.__cpGyroClear();", null)
         } else if (!isPageLoading && webViewInstance != null) {
             gyroController.syncCurrentOutput()
@@ -997,7 +1009,11 @@ fun CloudBrowserScreen(
     DisposableEffect(gyroController) {
         onDispose {
             gyroController.stopListening()
-            currentWebViewForGyro?.evaluateJavascript("if(window.__cpGyroClear)window.__cpGyroClear();", null)
+            XboxBridge.resetNativeGyroSupport()
+            currentWebViewForGyro?.evaluateJavascript(
+                "if(window.__cpGyroClear)window.__cpGyroClear();if(window.__setNativeGyroAllowed)window.__setNativeGyroAllowed(false);",
+                null
+            )
         }
     }
 
@@ -1378,6 +1394,7 @@ fun CloudBrowserScreen(
                                 }
                             }
                             isPageLoading = true
+                            XboxBridge.resetNativeGyroSupport()
                             injectedForCurrentPage = hasDocumentStartScript
                             bridge.updateCurrentUrl(url)
                             url?.let {

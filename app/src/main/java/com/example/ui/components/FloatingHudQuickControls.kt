@@ -9,6 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -16,8 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cloudplay.XboxBridge
 import com.example.data.AppConfig
 import com.example.data.GameOptimizationProfile
+import com.example.data.GyroControlMode
 import com.example.data.SettingsRepository
 import com.example.data.XboxWebUiMode
 import com.example.ui.theme.JetBrainsMonoFontFamily
@@ -85,87 +89,103 @@ internal fun HudControlsTabContent(
         HudSwitchRow(
             title = config.tr("Bật con quay hồi chuyển", "Enable Gyroscope"),
             subtitle = config.tr(
-                "Mặc định tắt — bật để nghiêng máy điều khiển cần tay cầm.",
-                "Off by default — turn on to tilt and control stick."
+                "Mặc định tắt — bật để dùng theo game hỗ trợ hoặc nghiêng lái xe thủ công.",
+                "Off by default — turn on for game-supported gyro or manual racing tilt."
             ),
             checked = config.gyroEnabled,
             onCheckedChange = { enabled ->
                 onInteraction()
                 SettingsRepository.updateGyroEnabled(enabled)
-                if (enabled) {
+                if (enabled && config.gyroMode == GyroControlMode.RACING_STEER) {
                     com.example.cloudplay.GyroscopeController.requestRecenterNow()
                 }
             }
         )
 
         if (config.gyroEnabled) {
-            val gyroModes = com.example.data.GyroControlMode.entries
+            val gyroModes = GyroControlMode.entries
             val curGyroIdx = gyroModes.indexOf(config.gyroMode).coerceAtLeast(0)
             HudSegmentedControl(
-                options = listOf(
-                    config.tr("Bắn súng/VR", "FPS / VR"),
-                    config.tr("Đua xe", "Racing"),
-                    config.tr("Cần trái 360°", "Left 360°")
-                ),
+                options = gyroModes.map { config.tr(it.shortVi, it.shortEn) },
                 selectedIndex = curGyroIdx,
                 onSelect = { idx ->
                     onInteraction()
                     gyroModes.getOrNull(idx)?.let {
                         SettingsRepository.updateGyroMode(it)
-                        com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                        if (it == GyroControlMode.RACING_STEER) {
+                            com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                        }
                     }
                 },
                 tagPrefix = "hud_gyro_mode_seg"
             )
 
-            HudSliderRow(
-                label = if (config.gyroMode == com.example.data.GyroControlMode.RACING_STEER) {
-                    config.tr("Độ nhạy lái", "Steer sens")
-                } else {
-                    config.tr("Độ nhạy ngang", "Horiz sens")
-                },
-                valueText = "${(config.gyroSensitivityX * 100f).roundToInt()}%",
-                value = config.gyroSensitivityX,
-                valueRange = 0.10f..3.00f,
-                onValueChange = {
-                    onInteraction()
-                    SettingsRepository.updateGyroSensitivityX(it)
+            if (config.gyroMode == GyroControlMode.GAME_NATIVE) {
+                val nativeGyroSupported by XboxBridge.nativeGyroSupported.collectAsState()
+                HudSurfaceRow(minHeight = 42.dp) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Text(
+                            text = if (nativeGyroSupported) {
+                                config.tr(
+                                    "● Game hiện tại đang hỗ trợ cảm biến gốc",
+                                    "● Native game gyro detected"
+                                )
+                            } else {
+                                config.tr(
+                                    "○ Chưa phát hiện game hỗ trợ cảm biến gốc",
+                                    "○ No native gyro detected in current game"
+                                )
+                            },
+                            color = if (nativeGyroSupported) HudAccent else HudWarn,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = config.tr(
+                                "Chế độ này không giả lập cần tay cầm. Chuyển thủ công sang Đua xe (Trái/Phải) nếu muốn nghiêng lái xe.",
+                                "No synthetic stick input is active in this mode. Switch manually to Racing (Tilt) to steer left/right."
+                            ),
+                            color = HudFaint,
+                            fontSize = 11.sp
+                        )
+                    }
                 }
-            )
-
-            if (config.gyroMode != com.example.data.GyroControlMode.RACING_STEER) {
+            } else {
                 HudSliderRow(
-                    label = config.tr("Độ nhạy dọc", "Vert sens"),
-                    valueText = "${(config.gyroSensitivityY * 100f).roundToInt()}%",
-                    value = config.gyroSensitivityY,
+                    label = config.tr("Độ nhạy lái", "Steer sens"),
+                    valueText = "${(config.gyroSensitivityX * 100f).roundToInt()}%",
+                    value = config.gyroSensitivityX,
                     valueRange = 0.10f..3.00f,
                     onValueChange = {
                         onInteraction()
-                        SettingsRepository.updateGyroSensitivityY(it)
+                        SettingsRepository.updateGyroSensitivityX(it)
                     }
                 )
-            }
 
-            HudSurfaceRow(
-                minHeight = 36.dp,
-                onClick = {
-                    onInteraction()
-                    com.example.cloudplay.GyroscopeController.requestRecenterNow()
-                },
-                modifier = Modifier.testTag("hud_gyro_recenter_btn")
-            ) {
-                Text(
-                    text = config.tr("🎯 Đặt lại tâm con quay (0°)", "🎯 Recenter Gyro (0°)"),
-                    color = HudAccent,
-                    fontSize = 12.5.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = config.tr("Đặt lại", "Reset"),
-                    color = HudCyan,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                HudSurfaceRow(
+                    minHeight = 36.dp,
+                    onClick = {
+                        onInteraction()
+                        com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                    },
+                    modifier = Modifier.testTag("hud_gyro_recenter_btn")
+                ) {
+                    Text(
+                        text = config.tr("🎯 Đặt lại tâm con quay (0°)", "🎯 Recenter Gyro (0°)"),
+                        color = HudAccent,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = config.tr("Đặt lại", "Reset"),
+                        color = HudCyan,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 

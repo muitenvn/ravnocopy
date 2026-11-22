@@ -235,23 +235,23 @@ internal fun SettingsGamepadTouchSection(
             }
         }
 
-        // Con quay hồi chuyển (Gyroscope) - Mặc định TẮT, bật thủ công để mô phỏng cần tay cầm
+        // Con quay hồi chuyển (Gyroscope) - Mặc định TẮT; bật thủ công chọn Theo game hỗ trợ hoặc Đua xe (Trái/Phải)
         SettingsCard(
             title = config.tr(
-                "🧭 Con quay hồi chuyển (Bắn súng / VR / Đua xe)",
-                "Gyroscope Motion Control (VR / Racing / Aim)"
+                "🧭 Con quay hồi chuyển (Theo game / Đua xe)",
+                "Gyroscope (Game Native / Racing)"
             )
         ) {
             SettingToggleRow(
                 title = config.tr("Bật con quay hồi chuyển", "Enable Gyroscope"),
                 subtitle = config.tr(
-                    "Mặc định tắt — bật để nghiêng máy điều khiển cần tay cầm.",
-                    "Off by default — turn on to tilt and control stick."
+                    "Mặc định tắt — bật để dùng theo game hỗ trợ hoặc nghiêng lái xe thủ công.",
+                    "Off by default — turn on for game-supported gyro or manual racing tilt."
                 ),
                 checked = config.gyroEnabled,
                 onCheckedChange = { enabled ->
                     SettingsRepository.updateGyroEnabled(enabled)
-                    if (enabled) {
+                    if (enabled && config.gyroMode == com.example.data.GyroControlMode.RACING_STEER) {
                         com.example.cloudplay.GyroscopeController.requestRecenterNow()
                     }
                 },
@@ -261,7 +261,7 @@ internal fun SettingsGamepadTouchSection(
 
             if (config.gyroEnabled) {
                 Text(
-                    text = config.tr("Chế độ nghiêng theo thể loại game", "Gyroscope Mode by Game Genre"),
+                    text = config.tr("Chế độ con quay hồi chuyển", "Gyroscope Mode"),
                     color = TextPrimary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
@@ -275,7 +275,9 @@ internal fun SettingsGamepadTouchSection(
                                 .clip(RoundedCornerShape(10.dp))
                                 .gamepadClickable(cornerRadius = 10.dp) {
                                     SettingsRepository.updateGyroMode(mode)
-                                    com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                                    if (mode == com.example.data.GyroControlMode.RACING_STEER) {
+                                        com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                                    }
                                 }
                                 .testTag("settings_gyro_mode_${mode.name.lowercase()}_btn"),
                             color = if (selected) Color(0xFF16352A) else XboxSurface,
@@ -304,112 +306,96 @@ internal fun SettingsGamepadTouchSection(
                     }
                 }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(XboxSurface)
-                        .border(1.dp, XboxCardBorder, RoundedCornerShape(12.dp))
-                        .padding(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    LabeledSlider(
-                        label = if (config.gyroMode == com.example.data.GyroControlMode.RACING_STEER) {
-                            config.tr("Độ nhạy nghiêng vô-lăng (Trái / Phải)", "Steering Sensitivity (Left / Right)")
-                        } else {
-                            config.tr("Độ nhạy xoay ngang (Trái / Phải)", "Horizontal Sensitivity (X)")
-                        },
-                        valueText = "${(config.gyroSensitivityX * 100f).toInt()}%",
-                        value = config.gyroSensitivityX,
-                        onValueChange = { SettingsRepository.updateGyroSensitivityX(it) },
-                        valueRange = 0.10f..3.00f,
-                        accentColor = XboxNeonGreen
-                    )
-
-                    if (config.gyroMode != com.example.data.GyroControlMode.RACING_STEER) {
+                if (config.gyroMode == com.example.data.GyroControlMode.GAME_NATIVE) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(XboxSurface)
+                            .border(1.dp, XboxCardBorder, RoundedCornerShape(12.dp))
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = config.tr(
+                                "Chế độ này không giả lập cần tay cầm. Chuyển thủ công sang Đua xe (Trái/Phải) nếu muốn nghiêng lái xe.",
+                                "No synthetic stick input is active in this mode. Switch manually to Racing (Tilt) to steer left/right."
+                            ),
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(XboxSurface)
+                            .border(1.dp, XboxCardBorder, RoundedCornerShape(12.dp))
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         LabeledSlider(
-                            label = config.tr("Độ nhạy xoay dọc (Lên / Xuống)", "Vertical Sensitivity (Y)"),
-                            valueText = "${(config.gyroSensitivityY * 100f).toInt()}%",
-                            value = config.gyroSensitivityY,
-                            onValueChange = { SettingsRepository.updateGyroSensitivityY(it) },
+                            label = config.tr("Độ nhạy nghiêng vô-lăng (Trái / Phải)", "Steering Sensitivity (Left / Right)"),
+                            valueText = "${(config.gyroSensitivityX * 100f).toInt()}%",
+                            value = config.gyroSensitivityX,
+                            onValueChange = { SettingsRepository.updateGyroSensitivityX(it) },
                             valueRange = 0.10f..3.00f,
-                            accentColor = DirectCyan
+                            accentColor = XboxNeonGreen
+                        )
+
+                        LabeledSlider(
+                            label = config.tr("Vùng chết chống rung tay", "Anti-Shake Deadzone"),
+                            valueText = "${(config.gyroDeadzone * 100f).toInt()}%",
+                            value = config.gyroDeadzone,
+                            onValueChange = { SettingsRepository.updateGyroDeadzone(it) },
+                            valueRange = 0.00f..0.20f,
+                            accentColor = XboxNeonGreen
                         )
                     }
 
-                    LabeledSlider(
-                        label = config.tr("Vùng chết chống rung tay", "Anti-Shake Deadzone"),
-                        valueText = "${(config.gyroDeadzone * 100f).toInt()}%",
-                        value = config.gyroDeadzone,
-                        onValueChange = { SettingsRepository.updateGyroDeadzone(it) },
-                        valueRange = 0.00f..0.20f,
-                        accentColor = XboxNeonGreen
-                    )
-                }
-
-                SettingToggleRow(
-                    title = config.tr("Chỉ bật khi đang giữ cò trái (LT)", "Activate Only While Holding LT (ADS)"),
-                    subtitle = config.tr(
-                        "Tiện cho game bắn súng: chỉ kích hoạt con quay khi đang giữ LT ngắm bắn",
-                        "Useful for shooters: only apply gyro motion while holding Left Trigger to aim"
-                    ),
-                    checked = config.gyroHoldLtOnly,
-                    onCheckedChange = { SettingsRepository.updateGyroHoldLtOnly(it) },
-                    activeColor = DirectCyan,
-                    switchTestTag = "settings_switch_gyro_hold_lt"
-                )
-
-                SettingToggleRow(
-                    title = config.tr("Đảo chiều ngang (Trái ↔ Phải)", "Invert Horizontal Axis"),
-                    subtitle = config.tr("Đảo ngược hướng nghiêng trái / phải", "Reverse left / right tilt direction"),
-                    checked = config.gyroInvertX,
-                    onCheckedChange = { SettingsRepository.updateGyroInvertX(it) },
-                    switchTestTag = "settings_switch_gyro_invert_x"
-                )
-
-                if (config.gyroMode != com.example.data.GyroControlMode.RACING_STEER) {
                     SettingToggleRow(
-                        title = config.tr("Đảo chiều dọc (Lên ↔ Xuống)", "Invert Vertical Axis"),
-                        subtitle = config.tr("Đảo ngược hướng ngẩng lên / cúi xuống", "Reverse up / down tilt direction"),
-                        checked = config.gyroInvertY,
-                        onCheckedChange = { SettingsRepository.updateGyroInvertY(it) },
-                        switchTestTag = "settings_switch_gyro_invert_y"
+                        title = config.tr("Đảo chiều ngang (Trái ↔ Phải)", "Invert Horizontal Axis"),
+                        subtitle = config.tr("Đảo ngược hướng nghiêng trái / phải", "Reverse left / right tilt direction"),
+                        checked = config.gyroInvertX,
+                        onCheckedChange = { SettingsRepository.updateGyroInvertX(it) },
+                        switchTestTag = "settings_switch_gyro_invert_x"
                     )
-                }
 
-                OutlinedButton(
-                    onClick = {
-                        com.example.cloudplay.GyroscopeController.requestRecenterNow()
-                        Toast.makeText(
-                            context,
-                            config.tr("🎯 Đã đặt lại tâm con quay hồi chuyển theo tư thế hiện tại", "🎯 Gyroscope center reset to current posture"),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .gamepadActionButton(cornerRadius = 10.dp) {
+                    OutlinedButton(
+                        onClick = {
                             com.example.cloudplay.GyroscopeController.requestRecenterNow()
                             Toast.makeText(
                                 context,
                                 config.tr("🎯 Đã đặt lại tâm con quay hồi chuyển theo tư thế hiện tại", "🎯 Gyroscope center reset to current posture"),
                                 Toast.LENGTH_SHORT
                             ).show()
-                        }
-                        .testTag("settings_gyro_recenter_btn"),
-                    shape = RoundedCornerShape(10.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, XboxNeonGreen),
-                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color(0xFF16352A)
-                    )
-                ) {
-                    Text(
-                        text = config.tr("🎯 Đặt lại tâm con quay hồi chuyển (0°)", "🎯 Recenter Gyroscope Neutral Pose (0°)"),
-                        color = XboxNeonGreen,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .gamepadActionButton(cornerRadius = 10.dp) {
+                                com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                                Toast.makeText(
+                                    context,
+                                    config.tr("🎯 Đã đặt lại tâm con quay hồi chuyển theo tư thế hiện tại", "🎯 Gyroscope center reset to current posture"),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            .testTag("settings_gyro_recenter_btn"),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, XboxNeonGreen),
+                        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color(0xFF16352A)
+                        )
+                    ) {
+                        Text(
+                            text = config.tr("🎯 Đặt lại tâm con quay hồi chuyển (0°)", "🎯 Recenter Gyroscope Neutral Pose (0°)"),
+                            color = XboxNeonGreen,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }

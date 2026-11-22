@@ -73,6 +73,13 @@ class XboxBridge(
         private val _translationInfo = MutableStateFlow(TranslationInfo())
         val translationInfo: StateFlow<TranslationInfo> = _translationInfo.asStateFlow()
 
+        private val _nativeGyroSupported = MutableStateFlow(false)
+        val nativeGyroSupported: StateFlow<Boolean> = _nativeGyroSupported.asStateFlow()
+
+        fun resetNativeGyroSupport() {
+            _nativeGyroSupported.value = false
+        }
+
         val TRUSTED_DOMAINS = listOf(
             "xbox.com",
             "xboxlive.com",
@@ -261,8 +268,10 @@ class XboxBridge(
             val isEnglishUi = currentConfig.isEnglishUI()
             val autoExitPreviewEnabled = currentConfig.autoExitPreviewHandlerEnabled &&
                 currentConfig.xboxWebUiMode == com.example.data.XboxWebUiMode.CLASSIC
+            val nativeGyroAllowed = currentConfig.gyroEnabled &&
+                currentConfig.gyroMode == com.example.data.GyroControlMode.GAME_NATIVE
             val targetTranslateLang = currentConfig.getTargetTranslateLanguageCode()
-            val cacheKey = "$clarityBoost|$clarityPreset|$maxBitrateMbps|$antiAfk|$targetCountry|$targetIp|$userLocale|$xcloudTranslate|$preserveTitles|$bilingualMode|$hideStreamStats|$cellularMode|$networkTuningMode|$speedFirstPriority|$effectiveBitrateMbps|$lowEndDeviceMode|$virtualGamepadEnabled|$renderScaleFactor|$fpsCap|$gpuLoadReduction|$isCellular|$isEnglishUi|$autoExitPreviewEnabled|$targetTranslateLang|${currentConfig.hashCode()}"
+            val cacheKey = "$clarityBoost|$clarityPreset|$maxBitrateMbps|$antiAfk|$targetCountry|$targetIp|$userLocale|$xcloudTranslate|$preserveTitles|$bilingualMode|$hideStreamStats|$cellularMode|$networkTuningMode|$speedFirstPriority|$effectiveBitrateMbps|$lowEndDeviceMode|$virtualGamepadEnabled|$renderScaleFactor|$fpsCap|$gpuLoadReduction|$isCellular|$isEnglishUi|$autoExitPreviewEnabled|$nativeGyroAllowed|$targetTranslateLang|${currentConfig.hashCode()}"
             if (cacheKey == lastInjectionCacheKey) {
                 lastInjectionScript?.let { return it }
             }
@@ -304,6 +313,7 @@ class XboxBridge(
                         if (window.__updateGraphicsTuning) window.__updateGraphicsTuning({ renderScale: $renderScaleFactor, fpsCap: $fpsCap, gpuLoadReduction: $gpuLoadReduction, lowEndDeviceMode: $lowEndDeviceMode });
                         if (window.__setVirtualGamepadEnabled) window.__setVirtualGamepadEnabled($virtualGamepadEnabled);
                         if (window.__setAutoExitPreviewEnabled) window.__setAutoExitPreviewEnabled($autoExitPreviewEnabled);
+                        if (window.__setNativeGyroAllowed) window.__setNativeGyroAllowed($nativeGyroAllowed);
                         if (window.__updatePhysicalControllerConfig) window.__updatePhysicalControllerConfig($initPhysConfJson);
                         if ($lowEndDeviceMode && window.__pauseTranslator) window.__pauseTranslator();
                         return;
@@ -317,6 +327,113 @@ class XboxBridge(
                             window.__cpExitPreviewStage = 'IDLE';
                         }
                     };
+                    window.__cpNativeGyroAllowed = $nativeGyroAllowed;
+                    (function installNativeGyroMonitor() {
+                        if (window.__cpNativeGyroMonitorInstalled) return;
+                        window.__cpNativeGyroMonitorInstalled = true;
+                        const motionTypes = {
+                            deviceorientation: true,
+                            deviceorientationabsolute: true,
+                            devicemotion: true
+                        };
+                        const entries = [];
+                        let lastReported = null;
+
+                        function hasActiveNativeMotion() {
+                            return entries.length > 0 ||
+                                typeof window.ondeviceorientation === 'function' ||
+                                typeof window.ondevicemotion === 'function';
+                        }
+
+                        function reportNativeGyroState(force) {
+                            const active = hasActiveNativeMotion();
+                            if (force || active !== lastReported) {
+                                lastReported = active;
+                                try {
+                                    if (window.CloudPlayBridge && typeof window.CloudPlayBridge.onNativeGyroSupportChanged === 'function') {
+                                        window.CloudPlayBridge.onNativeGyroSupportChanged(active);
+                                    }
+                                } catch (e) {}
+                            }
+                        }
+
+                        function removeEntry(target) {
+                            const idx = entries.indexOf(target);
+                            if (idx >= 0) {
+                                entries.splice(idx, 1);
+                                reportNativeGyroState(false);
+                            }
+                        }
+
+                        const origAdd = window.addEventListener;
+                        const origRemove = window.removeEventListener;
+                        if (typeof origAdd === 'function' && typeof origRemove === 'function') {
+                            window.addEventListener = function(type, listener, options) {
+                                const t = typeof type === 'string' ? type.toLowerCase() : '';
+                                const validListener = typeof listener === 'function' || (listener && typeof listener.handleEvent === 'function');
+                                if (!motionTypes[t] || !validListener) {
+                                    return origAdd.apply(this, arguments);
+                                }
+                                const capture = typeof options === 'boolean' ? options : !!(options && options.capture);
+                                for (let i = 0; i < entries.length; i++) {
+                                    const e = entries[i];
+                                    if (e.type === t && e.listener === listener && e.capture === capture) {
+                                        return;
+                                    }
+                                }
+                                const isOnce = typeof options === 'object' && options !== null && !!options.once;
+                                const entry = { type: t, listener: listener, capture: capture, wrapper: null };
+                                const wrapper = function(ev) {
+                                    if (!window.__cpNativeGyroAllowed) return;
+                                    if (isOnce) {
+                                        removeEntry(entry);
+                                        try { origRemove.call(window, type, wrapper, capture); } catch (e) {}
+                                    }
+                                    if (typeof listener === 'function') {
+                                        return listener.call(this, ev);
+                                    }
+                                    return listener.handleEvent(ev);
+                                };
+                                entry.wrapper = wrapper;
+                                entries.push(entry);
+                                let passOpts = options;
+                                if (isOnce && typeof options === 'object' && options !== null) {
+                                    passOpts = { capture: capture, passive: !!options.passive };
+                                    if (options.signal) passOpts.signal = options.signal;
+                                }
+                                if (typeof options === 'object' && options !== null && options.signal && typeof options.signal.addEventListener === 'function') {
+                                    try {
+                                        options.signal.addEventListener('abort', function() { removeEntry(entry); }, { once: true });
+                                    } catch (e) {}
+                                }
+                                reportNativeGyroState(false);
+                                return origAdd.call(this, type, wrapper, passOpts);
+                            };
+
+                            window.removeEventListener = function(type, listener, options) {
+                                const t = typeof type === 'string' ? type.toLowerCase() : '';
+                                if (!motionTypes[t]) {
+                                    return origRemove.apply(this, arguments);
+                                }
+                                const capture = typeof options === 'boolean' ? options : !!(options && options.capture);
+                                for (let i = 0; i < entries.length; i++) {
+                                    const e = entries[i];
+                                    if (e.type === t && e.listener === listener && e.capture === capture) {
+                                        entries.splice(i, 1);
+                                        reportNativeGyroState(false);
+                                        return origRemove.call(this, type, e.wrapper, options);
+                                    }
+                                }
+                                return origRemove.apply(this, arguments);
+                            };
+                        }
+
+                        window.__setNativeGyroAllowed = function(allowed) {
+                            window.__cpNativeGyroAllowed = !!allowed;
+                            reportNativeGyroState(true);
+                        };
+                        reportNativeGyroState(true);
+                    })();
                     window.__isRecordingPerformanceMode = false;
                     window.__physControllerConfig = $initPhysConfJson;
                     window.__updatePhysicalControllerConfig = function(conf) {
@@ -3631,6 +3748,12 @@ class XboxBridge(
     fun onControllerShortcut(actionId: String?) {
         if (!isCallerTrusted() || actionId.isNullOrBlank()) return
         controller.onControllerShortcutTriggered(actionId.trim())
+    }
+
+    @JavascriptInterface
+    fun onNativeGyroSupportChanged(supported: Boolean) {
+        if (!isCallerTrusted()) return
+        _nativeGyroSupported.value = supported
     }
 
     @JavascriptInterface

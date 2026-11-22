@@ -155,24 +155,21 @@ data class PadNodeTuning(
 }
 
 enum class PadGyroMode(val id: String) {
-    FPS_VR_360("fps_vr"),
-    RACING_STEER("racing"),
-    LEFT_STICK_360("left_360");
+    GAME_NATIVE("game_native"),
+    RACING_STEER("racing");
 
     fun localizedTitle(lang: PadLanguage): String = when (this) {
-        FPS_VR_360 -> PadStrings.tr(lang, "Bắn súng / VR — Mọi góc (Cần phải)", "FPS / VR — All Angles (Right Stick)")
-        RACING_STEER -> PadStrings.tr(lang, "Đua xe — Chỉ trái/phải (Cần trái)", "Racing — Left/Right Only (Left Stick)")
-        LEFT_STICK_360 -> PadStrings.tr(lang, "Di chuyển 360° — Mọi góc (Cần trái)", "360° Move — All Angles (Left Stick)")
+        GAME_NATIVE -> PadStrings.gyroModeGameNativeTitle(lang)
+        RACING_STEER -> PadStrings.gyroModeRacingTitle(lang)
     }
 
     fun shortTitle(lang: PadLanguage): String = when (this) {
-        FPS_VR_360 -> PadStrings.tr(lang, "Bắn súng / VR (Mọi góc)", "FPS / VR (All Angles)")
-        RACING_STEER -> PadStrings.tr(lang, "Đua xe (Chỉ trái/phải)", "Racing (Left/Right)")
-        LEFT_STICK_360 -> PadStrings.tr(lang, "Cần trái (Mọi góc)", "Left Stick (All Angles)")
+        GAME_NATIVE -> PadStrings.gyroModeGameNativeShort(lang)
+        RACING_STEER -> PadStrings.gyroModeRacingShort(lang)
     }
 
     companion object {
-        fun fromId(id: String): PadGyroMode = entries.firstOrNull { it.id == id } ?: FPS_VR_360
+        fun fromId(id: String): PadGyroMode = entries.firstOrNull { it.id == id } ?: GAME_NATIVE
     }
 }
 
@@ -196,7 +193,7 @@ data class PadGlobalControllerSettings(
     val isPositionLocked: Boolean = false,
     val showEditGrid: Boolean = true,
     val gyroEnabled: Boolean = false, // Mặc định TẮT hoàn toàn
-    val gyroMode: PadGyroMode = PadGyroMode.FPS_VR_360,
+    val gyroMode: PadGyroMode = PadGyroMode.GAME_NATIVE,
     val gyroSensX: Int = 100,
     val gyroSensY: Int = 100,
     val gyroDeadzone: Int = 2,
@@ -235,7 +232,7 @@ internal object PadControllerStorage {
             isPositionLocked = prefs.getBoolean("pad_position_locked", false),
             showEditGrid = prefs.getBoolean("pad_show_edit_grid", true),
             gyroEnabled = prefs.getBoolean("pad_gyro_enabled", false),
-            gyroMode = PadGyroMode.fromId(prefs.getString("pad_gyro_mode", PadGyroMode.FPS_VR_360.id).orEmpty()),
+            gyroMode = PadGyroMode.fromId(prefs.getString("pad_gyro_mode", PadGyroMode.GAME_NATIVE.id).orEmpty()),
             gyroSensX = prefs.getInt("pad_gyro_sens_x", 100).coerceIn(10, 300),
             gyroSensY = prefs.getInt("pad_gyro_sens_y", 100).coerceIn(10, 300),
             gyroDeadzone = prefs.getInt("pad_gyro_deadzone", 2).coerceIn(0, 20),
