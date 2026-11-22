@@ -30,16 +30,16 @@ jobs:
           token: ${{ secrets.SYNC_TOKEN }}
           path: dst
           fetch-depth: 0
-      - name: Copy to branch remix-sync
+      - name: Sync directly to main branch
         working-directory: dst
         run: |
           git config user.name "sync-bot"
           git config user.email "sync-bot@users.noreply.github.com"
-          git checkout -B remix-sync HEAD
+          TARGET_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "main")
           find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github -exec rm -rf {} +
           rsync -a --exclude .git --exclude .github ../src/ ./
           git add -A
-          if git diff --cached --quiet; then echo "No changes compared to default branch"; exit 0; fi
+          if git diff --cached --quiet; then echo "No changes compared to ${TARGET_BRANCH}"; exit 0; fi
           git commit -m "sync: ravnocopy ${GITHUB_SHA::7}"
-          git push --force origin remix-sync
-          echo "Synced successfully to muitenvn/Ravno-App (branch: remix-sync)"
+          git push origin "HEAD:${TARGET_BRANCH}"
+          echo "Synced successfully to muitenvn/Ravno-App (branch: ${TARGET_BRANCH})"
