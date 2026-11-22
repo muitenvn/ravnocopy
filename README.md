@@ -1,38 +1,65 @@
-# Ravno App — Ứng dụng hỗ trợ chơi Xbox Cloud Gaming trên Android
+# Ravno — Xbox Cloud Gaming Client for Android & Android TV
 
-**Ravno** (**Ravno App**) là ứng dụng độc lập, gọn nhẹ dành cho điện thoại Android và Android TV giúp mở và trải nghiệm **Xbox Cloud Gaming** (`xbox.com/play`) thuận tiện hơn, tích hợp sẵn tay cầm cảm ứng tùy chỉnh, ứng dụng tay cầm từ xa **Ravno Pad**, thông số kỹ thuật thực tế, dịch giao diện và bộ công cụ mạng tùy chọn (lấy cảm hứng từ dự án mã nguồn mở [better-xcloud](https://github.com/redphx/better-xcloud)).
+**Ravno** là ứng dụng Android độc lập, gọn nhẹ giúp chơi **Xbox Cloud Gaming** (`xbox.com/play`) mượt mà trên **điện thoại, máy tính bảng và Android TV**. Dự án đi kèm **Ravno Pad** — ứng dụng biến điện thoại thành tay cầm không dây độ trễ thấp cho TV qua mạng Wi-Fi nội bộ (LAN). Lấy cảm hứng từ dự án mã nguồn mở [better-xcloud](https://github.com/redphx/better-xcloud).
 
-**Ravno** (**Ravno App**) is a lightweight, independent Android application built for playing **Xbox Cloud Gaming** (`xbox.com/play`) on mobile phones and Android TV, featuring customizable touch controls, the **Ravno Pad** companion controller app, real-time stream telemetry, menu localization, and optional network routing tools (inspired by the open-source [better-xcloud](https://github.com/redphx/better-xcloud) project).
+**Ravno** is a lightweight, independent Android client for **Xbox Cloud Gaming** (`xbox.com/play`) on **phones, tablets, and Android TV**. It includes **Ravno Pad**, a companion app that turns your phone into a low-latency wireless controller for Android TV over local Wi-Fi (LAN). Inspired by the open-source [better-xcloud](https://github.com/redphx/better-xcloud) project.
 
 - **Trang chủ & Tải APK / Website & Download:** [https://muitenvn.github.io/Ravno-App/](https://muitenvn.github.io/Ravno-App/)
-- **Điều khoản & Quyền riêng tư (15 mục) / Terms & Privacy:** [https://muitenvn.github.io/Ravno-App/terms.html](https://muitenvn.github.io/Ravno-App/terms.html)
-- **Các phiên bản phát hành / Releases:** [GitHub Releases](https://github.com/muitenvn/Ravno-App/releases)
+- **Bản phát hành / GitHub Releases:** [Tải APK mới nhất / Latest Releases](https://github.com/muitenvn/Ravno-App/releases)
+- **Điều khoản & Quyền riêng tư / Terms & Privacy:** [https://muitenvn.github.io/Ravno-App/terms.html](https://muitenvn.github.io/Ravno-App/terms.html)
+- **Chính sách Bảo mật / Security Policy:** [SECURITY.md](SECURITY.md)
+- **Nhật ký thay đổi / Changelog:** [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
-## Tính năng chính / Core Features
+## Tải và Cài đặt / Download & Install
 
-- **Tay cầm cảm ứng & Tay cầm rời (Custom Touch & Physical Controls):** Hỗ trợ đầy đủ các nút bấm tiêu chuẩn Xbox, cho phép kéo thả vị trí, chỉnh kích thước, độ trong suốt, độ rung phản hồi và lưu bố cục riêng cho từng trò chơi. Tương thích tay cầm Bluetooth và USB-C.
-- **Hình ảnh & Thông số thực tế (Stream Tuning & Real Telemetry):** Tùy chỉnh độ phân giải mục tiêu (720p/1080p), giới hạn băng thông, bộ lọc độ nét, quay màn hình và hiển thị FPS, độ trễ (RTT ping), jitter, bitrate thực tế đọc trực tiếp từ kết nối WebRTC.
-- **Đa ngôn ngữ & Dịch giao diện (12 Languages & Menu Translation):** Giao diện ứng dụng và các mục menu trên trang Xbox hỗ trợ hiển thị bằng tiếng Việt, tiếng Anh và 10 ngôn ngữ phổ biến khác.
-- **Công cụ mạng & Bảo vệ tài khoản (Optional Network Tools & Account Safety):** Đo độ trễ thực tế, hỗ trợ máy chủ proxy tùy chọn do người dùng tự quyết định và tự động ngắt kết nối trung gian khi mở trang đăng nhập hoặc thanh toán của Microsoft.
-- **Thư viện & Lịch sử phiên chơi (Game Library & Session History):** Tra cứu nhanh danh mục trò chơi đám mây, đánh dấu trò chơi yêu thích và theo dõi thống kê chất lượng mạng của các phiên chơi gần đây.
+Vào trang [GitHub Releases](https://github.com/muitenvn/Ravno-App/releases) và chọn đúng tệp APK cho thiết bị của bạn:
+
+| Gói cài đặt / Package | Dành cho / For | Mô tả ngắn / Summary |
+| :--- | :--- | :--- |
+| `CloudPlay-Xbox-v*.apk` | Điện thoại, Máy tính bảng, **Android TV** | Ứng dụng **Ravno** chính để chơi Xbox Cloud Gaming. |
+| `CloudPlay-Pad-v*.apk` | Điện thoại Android (tùy chọn) | Ứng dụng **Ravno Pad** biến điện thoại thành tay cầm không dây cho Ravno trên TV. |
+
+> Mỗi bản phát hành đều kèm tệp kiểm tra `.sha256`. Bộ cập nhật tích hợp trong app tự động kiểm tra mã băm SHA-256 trước khi cài đặt. / *Every release includes `.sha256` checksums, verified automatically by the in-app updater.*
+
+---
+
+## Tính năng nổi bật / Key Features
+
+- **Điện thoại, Máy tính bảng & Android TV:** Hỗ trợ giao diện cảm ứng cho di động và giao diện tối ưu màn hình lớn cho Android TV (điều khiển hoàn toàn bằng D-Pad hoặc tay cầm rời). / *Supports mobile touch UI, tablets, and a dedicated Android TV layout with full D-Pad & gamepad navigation.*
+- **Ravno Pad — Tay cầm không dây qua Wi-Fi/LAN:** Kết nối điện thoại với Ravno trên Android TV qua NSD (`_cloudplaypad._tcp`), xác thực PIN 4 số + HMAC, truyền nút bấm qua UDP độ trễ thấp, hỗ trợ rung phản hồi và tự nhả nút khi mất kết nối (~450 ms). / *Turns your phone into a wireless LAN gamepad for Android TV with 4-digit PIN + HMAC pairing, low-latency UDP input, rumble feedback, and a 450 ms safety release watchdog.*
+- **Tay cầm cảm ứng, Tay cầm rời & Con quay hồi chuyển (Gyroscope):** Đầy đủ nút bấm Xbox tiêu chuẩn 1:1, kéo thả vị trí, chỉnh kích thước/độ mờ và lưu bố cục riêng; tương thích tay cầm Bluetooth/USB-C; tùy chọn ngắm bằng cảm biến con quay hồi chuyển (mặc định tắt). / *Customizable 1:1 Xbox touch controls, Bluetooth/USB-C controller support, and optional on-device gyroscope aiming (OFF by default).*
+- **Tối ưu luồng phát & Thông số WebRTC thật:** Chỉnh độ phân giải mục tiêu (720p/1080p), giới hạn bitrate, bộ lọc độ nét/màu sắc, khuếch đại âm lượng, quay màn hình `.mp4` và hiển thị FPS, RTT ping, jitter, mất gói đọc trực tiếp từ WebRTC (`RTCStatsReport`). / *Target 720p/1080p profiles, bitrate cap, clarity/color filters, audio boost, `.mp4` screen recording, and real-time WebRTC telemetry (never fabricated).*
+- **Hỗ trợ 12 ngôn ngữ & Dịch giao diện Xbox:** Toàn bộ giao diện Ravno và Ravno Pad hỗ trợ 12 ngôn ngữ (*Tiếng Việt, English, Español, Português, Français, Deutsch, 日本語, 한국어, 中文, Bahasa Indonesia, ไทย, Русский*), kèm tùy chọn dịch menu web Xbox. / *Full 12-language UI across both Ravno and Ravno Pad, plus optional Xbox menu localization.*
+- **Công cụ mạng tùy chọn & Bảo vệ tài khoản:** Đo độ trễ thực tế, hỗ trợ định tuyến proxy/VPN cục bộ theo ứng dụng (do người dùng tự chọn) và tự động ngắt kết nối trung gian khi mở trang đăng nhập hoặc thanh toán của Microsoft. / *Real latency probes, optional per-app proxy/VPN routing, and automatic bypass on Microsoft sign-in and billing pages.*
+- **Thư viện game & Lịch sử phiên chơi:** Tìm kiếm nhanh danh mục Xbox Cloud, lưu game yêu thích và xem thống kê mạng của các phiên chơi gần đây. / *Fast cloud game library search, favorites, and recent session network stats.*
 
 ---
 
 ## An toàn & Quyền riêng tư / Safety & Privacy
 
-Chi tiết đầy đủ được công bố tại [Chính sách Bảo mật (SECURITY.md)](SECURITY.md) và [Trang Điều khoản & Quyền riêng tư](https://muitenvn.github.io/Ravno-App/terms.html):
+Chi tiết đầy đủ xem tại [SECURITY.md](SECURITY.md) và [Trang Điều khoản & Quyền riêng tư](https://muitenvn.github.io/Ravno-App/terms.html):
 
-1. **An toàn tài khoản:** Người dùng đăng nhập trực tiếp trên trang chính thức của Microsoft (`login.live.com`, `xbox.com`). Ứng dụng hoàn toàn không đọc, không thu thập và không lưu mật khẩu hay mã xác thực (OTP/2FA).
-2. **Bảo vệ khi thanh toán:** Tự động ngắt máy chủ trung gian khi mở các trang mua hàng, nạp mã hoặc quản lý tài khoản của Microsoft.
-3. **Dữ liệu lưu cục bộ trên máy:** Mọi cài đặt, danh sách game yêu thích, lịch sử phiên chơi và nhật ký kỹ thuật chỉ lưu trong bộ nhớ riêng của ứng dụng trên điện thoại của người dùng; không có máy chủ thu thập dữ liệu cá nhân và không gắn quảng cáo.
-4. **Chơi công bằng (Fair Play):** Chỉ cung cấp nút bấm cảm ứng tiêu chuẩn 1:1 và tùy chỉnh hiển thị; hoàn toàn không có tính năng gian lận (cheat), bắn tự động (macro/turbo) hay can thiệp vào trò chơi.
+1. **Đăng nhập chính chủ Microsoft:** Tài khoản đăng nhập trực tiếp trên `login.live.com` / `xbox.com` qua HTTPS. Ứng dụng không đọc, không ghi log và không lưu mật khẩu hay mã OTP/2FA.
+2. **Bảo vệ trang thanh toán:** Tự động ngắt proxy/VPN trung gian khi mở các trang đăng nhập, thanh toán, mua hàng hoặc nạp mã Microsoft.
+3. **Dữ liệu lưu cục bộ, không theo dõi:** Mọi cài đặt, bố cục tay cầm, game yêu thích và lịch sử phiên chơi chỉ lưu trên máy người dùng. Không máy chủ thu thập dữ liệu, không quảng cáo, không SDK theo dõi.
+4. **Chơi công bằng (Fair Play):** Chỉ hỗ trợ thao tác tay cầm tiêu chuẩn 1:1; không có cheat, macro, turbo fire hay can thiệp trò chơi.
 
 ---
 
-## Lưu ý pháp lý & Liên hệ / Legal Notice & Contact
+## Cấu trúc dự án / Project Modules
 
-- **Dự án độc lập:** Ravno (Ravno App & Ravno Pad) là dự án cá nhân độc lập, **không** liên kết, không thuộc sở hữu và không được Microsoft Corporation, Xbox hay Epic Games bảo trợ hoặc cấp phép. Mọi tên gọi và nhãn hiệu thuộc về chủ sở hữu tương ứng.
-- **Ghi công dữ liệu:** Định vị vị trí IP sử dụng cơ sở dữ liệu miễn phí từ [DB-IP.com](https://db-ip.com) theo giấy phép **CC BY 4.0**.
+- `:app` (`com.aistudio.cloudplay.kbtolt`) — Ứng dụng **Ravno** chính (Kotlin + Jetpack Compose + WebView) cho điện thoại, máy tính bảng và Android TV.
+- `:pad` (`com.muitenvn.cloudplay.pad`) — Ứng dụng tay cầm không dây **Ravno Pad** qua mạng LAN.
+- `:remote-protocol` — Thư viện giao thức dùng chung (NSD, ghép đôi PIN/HMAC, khung điều khiển TCP và gói dữ liệu UDP).
+
+---
+
+## Lưu ý pháp lý, Ghi công & Liên hệ / Legal Notice & Contact
+
+- **Dự án độc lập:** Ravno và Ravno Pad là dự án cá nhân độc lập, **không** liên kết, không thuộc sở hữu và không được Microsoft Corporation, Xbox hay Epic Games bảo trợ hoặc ủy quyền. Mọi nhãn hiệu thuộc quyền sở hữu của chủ sở hữu tương ứng.
+- **Ghi công / Attribution:**
+  - Định vị vị trí IP sử dụng cơ sở dữ liệu miễn phí từ [DB-IP.com](https://db-ip.com) theo giấy phép **CC BY 4.0**.
+  - Cảm hứng kỹ thuật và từ điển bản địa hóa menu từ dự án mã nguồn mở [better-xcloud](https://github.com/redphx/better-xcloud) (MIT License).
 - **Nhà phát triển / Developer:** Nguyễn Thế Ngọc (`muitenvn`) — Email: [cloudplayxbox@gmail.com](mailto:cloudplayxbox@gmail.com)
