@@ -226,13 +226,15 @@ fun CloudBrowserScreen(
     }
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    var isLifecycleResumed by remember { mutableStateOf(true) }
     DisposableEffect(lifecycleOwner, webViewInstance, context) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             when (event) {
                 androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> {
+                    isLifecycleResumed = false
                     try {
                         webViewInstance?.evaluateJavascript(
-                            "if (window.__setAppInBackground) window.__setAppInBackground(true);",
+                            "if (window.__cpGyroClear) window.__cpGyroClear(); if (window.__setAppInBackground) window.__setAppInBackground(true);",
                             null
                         )
                         webViewInstance?.onPause()
@@ -240,6 +242,7 @@ fun CloudBrowserScreen(
                     } catch (_: Exception) {}
                 }
                 androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                    isLifecycleResumed = true
                     try {
                         webViewInstance?.onResume()
                         webViewInstance?.resumeTimers()
@@ -942,13 +945,14 @@ fun CloudBrowserScreen(
     // Bộ điều khiển Con quay hồi chuyển (Gyroscope) - Mặc định TẮT hoàn toàn nếu người dùng không bật
     val currentHoldLtOnly by androidx.compose.runtime.rememberUpdatedState(config.gyroHoldLtOnly)
     val currentWebViewForGyro by androidx.compose.runtime.rememberUpdatedState(webViewInstance)
+    val currentLifecycleResumedForGyro by androidx.compose.runtime.rememberUpdatedState(isLifecycleResumed)
     val gyroController = remember(context) {
         com.example.cloudplay.GyroscopeController(context) { targetRightStick, outX, outY ->
             val wv = currentWebViewForGyro ?: return@GyroscopeController
-            val rx = (outX.coerceIn(-1f, 1f) * 100f).let { kotlin.math.round(it) / 100f }
-            val ry = (outY.coerceIn(-1f, 1f) * 100f).let { kotlin.math.round(it) / 100f }
+            val rx = if (outX.isFinite()) (outX.coerceIn(-1f, 1f) * 100f).let { kotlin.math.round(it) / 100f } else 0f
+            val ry = if (outY.isFinite()) (outY.coerceIn(-1f, 1f) * 100f).let { kotlin.math.round(it) / 100f } else 0f
             wv.post {
-                if (kotlin.math.abs(rx) < 0.001f && kotlin.math.abs(ry) < 0.001f && !SettingsRepository.config.value.gyroEnabled) {
+                if (!SettingsRepository.config.value.gyroEnabled || !currentLifecycleResumedForGyro) {
                     wv.evaluateJavascript("if(window.__cpGyroClear)window.__cpGyroClear();", null)
                 } else {
                     wv.evaluateJavascript(
@@ -969,8 +973,11 @@ fun CloudBrowserScreen(
         config.gyroInvertX,
         config.gyroInvertY,
         config.gyroHoldLtOnly,
+        isLifecycleResumed,
+        isPageLoading,
         webViewInstance
     ) {
+        gyroController.setPaused(!isLifecycleResumed)
         gyroController.updateConfiguration(
             enabled = config.gyroEnabled,
             mode = config.gyroMode,
@@ -980,8 +987,10 @@ fun CloudBrowserScreen(
             invertX = config.gyroInvertX,
             invertY = config.gyroInvertY
         )
-        if (!config.gyroEnabled) {
+        if (!config.gyroEnabled || !isLifecycleResumed) {
             webViewInstance?.evaluateJavascript("if(window.__cpGyroClear)window.__cpGyroClear();", null)
+        } else if (!isPageLoading && webViewInstance != null) {
+            gyroController.syncCurrentOutput()
         }
     }
 

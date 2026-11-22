@@ -5,28 +5,28 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.hardware.display.DisplayManager
 import android.os.Build
+import android.view.Display
 import android.view.InputDevice
 import android.view.Surface
-import android.view.WindowManager
 import com.example.data.GyroControlMode
 import kotlin.math.abs
 import kotlin.math.atan2
+import kotlin.math.hypot
 import kotlin.math.sign
-import kotlin.math.sqrt
 
 /**
  * Bộ điều khiển Con quay hồi chuyển (Gyroscope) cho Ravno:
- * - Mặc định TẮT hoàn toàn để không can thiệp vào cảm biến gốc của game Xbox nếu người dùng không bật.
+ * - Mặc định TẮT hoàn toàn: khi tắt không đăng ký cảm biến và không gửi tín hiệu.
  * - Khi người dùng BẬT:
- *   + Tự động ưu tiên cảm biến con quay hồi chuyển tích hợp sẵn bên trong tay cầm thật (Android 12+ InputDevice.sensorManager,
- *     ví dụ DualSense / DualShock 4 / Switch Pro / GameSir) nếu có, hoặc dùng cảm biến của điện thoại.
+ *   + Ưu tiên cảm biến con quay trên tay cầm thật (Android 12+ nếu có cảm biến xoay/gyro) và tự dự phòng sang cảm biến điện thoại nếu đăng ký thất bại.
+ *   + Chuỗi dự phòng cảm biến: GAME_ROTATION_VECTOR -> ROTATION_VECTOR -> GYROSCOPE -> GRAVITY -> ACCELEROMETER (chỉ đăng ký 1 nguồn để tránh ghi đè lẫn nhau).
+ *   + Dùng ma trận xoay tương đối R_rel = R_ref^T * R_cur để tránh khóa khớp (gimbal lock) khi cầm máy thẳng đứng chơi game.
  *   + Hỗ trợ 3 chế độ:
- *     1. FPS_VR_360 (Bắn súng / VR - Mọi góc -> Cần phải RS): nghiêng/xoay mọi góc ngang & dọc.
- *     2. RACING_STEER (Đua xe - Chỉ qua lại trái/phải -> Cần trái LS): chỉ nhận nghiêng vô-lăng trái/phải, khóa trục dọc = 0.
- *     3. LEFT_STICK_360 (Di chuyển / Lái máy bay 360° -> Cần trái LS): nghiêng mọi góc ngang & dọc.
- *   + Hỗ trợ chỉnh độ nhạy Ngang / Dọc (10% - 300%), Vùng chết chống rung tay (0% - 20%), Đảo chiều Ngang / Dọc,
- *     và Đặt lại tâm chuẩn (Recenter 0°) theo tư thế cầm máy hiện tại.
+ *     1. FPS_VR_360 (Bắn súng / VR -> Cần phải RS)
+ *     2. RACING_STEER (Đua xe -> Cần trái LS, khóa trục dọc)
+ *     3. LEFT_STICK_360 (Di chuyển / Bay 360° -> Cần trái LS)
  */
 class GyroscopeController(
     context: Context,
@@ -42,13 +42,7 @@ class GyroscopeController(
         }
 
         fun hasAvailableGyroSensor(context: Context): Boolean {
-            if (findPhysicalControllerSensorManager()?.let { sm ->
-                    sm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null ||
-                        sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null ||
-                        sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null ||
-                        sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null
-                } == true
-            ) {
+            if (findPhysicalControllerSensorManager() != null) {
                 return true
             }
             val sm = context.applicationContext.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
@@ -56,6 +50,7 @@ class GyroscopeController(
             return sm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null ||
                 sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null ||
                 sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null ||
+                sm.getDefaultSensor(Sensor.TYPE_GRAVITY) != null ||
                 sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null
         }
 
@@ -68,11 +63,11 @@ class GyroscopeController(
                         (dev.sources and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
                     if (isGamepad && !dev.isVirtual) {
                         val sm = dev.sensorManager
-                        val hasMotion = sm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null ||
+                        // Chỉ ưu tiên tay cầm vật lý nếu thực sự có cảm biến xoay/gyro (tránh bị gia tốc kế giả chặn mất gyro điện thoại)
+                        val hasTrueGyro = sm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null ||
                             sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null ||
-                            sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null ||
-                            sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null
-                        if (hasMotion) return sm
+                            sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null
+                        if (hasTrueGyro) return sm
                     }
                 }
                 null
@@ -86,6 +81,7 @@ class GyroscopeController(
     private var activeSensorManager: SensorManager? = null
     private var isUsingControllerSensor: Boolean = false
     private var isListening: Boolean = false
+    private var isPaused: Boolean = false
 
     var enabled: Boolean = false
         private set
@@ -98,15 +94,15 @@ class GyroscopeController(
 
     private val rotationMatrix = FloatArray(9)
     private val remappedMatrix = FloatArray(9)
-    private val orientationAngles = FloatArray(3)
+    private val refMatrix = FloatArray(9)
+    private val relMatrix = FloatArray(9)
 
     private var hasReferencePose = false
-    private var refYawRad = 0f
     private var refPitchRad = 0f
     private var refRollRad = 0f
     private var lastHandledRecenterTick = 0L
 
-    // Dùng khi thiết bị chỉ có GYROSCOPE + ACCELEROMETER rời
+    // Dùng khi thiết bị chỉ có GYROSCOPE rời (không có RotationVector)
     private var integratedX = 0f
     private var integratedY = 0f
     private var lastGyroTimestampNs = 0L
@@ -132,18 +128,36 @@ class GyroscopeController(
         this.invertX = invertX
         this.invertY = invertY
 
-        if (prevMode != mode) {
+        if (prevMode != mode && enabled && !isPaused) {
             recenter()
         }
 
-        if (enabled != this.enabled) {
-            this.enabled = enabled
-            if (enabled) {
-                startListening()
-            } else {
-                stopListening()
-            }
+        val prevEnabled = this.enabled
+        this.enabled = enabled
+        val shouldListen = enabled && !isPaused
+        if (shouldListen && !isListening) {
+            startListening()
+        } else if (!shouldListen && (isListening || prevEnabled != enabled)) {
+            stopListening()
         }
+    }
+
+    fun setPaused(paused: Boolean) {
+        if (this.isPaused == paused) return
+        this.isPaused = paused
+        if (paused) {
+            stopListening()
+        } else if (enabled) {
+            startListening()
+        }
+    }
+
+    /**
+     * Đẩy lại trạng thái hiện tại sang WebView sau khi trang tải xong hoặc khi đổi tùy chọn (vd: holdLtOnly).
+     */
+    fun syncCurrentOutput() {
+        if (!enabled || isPaused) return
+        dispatchOutput(mode == GyroControlMode.FPS_VR_360, lastDispatchedX, lastDispatchedY, force = true)
     }
 
     fun recenter() {
@@ -154,41 +168,57 @@ class GyroscopeController(
         dispatchOutput(mode == GyroControlMode.FPS_VR_360, 0f, 0f, force = true)
     }
 
+    private fun tryRegisterBestSensor(sm: SensorManager): Boolean {
+        val rotSensor = sm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
+            ?: sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        if (rotSensor != null && sm.registerListener(this, rotSensor, SensorManager.SENSOR_DELAY_GAME)) {
+            return true
+        }
+        val gyro = sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        if (gyro != null && sm.registerListener(this, gyro, SensorManager.SENSOR_DELAY_GAME)) {
+            return true
+        }
+        val accel = sm.getDefaultSensor(Sensor.TYPE_GRAVITY)
+            ?: sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        if (accel != null && sm.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME)) {
+            return true
+        }
+        return false
+    }
+
     private fun startListening() {
         if (isListening) return
         val controllerSm = findPhysicalControllerSensorManager()
         val systemSm = appContext.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
-        val chosenSm = controllerSm ?: systemSm ?: return
-        isUsingControllerSensor = (controllerSm != null)
-        activeSensorManager = chosenSm
 
         hasReferencePose = false
         integratedX = 0f
         integratedY = 0f
         lastGyroTimestampNs = 0L
 
-        val rotSensor = chosenSm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
-            ?: chosenSm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-
         var registered = false
-        if (rotSensor != null) {
-            registered = chosenSm.registerListener(this, rotSensor, SensorManager.SENSOR_DELAY_GAME)
-        }
-        if (!registered) {
-            val gyro = chosenSm.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-            val accel = chosenSm.getDefaultSensor(Sensor.TYPE_GRAVITY)
-                ?: chosenSm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-            if (gyro != null) {
-                registered = chosenSm.registerListener(this, gyro, SensorManager.SENSOR_DELAY_GAME)
+        if (controllerSm != null) {
+            registered = tryRegisterBestSensor(controllerSm)
+            if (registered) {
+                activeSensorManager = controllerSm
+                isUsingControllerSensor = true
             }
-            if (accel != null) {
-                registered = chosenSm.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME) || registered
+        }
+        if (!registered && systemSm != null) {
+            registered = tryRegisterBestSensor(systemSm)
+            if (registered) {
+                activeSensorManager = systemSm
+                isUsingControllerSensor = false
             }
         }
         isListening = registered
+        if (registered) {
+            dispatchOutput(mode == GyroControlMode.FPS_VR_360, 0f, 0f, force = true)
+        }
     }
 
     fun stopListening() {
+        val wasListening = isListening
         if (isListening) {
             try {
                 activeSensorManager?.unregisterListener(this)
@@ -197,17 +227,20 @@ class GyroscopeController(
             isListening = false
         }
         activeSensorManager = null
+        isUsingControllerSensor = false
         hasReferencePose = false
         integratedX = 0f
         integratedY = 0f
         lastGyroTimestampNs = 0L
-        dispatchOutput(mode == GyroControlMode.FPS_VR_360, 0f, 0f, force = true)
+        if (wasListening || lastDispatchedX != 0f || lastDispatchedY != 0f) {
+            dispatchOutput(mode == GyroControlMode.FPS_VR_360, 0f, 0f, force = true)
+        }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (!enabled || event == null) return
+        if (!enabled || isPaused || event == null) return
 
         val reqTick = recenterRequestTick
         if (reqTick > lastHandledRecenterTick) {
@@ -222,29 +255,25 @@ class GyroscopeController(
             Sensor.TYPE_ROTATION_VECTOR -> {
                 SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
                 remapForScreenRotation(rotationMatrix, remappedMatrix)
-                SensorManager.getOrientation(remappedMatrix, orientationAngles)
-
-                val yaw = orientationAngles[0]   // Xoay ngang trái/phải
-                val pitch = orientationAngles[1] // Ngẩng lên / cúi xuống
-                val roll = orientationAngles[2]  // Nghiêng vô-lăng trái/phải
 
                 if (!hasReferencePose) {
-                    refYawRad = yaw
-                    refPitchRad = pitch
-                    refRollRad = roll
+                    System.arraycopy(remappedMatrix, 0, refMatrix, 0, 9)
                     hasReferencePose = true
                 }
 
-                val dYaw = normalizeAngleRad(yaw - refYawRad)
-                val dPitch = normalizeAngleRad(pitch - refPitchRad)
-                val dRoll = normalizeAngleRad(roll - refRollRad)
+                // R_rel = R_ref^T * R_cur: góc xoay tương đối trong hệ tọa độ màn hình (không bị gimbal lock khi cầm thẳng đứng)
+                multiplyTransposeLeft(refMatrix, remappedMatrix, relMatrix)
+
+                val dYaw = atan2(-relMatrix[2], relMatrix[8])
+                val dPitch = atan2(relMatrix[5], relMatrix[8])
+                val dRoll = atan2(relMatrix[1], relMatrix[0])
 
                 // Quy đổi góc nghiêng (khoảng ±32 độ = ±0.56 rad tương ứng 100% cần ở độ nhạy 100%)
                 val fullScaleRad = 0.56f
                 val rawHorizontal = when (mode) {
                     GyroControlMode.RACING_STEER -> (dRoll / fullScaleRad)
                     GyroControlMode.FPS_VR_360,
-                    GyroControlMode.LEFT_STICK_360 -> ((dYaw * 0.85f + dRoll * 0.65f) / fullScaleRad)
+                    GyroControlMode.LEFT_STICK_360 -> ((dYaw * 0.85f + dRoll * 0.50f) / fullScaleRad)
                 }
                 val rawVertical = when (mode) {
                     GyroControlMode.RACING_STEER -> 0f
@@ -276,12 +305,21 @@ class GyroscopeController(
                 val nowNs = event.timestamp
                 if (lastGyroTimestampNs != 0L) {
                     val dt = ((nowNs - lastGyroTimestampNs) * 1e-9f).coerceIn(0f, 0.1f)
-                    // Góc vận tốc (rad/s) tích phân có hồi tâm nhẹ cho FPS/VR hoặc góc nghiêng
-                    val wx = event.values[0]
-                    val wy = event.values[1]
-                    val wz = event.values[2]
-                    integratedX = (integratedX + (-wz * 0.7f + wy * 0.5f) * dt * 1.8f).coerceIn(-1.5f, 1.5f)
-                    integratedY = (integratedY + (-wx) * dt * 1.8f).coerceIn(-1.5f, 1.5f)
+                    val (sx, sy, sz) = remapVectorToScreenAxes(event.values[0], event.values[1], event.values[2])
+                    val dYaw = -sy * dt
+                    val dRoll = -sz * dt
+                    val dPitchDown = -sx * dt
+
+                    val fullScaleRad = 0.56f
+                    val deltaH = when (mode) {
+                        GyroControlMode.RACING_STEER -> dRoll / fullScaleRad
+                        GyroControlMode.FPS_VR_360,
+                        GyroControlMode.LEFT_STICK_360 -> (dYaw * 0.85f + dRoll * 0.50f) / fullScaleRad
+                    }
+                    val deltaV = if (mode == GyroControlMode.RACING_STEER) 0f else (dPitchDown / fullScaleRad)
+
+                    integratedX = (integratedX + deltaH).coerceIn(-1.5f, 1.5f)
+                    integratedY = (integratedY + deltaV).coerceIn(-1.5f, 1.5f)
 
                     val outX = processAxis(integratedX, sensitivityXPercent, deadzonePercent, invertX)
                     val outY = if (mode == GyroControlMode.RACING_STEER) {
@@ -296,23 +334,37 @@ class GyroscopeController(
 
             Sensor.TYPE_GRAVITY,
             Sensor.TYPE_ACCELEROMETER -> {
-                if (mode == GyroControlMode.RACING_STEER) {
-                    // Dùng trọng lực để đo góc nghiêng vô-lăng trái/phải chính xác nếu máy không có RotationVector
-                    val gx = event.values[0]
-                    val gy = event.values[1]
-                    val gz = event.values[2]
-                    val norm = sqrt(gx * gx + gy * gy + gz * gz).coerceAtLeast(1f)
-                    val steerAngle = atan2(gy / norm, gx / norm)
-                    if (!hasReferencePose) {
-                        refRollRad = steerAngle
-                        hasReferencePose = true
-                    }
-                    val dRoll = normalizeAngleRad(steerAngle - refRollRad)
-                    val rawSteer = dRoll / 0.56f
-                    val outX = processAxis(rawSteer, sensitivityXPercent, deadzonePercent, invertX)
-                    dispatchOutput(false, outX, 0f, force = false)
+                // Dự phòng bằng trọng lực trên thiết bị không có con quay hồi chuyển vật lý (hỗ trợ cả 3 chế độ)
+                val (sx, sy, sz) = remapVectorToScreenAxes(event.values[0], event.values[1], event.values[2])
+                val rollRight = atan2(-sx, sy)
+                val pitchDown = atan2(-sz, hypot(sx, sy).coerceAtLeast(0.001f))
+                if (!hasReferencePose) {
+                    refRollRad = rollRight
+                    refPitchRad = pitchDown
+                    hasReferencePose = true
                 }
+                val dRoll = normalizeAngleRad(rollRight - refRollRad)
+                val dPitch = normalizeAngleRad(pitchDown - refPitchRad)
+
+                val fullScaleRad = 0.56f
+                val outX = processAxis(dRoll / fullScaleRad, sensitivityXPercent, deadzonePercent, invertX)
+                val outY = if (mode == GyroControlMode.RACING_STEER) {
+                    0f
+                } else {
+                    processAxis(dPitch / fullScaleRad, sensitivityYPercent, deadzonePercent, invertY)
+                }
+                dispatchOutput(targetRightStick, outX, outY, force = false)
             }
+        }
+    }
+
+    private fun getDisplayRotation(): Int {
+        if (isUsingControllerSensor) return Surface.ROTATION_0
+        return try {
+            val dm = appContext.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+            dm?.getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: Surface.ROTATION_90
+        } catch (_: Exception) {
+            Surface.ROTATION_90
         }
     }
 
@@ -321,10 +373,7 @@ class GyroscopeController(
             System.arraycopy(inR, 0, outR, 0, 9)
             return
         }
-        val wm = appContext.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
-        @Suppress("DEPRECATION")
-        val rotation = wm?.defaultDisplay?.rotation ?: Surface.ROTATION_90
-        when (rotation) {
+        when (getDisplayRotation()) {
             Surface.ROTATION_90 -> SensorManager.remapCoordinateSystem(
                 inR,
                 SensorManager.AXIS_Y,
@@ -347,6 +396,26 @@ class GyroscopeController(
         }
     }
 
+    private fun remapVectorToScreenAxes(x: Float, y: Float, z: Float): Triple<Float, Float, Float> {
+        return when (getDisplayRotation()) {
+            Surface.ROTATION_90 -> Triple(-y, x, z)
+            Surface.ROTATION_270 -> Triple(y, -x, z)
+            Surface.ROTATION_180 -> Triple(-x, -y, z)
+            else -> Triple(x, y, z)
+        }
+    }
+
+    private fun multiplyTransposeLeft(a: FloatArray, b: FloatArray, out: FloatArray) {
+        for (r in 0..2) {
+            for (c in 0..2) {
+                out[r * 3 + c] =
+                    a[0 * 3 + r] * b[0 * 3 + c] +
+                    a[1 * 3 + r] * b[1 * 3 + c] +
+                    a[2 * 3 + r] * b[2 * 3 + c]
+            }
+        }
+    }
+
     private fun normalizeAngleRad(angle: Float): Float {
         var a = angle
         val pi = Math.PI.toFloat()
@@ -361,6 +430,7 @@ class GyroscopeController(
         deadzonePct: Int,
         invert: Boolean
     ): Float {
+        if (!raw.isFinite()) return 0f
         val dz = (deadzonePct.coerceIn(0, 20) / 100f)
         val absRaw = abs(raw)
         if (absRaw <= dz) return 0f
@@ -376,13 +446,15 @@ class GyroscopeController(
         outY: Float,
         force: Boolean
     ) {
-        val dx = abs(outX - lastDispatchedX)
-        val dy = abs(outY - lastDispatchedY)
-        if (force || targetRightStick != lastDispatchedRightStick || dx >= 0.008f || dy >= 0.008f || (outX == 0f && lastDispatchedX != 0f) || (outY == 0f && lastDispatchedY != 0f)) {
+        val safeX = if (outX.isFinite()) outX.coerceIn(-1f, 1f) else 0f
+        val safeY = if (outY.isFinite()) outY.coerceIn(-1f, 1f) else 0f
+        val dx = abs(safeX - lastDispatchedX)
+        val dy = abs(safeY - lastDispatchedY)
+        if (force || targetRightStick != lastDispatchedRightStick || dx >= 0.008f || dy >= 0.008f || (safeX == 0f && lastDispatchedX != 0f) || (safeY == 0f && lastDispatchedY != 0f)) {
             lastDispatchedRightStick = targetRightStick
-            lastDispatchedX = outX
-            lastDispatchedY = outY
-            onOutputChanged(targetRightStick, outX, outY)
+            lastDispatchedX = safeX
+            lastDispatchedY = safeY
+            onOutputChanged(targetRightStick, safeX, safeY)
         }
     }
 }

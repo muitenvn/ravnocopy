@@ -318,4 +318,100 @@ object PadStrings {
         th = "ต้องอัปเดต Ravno Pad",
         ru = "Требуется обновить Ravno Pad"
     )
+
+    fun gyroLabel(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Con quay hồi chuyển",
+        en = "Gyroscope",
+        es = "Giroscopio",
+        pt = "Giroscópio",
+        fr = "Gyroscope",
+        de = "Gyroskop",
+        ja = "ジャイロ操作",
+        ko = "자이로스코프",
+        zh = "陀螺仪",
+        id = "Giroskop",
+        th = "ไจโรสโคป",
+        ru = "Гироскоп"
+    )
+
+    fun gyroSectionTitle(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "🧭 CON QUAY HỒI CHUYỂN (BẮN SÚNG / VR / ĐUA XE)",
+        en = "🧭 GYROSCOPE MOTION CONTROL (FPS / VR / RACING)",
+        es = "🧭 CONTROL POR GIROSCOPIO (FPS / VR / CARRERAS)",
+        pt = "🧭 CONTROLE POR GIROSCÓPIO (FPS / VR / CORRIDA)",
+        fr = "🧭 CONTRÔLE GYROSCOPIQUE (FPS / VR / COURSE)",
+        de = "🧭 GYROSKOP-STEUERUNG (FPS / VR / RENNEN)",
+        ja = "🧭 ジャイロ操作 (FPS / VR / レース)",
+        ko = "🧭 자이로 모션 제어 (FPS / VR / 레이싱)",
+        zh = "🧭 陀螺仪体感控制 (射击 / VR / 赛车)",
+        id = "🧭 KONTROL GIROSKOP (FPS / VR / BALAPAN)",
+        th = "🧭 ไจโรสโคป (ยิงปืน / VR / แข่งรถ)",
+        ru = "🧭 ГИРОСКОП (ШУТЕРЫ / VR / ГОНКИ)"
+    )
+
+    fun gyroPhoneTitle(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Bật con quay hồi chuyển",
+        en = "Enable Gyroscope",
+        es = "Activar giroscopio",
+        pt = "Ativar giroscópio",
+        fr = "Activer le gyroscope",
+        de = "Gyroskop aktivieren",
+        ja = "ジャイロを有効にする",
+        ko = "자이로스코프 켜기",
+        zh = "启用陀螺仪",
+        id = "Aktifkan Giroskop",
+        th = "เปิดใช้งานไจโรสโคป",
+        ru = "Включить гироскоп"
+    )
+
+    fun gyroDefaultOffHint(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Mặc định tắt — bật để nghiêng máy điều khiển cần tay cầm.",
+        en = "Off by default — turn on to tilt and control stick.",
+        es = "Apagado por defecto — actívalo para controlar el stick al inclinar.",
+        pt = "Desativado por padrão — ative para inclinar e controlar o analógico.",
+        fr = "Désactivé par défaut — activez pour contrôler le stick par inclinaison.",
+        de = "Standardmäßig aus — zum Steuern des Sticks durch Neigen aktivieren.",
+        ja = "初期設定はオフ — オンで傾き操作をスティックに反映。",
+        ko = "기본값 꺼짐 — 켜면 기울여 스틱을 조작합니다.",
+        zh = "默认关闭 — 开启后可倾斜设备模拟摇杆。",
+        id = "Mati secara default — aktifkan untuk miringkan perangkat sebagai stik.",
+        th = "ปิดเป็นค่าเริ่มต้น — เปิดเพื่อเอียงเครื่องควบคุมก้านอนาล็อก",
+        ru = "По умолчанию выкл. — включите для управления стиком наклоном."
+    )
+
+    fun gyroStatusOn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "● Đang bật",
+        en = "● Enabled",
+        es = "● Activado",
+        pt = "● Ativado",
+        fr = "● Activé",
+        de = "● Ein",
+        ja = "● オン",
+        ko = "● 켜짐",
+        zh = "● 已开启",
+        id = "● Aktif",
+        th = "● เปิดอยู่",
+        ru = "● Вкл."
+    )
+
+    fun gyroStatusOffDefault(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "○ Đang tắt (Mặc định)",
+        en = "○ Off (Default)",
+        es = "○ Apagado (Predet.)",
+        pt = "○ Desligado (Padrão)",
+        fr = "○ Désactivé (Défaut)",
+        de = "○ Aus (Standard)",
+        ja = "○ オフ (既定)",
+        ko = "○ 꺼짐 (기본값)",
+        zh = "○ 关闭 (默认)",
+        id = "○ Mati (Default)",
+        th = "○ ปิด (ค่าเริ่มต้น)",
+        ru = "○ Выкл. (по умолч.)"
+    )
 }

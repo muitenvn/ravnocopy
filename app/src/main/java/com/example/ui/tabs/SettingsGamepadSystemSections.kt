@@ -235,15 +235,19 @@ internal fun SettingsGamepadTouchSection(
             }
         }
 
-        // Con quay hồi chuyển (Gyroscope) - Mặc định TẮT để nhường quyền cho cảm biến gốc của game Xbox nếu không bật
-        SettingsCard(title = if (isEn) "Gyroscope Motion Control (VR / Racing / Aim)" else "🧭 Con quay hồi chuyển (Bắn súng / VR / Đua xe)") {
+        // Con quay hồi chuyển (Gyroscope) - Mặc định TẮT, bật thủ công để mô phỏng cần tay cầm
+        SettingsCard(
+            title = config.tr(
+                "🧭 Con quay hồi chuyển (Bắn súng / VR / Đua xe)",
+                "Gyroscope Motion Control (VR / Racing / Aim)"
+            )
+        ) {
             SettingToggleRow(
-                title = if (isEn) "Enable App Gyroscope Emulation" else "Bật con quay hồi chuyển của ứng dụng",
-                subtitle = if (isEn) {
-                    "Default OFF so native Xbox game motion sensors work untouched. Turn ON when a game lacks native gyro support."
-                } else {
-                    "Mặc định TẮT để dùng con quay hồi chuyển gốc của Xbox (nếu game hỗ trợ sẵn). Chỉ bật khi bạn muốn nghiêng máy/tay cầm để ngắm bắn, nhìn VR hoặc lái xe."
-                },
+                title = config.tr("Bật con quay hồi chuyển", "Enable Gyroscope"),
+                subtitle = config.tr(
+                    "Mặc định tắt — bật để nghiêng máy điều khiển cần tay cầm.",
+                    "Off by default — turn on to tilt and control stick."
+                ),
                 checked = config.gyroEnabled,
                 onCheckedChange = { enabled ->
                     SettingsRepository.updateGyroEnabled(enabled)

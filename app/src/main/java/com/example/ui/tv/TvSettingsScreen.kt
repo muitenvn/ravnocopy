@@ -616,11 +616,16 @@ internal fun TvSettingsScreen(
                             TvSettingToggleRow(
                                 title = config.tr("🎯 Con quay hồi chuyển (Bắn súng / VR / Đua xe)", "🎯 Gyroscope Control (Shooter / VR / Racing)"),
                                 subtitle = config.tr(
-                                    "Mặc định Tắt (giữ cảm biến gốc của game Xbox). Khi bật: nghiêng máy/tay cầm để ngắm mọi góc hoặc lái xe.",
-                                    "Default Off (uses native Xbox game gyro). When On: tilt device/controller for 360° aiming or steering."
+                                    "Mặc định tắt — bật để nghiêng máy điều khiển cần tay cầm.",
+                                    "Off by default — turn on to tilt and control stick."
                                 ),
                                 checked = config.gyroEnabled,
-                                onCheckedChange = { SettingsRepository.updateGyroEnabled(it) },
+                                onCheckedChange = { enabled ->
+                                    SettingsRepository.updateGyroEnabled(enabled)
+                                    if (enabled) {
+                                        com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                                    }
+                                },
                                 scale = scale,
                                 onMoveLeftToCategory = moveFocusToCategory,
                                 testTag = "tv_setting_gyro_enabled_row"

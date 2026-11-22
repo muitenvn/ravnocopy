@@ -84,6 +84,10 @@ internal fun HudControlsTabContent(
 
         HudSwitchRow(
             title = config.tr("Bật con quay hồi chuyển", "Enable Gyroscope"),
+            subtitle = config.tr(
+                "Mặc định tắt — bật để nghiêng máy điều khiển cần tay cầm.",
+                "Off by default — turn on to tilt and control stick."
+            ),
             checked = config.gyroEnabled,
             onCheckedChange = { enabled ->
                 onInteraction()

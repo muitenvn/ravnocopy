@@ -121,7 +121,12 @@ object AppUiTranslator {
             "Download APK" to "下载 APK",
             "New Update Available" to "发现新版本",
             "🤖 AI Update Summary" to "🤖 AI 更新内容摘要",
-            "What's new" to "更新内容"
+            "What's new" to "更新内容",
+            "Gyroscope Motion Control (VR / Racing / Aim)" to "🧭 陀螺仪体感控制 (射击 / VR / 赛车)",
+            "🎯 Gyroscope Control (Shooter / VR / Racing)" to "🎯 陀螺仪控制 (射击 / VR / 赛车)",
+            "Gyroscope Motion" to "陀螺仪体感",
+            "Enable Gyroscope" to "启用陀螺仪",
+            "Off by default — turn on to tilt and control stick." to "默认关闭 — 开启后可倾斜设备模拟摇杆。"
         ),
         "ja" to mapOf(
             "Auto Translate" to "自動翻訳",
@@ -201,7 +206,12 @@ object AppUiTranslator {
             "Download APK" to "APKをダウンロード",
             "New Update Available" to "新しいアップデートがあります",
             "🤖 AI Update Summary" to "🤖 AI アップデート要約",
-            "What's new" to "更新内容"
+            "What's new" to "更新内容",
+            "Gyroscope Motion Control (VR / Racing / Aim)" to "🧭 ジャイロ操作 (FPS / VR / レース)",
+            "🎯 Gyroscope Control (Shooter / VR / Racing)" to "🎯 ジャイロ操作 (FPS / VR / レース)",
+            "Gyroscope Motion" to "ジャイロ操作",
+            "Enable Gyroscope" to "ジャイロを有効にする",
+            "Off by default — turn on to tilt and control stick." to "初期設定はオフ — オンで傾き操作をスティックに反映。"
         ),
         "ko" to mapOf(
             "Auto Translate" to "자동 번역",
@@ -281,7 +291,12 @@ object AppUiTranslator {
             "Download APK" to "APK 다운로드",
             "New Update Available" to "새 업데이트 사용 가능",
             "🤖 AI Update Summary" to "🤖 AI 업데이트 요약",
-            "What's new" to "새로운 기능"
+            "What's new" to "새로운 기능",
+            "Gyroscope Motion Control (VR / Racing / Aim)" to "🧭 자이로 모션 제어 (FPS / VR / 레이싱)",
+            "🎯 Gyroscope Control (Shooter / VR / Racing)" to "🎯 자이로 제어 (FPS / VR / 레이싱)",
+            "Gyroscope Motion" to "자이로 모션",
+            "Enable Gyroscope" to "자이로스코프 켜기",
+            "Off by default — turn on to tilt and control stick." to "기본값 꺼짐 — 켜면 기울여 스틱을 조작합니다."
         ),
         "es" to mapOf(
             "Auto Translate" to "Traducción automática",
@@ -351,7 +366,12 @@ object AppUiTranslator {
             "Download APK" to "Descargar APK",
             "New Update Available" to "Nueva actualización disponible",
             "🤖 AI Update Summary" to "🤖 Resumen de actualización (IA)",
-            "What's new" to "Novedades"
+            "What's new" to "Novedades",
+            "Gyroscope Motion Control (VR / Racing / Aim)" to "🧭 Control por giroscopio (FPS / VR / Carreras)",
+            "🎯 Gyroscope Control (Shooter / VR / Racing)" to "🎯 Giroscopio (Disparos / VR / Carreras)",
+            "Gyroscope Motion" to "Giroscopio",
+            "Enable Gyroscope" to "Activar giroscopio",
+            "Off by default — turn on to tilt and control stick." to "Apagado por defecto — actívalo para controlar el stick al inclinar."
         ),
         "pt" to mapOf(
             "Auto Translate" to "Tradução automática",
@@ -417,7 +437,12 @@ object AppUiTranslator {
             "Download APK" to "Baixar APK",
             "New Update Available" to "Nova atualização disponível",
             "🤖 AI Update Summary" to "🤖 Resumo da atualização (IA)",
-            "What's new" to "Novidades"
+            "What's new" to "Novidades",
+            "Gyroscope Motion Control (VR / Racing / Aim)" to "🧭 Controle por giroscópio (FPS / VR / Corrida)",
+            "🎯 Gyroscope Control (Shooter / VR / Racing)" to "🎯 Giroscópio (Tiro / VR / Corrida)",
+            "Gyroscope Motion" to "Giroscópio",
+            "Enable Gyroscope" to "Ativar giroscópio",
+            "Off by default — turn on to tilt and control stick." to "Desativado por padrão — ative para inclinar e controlar o analógico."
         ),
         "fr" to mapOf(
             "Auto Translate" to "Traduction auto",
@@ -483,7 +508,12 @@ object AppUiTranslator {
             "Download APK" to "Télécharger APK",
             "New Update Available" to "Nouvelle mise à jour disponible",
             "🤖 AI Update Summary" to "🤖 Résumé de la mise à jour (IA)",
-            "What's new" to "Nouveautés"
+            "What's new" to "Nouveautés",
+            "Gyroscope Motion Control (VR / Racing / Aim)" to "🧭 Contrôle gyroscopique (FPS / VR / Course)",
+            "🎯 Gyroscope Control (Shooter / VR / Racing)" to "🎯 Gyroscope (Tir / VR / Course)",
+            "Gyroscope Motion" to "Gyroscope",
+            "Enable Gyroscope" to "Activer le gyroscope",
+            "Off by default — turn on to tilt and control stick." to "Désactivé par défaut — activez pour contrôler le stick par inclinaison."
         ),
         "de" to mapOf(
             "Auto Translate" to "Auto-Übersetzung",
@@ -549,7 +579,12 @@ object AppUiTranslator {
             "Download APK" to "APK herunterladen",
             "New Update Available" to "Neues Update verfügbar",
             "🤖 AI Update Summary" to "🤖 KI-Update-Zusammenfassung",
-            "What's new" to "Neuigkeiten"
+            "What's new" to "Neuigkeiten",
+            "Gyroscope Motion Control (VR / Racing / Aim)" to "🧭 Gyroskop-Steuerung (FPS / VR / Rennen)",
+            "🎯 Gyroscope Control (Shooter / VR / Racing)" to "🎯 Gyroskop (Shooter / VR / Rennen)",
+            "Gyroscope Motion" to "Gyroskop",
+            "Enable Gyroscope" to "Gyroskop aktivieren",
+            "Off by default — turn on to tilt and control stick." to "Standardmäßig aus — zum Steuern des Sticks durch Neigen aktivieren."
         ),
         "ru" to mapOf(
             "Auto Translate" to "Автоперевод",
@@ -615,7 +650,12 @@ object AppUiTranslator {
             "Download APK" to "Скачать APK",
             "New Update Available" to "Доступно обновление",
             "🤖 AI Update Summary" to "🤖 ИИ-описание обновления",
-            "What's new" to "Что нового"
+            "What's new" to "Что нового",
+            "Gyroscope Motion Control (VR / Racing / Aim)" to "🧭 Гироскоп (Шутеры / VR / Гонки)",
+            "🎯 Gyroscope Control (Shooter / VR / Racing)" to "🎯 Гироскоп (Шутеры / VR / Гонки)",
+            "Gyroscope Motion" to "Гироскоп",
+            "Enable Gyroscope" to "Включить гироскоп",
+            "Off by default — turn on to tilt and control stick." to "По умолчанию выкл. — включите для управления стиком наклоном."
         ),
         "th" to mapOf(
             "Auto Translate" to "แปลภาษาอัตโนมัติ",
@@ -681,7 +721,12 @@ object AppUiTranslator {
             "Download APK" to "ดาวน์โหลด APK",
             "New Update Available" to "มีอัปเดตเวอร์ชันใหม่",
             "🤖 AI Update Summary" to "🤖 สรุปการอัปเดตโดย AI",
-            "What's new" to "มีอะไรใหม่"
+            "What's new" to "มีอะไรใหม่",
+            "Gyroscope Motion Control (VR / Racing / Aim)" to "🧭 ไจโรสโคป (ยิงปืน / VR / แข่งรถ)",
+            "🎯 Gyroscope Control (Shooter / VR / Racing)" to "🎯 ไจโรสโคป (ยิงปืน / VR / แข่งรถ)",
+            "Gyroscope Motion" to "ไจโรสโคป",
+            "Enable Gyroscope" to "เปิดใช้งานไจโรสโคป",
+            "Off by default — turn on to tilt and control stick." to "ปิดเป็นค่าเริ่มต้น — เปิดเพื่อเอียงเครื่องควบคุมก้านอนาล็อก"
         ),
         "id" to mapOf(
             "Auto Translate" to "Terjemahan Otomatis",
@@ -747,7 +792,12 @@ object AppUiTranslator {
             "Download APK" to "Unduh APK",
             "New Update Available" to "Pembaruan Baru Tersedia",
             "🤖 AI Update Summary" to "🤖 Ringkasan Pembaruan (AI)",
-            "What's new" to "Apa yang baru"
+            "What's new" to "Apa yang baru",
+            "Gyroscope Motion Control (VR / Racing / Aim)" to "🧭 Kontrol Giroskop (FPS / VR / Balapan)",
+            "🎯 Gyroscope Control (Shooter / VR / Racing)" to "🎯 Giroskop (Tembakan / VR / Balapan)",
+            "Gyroscope Motion" to "Giroskop",
+            "Enable Gyroscope" to "Aktifkan Giroskop",
+            "Off by default — turn on to tilt and control stick." to "Mati secara default — aktifkan untuk miringkan perangkat sebagai stik."
         )
     )
     }

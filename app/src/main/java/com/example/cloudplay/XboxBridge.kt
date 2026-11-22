@@ -2085,11 +2085,22 @@ class XboxBridge(
                         }
                     }
 
+                    let gyroInputState = { active: false, rightStick: true, x: 0, y: 0, holdLtOnly: false, timestamp: 0 };
+
                     window.__setVirtualGamepadEnabled = function(enabled) {
                         const isEn = !!enabled;
                         window.__virtualGamepadEnabled = isEn;
                         if (isEn) {
                             ensureGamepadConnectedEvent();
+                        } else if (gyroInputState && gyroInputState.active && !window.__hasPhysicalGamepadConnected) {
+                            // Giữ tay cầm giả lập đang mở khi người dùng bật gyro mà không cắm tay cầm vật lý
+                            for (let i = 0; i < 4; i++) virtualGamepadState.axes[i] = 0;
+                            for (let b = 0; b < 17; b++) {
+                                virtualGamepadState.buttons[b].pressed = false;
+                                virtualGamepadState.buttons[b].touched = false;
+                                virtualGamepadState.buttons[b].value = 0;
+                            }
+                            virtualGamepadState.timestamp = nowTs();
                         } else {
                             // Disconnect synthetic gamepad so Fortnite Native Epic Touch Controls activate cleanly without controller conflict
                             virtualGamepadActive = false;
@@ -2170,25 +2181,31 @@ class XboxBridge(
                         virtualGamepadState.timestamp = nowTs();
                     };
 
-                    let gyroInputState = { active: false, rightStick: true, x: 0, y: 0, holdLtOnly: false };
-
                     window.__cpGyro = function(rightStick, xVal, yVal, holdLtOnly) {
+                        const ts = nowTs();
                         gyroInputState.active = true;
                         gyroInputState.rightStick = !!rightStick;
-                        gyroInputState.x = Math.max(-1, Math.min(1, xVal || 0));
-                        gyroInputState.y = Math.max(-1, Math.min(1, yVal || 0));
+                        gyroInputState.x = Math.max(-1, Math.min(1, Number(xVal) || 0));
+                        gyroInputState.y = Math.max(-1, Math.min(1, Number(yVal) || 0));
                         gyroInputState.holdLtOnly = !!holdLtOnly;
-                        if (Math.abs(gyroInputState.x) > 0.005 || Math.abs(gyroInputState.y) > 0.005) {
+                        gyroInputState.timestamp = ts;
+                        if (!window.__hasPhysicalGamepadConnected && (Math.abs(gyroInputState.x) > 0.005 || Math.abs(gyroInputState.y) > 0.005)) {
                             ensureGamepadConnectedEvent();
                         }
-                        virtualGamepadState.timestamp = nowTs();
+                        virtualGamepadState.timestamp = ts;
                     };
 
                     window.__cpGyroClear = function() {
+                        const ts = nowTs();
+                        const wasActive = gyroInputState.active;
                         gyroInputState.active = false;
                         gyroInputState.x = 0;
                         gyroInputState.y = 0;
-                        virtualGamepadState.timestamp = nowTs();
+                        gyroInputState.timestamp = ts;
+                        virtualGamepadState.timestamp = ts;
+                        if (wasActive && !window.__virtualGamepadEnabled && !window.__hasPhysicalGamepadConnected && virtualGamepadState.connected) {
+                            window.__setVirtualGamepadEnabled(false);
+                        }
                     };
 
                     function mixGyroIntoAxesAndButtons(axesArr, buttonsArr) {
@@ -2448,6 +2465,9 @@ class XboxBridge(
                                 outButtons = mergedButtons;
                             }
                             outAxes = mixGyroIntoAxesAndButtons(outAxes, outButtons);
+                            if (gyroInputState.timestamp > outTimestamp) {
+                                outTimestamp = gyroInputState.timestamp;
+                            }
 
                             const physVib = physPad.vibrationActuator;
                             const combinedVibActuator = (shouldExposeVirtual && physVib && typeof physVib.playEffect === 'function') ? {

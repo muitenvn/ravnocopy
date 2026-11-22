@@ -586,12 +586,8 @@ private fun PadGlobalPopoverBody(
 
     // Con quay hồi chuyển (Gyroscope - Mặc định TẮT)
     PadPopoverSwitchRow(
-        title = PadStrings.tr(lang, "Con quay hồi chuyển", "Gyroscope"),
-        subtitle = PadStrings.tr(
-            lang,
-            "Mặc định tắt · Bật để nghiêng máy xoay tâm / lái xe",
-            "Default off · Tilt phone for aiming or steering"
-        ),
+        title = PadStrings.gyroLabel(lang),
+        subtitle = PadStrings.gyroDefaultOffHint(lang),
         checked = settings.gyroEnabled,
         onCheckedChange = { enabled ->
             onUpdateSettings(settings.copy(gyroEnabled = enabled))
@@ -2047,11 +2043,7 @@ internal fun PadGlobalSettingsSheet(
                 }
 
                 SheetSectionCard(
-                    title = PadStrings.tr(
-                        lang,
-                        "🧭 CON QUAY HỒI CHUYỂN (BẮN SÚNG / VR / ĐUA XE)",
-                        "🧭 GYROSCOPE MOTION CONTROL (FPS / VR / RACING)"
-                    )
+                    title = PadStrings.gyroSectionTitle(lang)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -2060,30 +2052,22 @@ internal fun PadGlobalSettingsSheet(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = PadStrings.tr(
-                                    lang,
-                                    "Con quay hồi chuyển trên điện thoại",
-                                    "Phone Gyroscope Motion Control"
-                                ),
+                                text = PadStrings.gyroPhoneTitle(lang),
                                 color = SheetText,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = PadStrings.tr(
-                                    lang,
-                                    "Mặc định TẮT. Bật khi muốn nghiêng điện thoại để xoay mọi góc (Bắn súng/VR) hoặc lái xe qua lại (Đua xe).",
-                                    "Default OFF. Turn ON to tilt phone for 360° aiming/VR or left/right steering in racing games."
-                                ),
+                                text = PadStrings.gyroDefaultOffHint(lang),
                                 color = SheetMuted,
                                 fontSize = 11.sp
                             )
                         }
                         SheetChoiceChip(
                             label = if (settings.gyroEnabled) {
-                                PadStrings.tr(lang, "● Đang bật", "● Enabled")
+                                PadStrings.gyroStatusOn(lang)
                             } else {
-                                PadStrings.tr(lang, "○ Đang tắt (Mặc định)", "○ Off (Default)")
+                                PadStrings.gyroStatusOffDefault(lang)
                             },
                             selected = settings.gyroEnabled,
                             onClick = {

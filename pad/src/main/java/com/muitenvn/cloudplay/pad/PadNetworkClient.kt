@@ -297,10 +297,11 @@ object PadNetworkClient {
     }
 
     fun updateGyroOffset(rightStick: Boolean, gx: Float, gy: Float, holdLtOnly: Boolean) {
-        val cx = gx.coerceIn(-1f, 1f)
-        val cy = gy.coerceIn(-1f, 1f)
+        val cx = if (gx.isFinite()) gx.coerceIn(-1f, 1f) else 0f
+        val cy = if (gy.isFinite()) gy.coerceIn(-1f, 1f) else 0f
         val changed = !gyroActive || gyroRightStick != rightStick || gyroHoldLtOnly != holdLtOnly ||
-            abs(gyroX - cx) >= 0.006f || abs(gyroY - cy) >= 0.006f
+            abs(gyroX - cx) >= 0.006f || abs(gyroY - cy) >= 0.006f ||
+            (cx == 0f && gyroX != 0f) || (cy == 0f && gyroY != 0f)
         gyroActive = true
         gyroRightStick = rightStick
         gyroX = cx

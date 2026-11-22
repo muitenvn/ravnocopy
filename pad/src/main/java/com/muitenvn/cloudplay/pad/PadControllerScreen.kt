@@ -275,11 +275,19 @@ internal fun PadLandscapeControllerScreen(
         }
     }
 
-    // 2. Khi ứng dụng vào nền (ON_PAUSE / ON_STOP) -> lập tức nhả toàn bộ nút
+    // 2. Khi ứng dụng vào nền (ON_PAUSE / ON_STOP) -> lập tức nhả toàn bộ nút và dừng cảm biến gyro
+    var isPadLifecycleResumed by remember { mutableStateOf(true) }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
-                PadNetworkClient.releaseAllInputsImmediate()
+            when (event) {
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> {
+                    isPadLifecycleResumed = false
+                    PadNetworkClient.releaseAllInputsImmediate()
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    isPadLifecycleResumed = true
+                }
+                else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -291,21 +299,54 @@ internal fun PadLandscapeControllerScreen(
     // 2B. Con quay hồi chuyển (Gyroscope) trên Ravno Pad - Mặc định TẮT hoàn toàn nếu người dùng không bật
     var gyroRecenterTick by remember { mutableIntStateOf(0) }
     val currentGyroSettings by rememberUpdatedState(globalSettings)
-    val shouldRunPadGyro = globalSettings.gyroEnabled && !isCustomizeMode && !showGlobalSettingsSheet && !showManageButtonsModal && activePopoverNodeKey == null
+    val shouldRunPadGyro = isPadLifecycleResumed && globalSettings.gyroEnabled && !isCustomizeMode && !showGlobalSettingsSheet && !showManageButtonsModal && activePopoverNodeKey == null
     DisposableEffect(context, shouldRunPadGyro) {
         if (!shouldRunPadGyro) {
             PadNetworkClient.clearGyroOffset()
             onDispose { PadNetworkClient.clearGyroOffset() }
         } else {
-            val sm = context.applicationContext.getSystemService(Context.SENSOR_SERVICE) as? android.hardware.SensorManager
+            val appCtx = context.applicationContext ?: context
+            val sm = appCtx.getSystemService(Context.SENSOR_SERVICE) as? android.hardware.SensorManager
             val rotMatrix = FloatArray(9)
             val remapMatrix = FloatArray(9)
-            val orientAngles = FloatArray(3)
+            val refMatrix = FloatArray(9)
+            val relMatrix = FloatArray(9)
             var hasRef = false
-            var refYaw = 0f
             var refPitch = 0f
             var refRoll = 0f
+            var integratedX = 0f
+            var integratedY = 0f
+            var lastGyroTsNs = 0L
             var lastRecenterSeen = gyroRecenterTick
+
+            fun getDisplayRotation(): Int {
+                return try {
+                    val dm = appCtx.getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
+                    dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)?.rotation ?: android.view.Surface.ROTATION_90
+                } catch (_: Exception) {
+                    android.view.Surface.ROTATION_90
+                }
+            }
+
+            fun remapVec(x: Float, y: Float, z: Float): Triple<Float, Float, Float> {
+                return when (getDisplayRotation()) {
+                    android.view.Surface.ROTATION_90 -> Triple(-y, x, z)
+                    android.view.Surface.ROTATION_270 -> Triple(y, -x, z)
+                    android.view.Surface.ROTATION_180 -> Triple(-x, -y, z)
+                    else -> Triple(x, y, z)
+                }
+            }
+
+            fun mulTransposeLeft(a: FloatArray, b: FloatArray, out: FloatArray) {
+                for (r in 0..2) {
+                    for (c in 0..2) {
+                        out[r * 3 + c] =
+                            a[0 * 3 + r] * b[0 * 3 + c] +
+                            a[1 * 3 + r] * b[1 * 3 + c] +
+                            a[2 * 3 + r] * b[2 * 3 + c]
+                    }
+                }
+            }
 
             fun normAngle(a: Float): Float {
                 var v = a
@@ -316,6 +357,7 @@ internal fun PadLandscapeControllerScreen(
             }
 
             fun shapeGyroAxis(raw: Float, sensPct: Int, dzPct: Int, invert: Boolean): Float {
+                if (!raw.isFinite()) return 0f
                 val dz = (dzPct.coerceIn(0, 20) / 100f)
                 val absV = abs(raw)
                 if (absV <= dz) return 0f
@@ -332,15 +374,16 @@ internal fun PadLandscapeControllerScreen(
                     if (gyroRecenterTick != lastRecenterSeen) {
                         lastRecenterSeen = gyroRecenterTick
                         hasRef = false
+                        integratedX = 0f
+                        integratedY = 0f
+                        lastGyroTsNs = 0L
                     }
+                    val fullRad = 0.56f
                     when (event.sensor.type) {
                         android.hardware.Sensor.TYPE_GAME_ROTATION_VECTOR,
                         android.hardware.Sensor.TYPE_ROTATION_VECTOR -> {
                             android.hardware.SensorManager.getRotationMatrixFromVector(rotMatrix, event.values)
-                            val wm = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
-                            @Suppress("DEPRECATION")
-                            val rot = wm?.defaultDisplay?.rotation ?: android.view.Surface.ROTATION_90
-                            when (rot) {
+                            when (getDisplayRotation()) {
                                 android.view.Surface.ROTATION_90 -> android.hardware.SensorManager.remapCoordinateSystem(
                                     rotMatrix,
                                     android.hardware.SensorManager.AXIS_Y,
@@ -353,26 +396,26 @@ internal fun PadLandscapeControllerScreen(
                                     android.hardware.SensorManager.AXIS_X,
                                     remapMatrix
                                 )
+                                android.view.Surface.ROTATION_180 -> android.hardware.SensorManager.remapCoordinateSystem(
+                                    rotMatrix,
+                                    android.hardware.SensorManager.AXIS_MINUS_X,
+                                    android.hardware.SensorManager.AXIS_MINUS_Y,
+                                    remapMatrix
+                                )
                                 else -> System.arraycopy(rotMatrix, 0, remapMatrix, 0, 9)
                             }
-                            android.hardware.SensorManager.getOrientation(remapMatrix, orientAngles)
-                            val yaw = orientAngles[0]
-                            val pitch = orientAngles[1]
-                            val roll = orientAngles[2]
                             if (!hasRef) {
-                                refYaw = yaw
-                                refPitch = pitch
-                                refRoll = roll
+                                System.arraycopy(remapMatrix, 0, refMatrix, 0, 9)
                                 hasRef = true
                             }
-                            val dYaw = normAngle(yaw - refYaw)
-                            val dPitch = normAngle(pitch - refPitch)
-                            val dRoll = normAngle(roll - refRoll)
-                            val fullRad = 0.56f
+                            mulTransposeLeft(refMatrix, remapMatrix, relMatrix)
+                            val dYaw = atan2(-relMatrix[2], relMatrix[8])
+                            val dPitch = atan2(relMatrix[5], relMatrix[8])
+                            val dRoll = atan2(relMatrix[1], relMatrix[0])
                             val rawH = when (gs.gyroMode) {
                                 PadGyroMode.RACING_STEER -> dRoll / fullRad
                                 PadGyroMode.FPS_VR_360,
-                                PadGyroMode.LEFT_STICK_360 -> (dYaw * 0.85f + dRoll * 0.65f) / fullRad
+                                PadGyroMode.LEFT_STICK_360 -> (dYaw * 0.85f + dRoll * 0.50f) / fullRad
                             }
                             val rawV = if (gs.gyroMode == PadGyroMode.RACING_STEER) 0f else (dPitch / fullRad)
                             val outX = shapeGyroAxis(rawH, gs.gyroSensX, gs.gyroDeadzone, gs.gyroInvertX)
@@ -384,21 +427,45 @@ internal fun PadLandscapeControllerScreen(
                                 holdLtOnly = gs.gyroHoldLtOnly
                             )
                         }
+                        android.hardware.Sensor.TYPE_GYROSCOPE -> {
+                            val nowNs = event.timestamp
+                            if (lastGyroTsNs != 0L) {
+                                val dt = ((nowNs - lastGyroTsNs) * 1e-9f).coerceIn(0f, 0.1f)
+                                val (sx, sy, sz) = remapVec(event.values[0], event.values[1], event.values[2])
+                                val dYaw = -sy * dt
+                                val dRoll = -sz * dt
+                                val dPitchDown = -sx * dt
+                                val deltaH = when (gs.gyroMode) {
+                                    PadGyroMode.RACING_STEER -> dRoll / fullRad
+                                    PadGyroMode.FPS_VR_360,
+                                    PadGyroMode.LEFT_STICK_360 -> (dYaw * 0.85f + dRoll * 0.50f) / fullRad
+                                }
+                                val deltaV = if (gs.gyroMode == PadGyroMode.RACING_STEER) 0f else (dPitchDown / fullRad)
+                                integratedX = (integratedX + deltaH).coerceIn(-1.5f, 1.5f)
+                                integratedY = (integratedY + deltaV).coerceIn(-1.5f, 1.5f)
+                                val outX = shapeGyroAxis(integratedX, gs.gyroSensX, gs.gyroDeadzone, gs.gyroInvertX)
+                                val outY = if (gs.gyroMode == PadGyroMode.RACING_STEER) 0f else shapeGyroAxis(integratedY, gs.gyroSensY, gs.gyroDeadzone, gs.gyroInvertY)
+                                PadNetworkClient.updateGyroOffset(
+                                    rightStick = (gs.gyroMode == PadGyroMode.FPS_VR_360),
+                                    gx = outX,
+                                    gy = outY,
+                                    holdLtOnly = gs.gyroHoldLtOnly
+                                )
+                            }
+                            lastGyroTsNs = nowNs
+                        }
                         android.hardware.Sensor.TYPE_ACCELEROMETER,
                         android.hardware.Sensor.TYPE_GRAVITY -> {
-                            val gx = event.values[0]
-                            val gy = event.values[1]
-                            val gz = event.values[2]
-                            val norm = sqrt(gx * gx + gy * gy + gz * gz).coerceAtLeast(1f)
-                            val steerAngle = atan2(gy / norm, gx / norm)
-                            val pitchAngle = atan2(-gz / norm, gx / norm)
+                            val (sx, sy, sz) = remapVec(event.values[0], event.values[1], event.values[2])
+                            val rollRight = atan2(-sx, sy)
+                            val pitchDown = atan2(-sz, kotlin.math.hypot(sx, sy).coerceAtLeast(0.001f))
                             if (!hasRef) {
-                                refRoll = steerAngle
-                                refPitch = pitchAngle
+                                refRoll = rollRight
+                                refPitch = pitchDown
                                 hasRef = true
                             }
-                            val dRoll = normAngle(steerAngle - refRoll) / 0.56f
-                            val dPitch = normAngle(pitchAngle - refPitch) / 0.56f
+                            val dRoll = normAngle(rollRight - refRoll) / fullRad
+                            val dPitch = normAngle(pitchDown - refPitch) / fullRad
                             val outX = shapeGyroAxis(dRoll, gs.gyroSensX, gs.gyroDeadzone, gs.gyroInvertX)
                             val outY = if (gs.gyroMode == PadGyroMode.RACING_STEER) 0f else shapeGyroAxis(dPitch, gs.gyroSensY, gs.gyroDeadzone, gs.gyroInvertY)
                             PadNetworkClient.updateGyroOffset(
@@ -412,12 +479,19 @@ internal fun PadLandscapeControllerScreen(
                 }
             }
 
-            val rotSensor = sm?.getDefaultSensor(android.hardware.Sensor.TYPE_GAME_ROTATION_VECTOR)
-                ?: sm?.getDefaultSensor(android.hardware.Sensor.TYPE_ROTATION_VECTOR)
-                ?: sm?.getDefaultSensor(android.hardware.Sensor.TYPE_GRAVITY)
-                ?: sm?.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
-            if (rotSensor != null) {
-                sm?.registerListener(listener, rotSensor, android.hardware.SensorManager.SENSOR_DELAY_GAME)
+            if (sm != null) {
+                val candidates = listOfNotNull(
+                    sm.getDefaultSensor(android.hardware.Sensor.TYPE_GAME_ROTATION_VECTOR),
+                    sm.getDefaultSensor(android.hardware.Sensor.TYPE_ROTATION_VECTOR),
+                    sm.getDefaultSensor(android.hardware.Sensor.TYPE_GYROSCOPE),
+                    sm.getDefaultSensor(android.hardware.Sensor.TYPE_GRAVITY),
+                    sm.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
+                )
+                for (sensor in candidates) {
+                    if (sm.registerListener(listener, sensor, android.hardware.SensorManager.SENSOR_DELAY_GAME)) {
+                        break
+                    }
+                }
             }
             onDispose {
                 runCatching { sm?.unregisterListener(listener) }
