@@ -13,17 +13,18 @@ import android.view.Surface
 import com.example.data.GyroControlMode
 import kotlin.math.abs
 import kotlin.math.atan2
+import kotlin.math.hypot
 import kotlin.math.sign
 
 /**
- * Bộ điều khiển Con quay hồi chuyển (Gyroscope) cho Ravno:
+ * Bộ điều khiển Cảm biến nghiêng (Gia tốc kế / Trọng lực) cho Ravno:
  * - Mặc định TẮT hoàn toàn: khi tắt không đăng ký cảm biến và không gửi tín hiệu.
  * - Khi người dùng BẬT:
  *   1. GAME_NATIVE (Mặc định khi bật): Không đăng ký cảm biến giả lập cần tay cầm, nhường hoàn toàn cảm biến gốc trình duyệt cho game hỗ trợ.
  *   2. RACING_STEER (Thủ công cho game đua xe): Chỉ nghiêng trái/phải điều khiển Cần Trái (LS trục X), khóa trục dọc = 0.
- *      + Ưu tiên cảm biến con quay trên tay cầm thật (Android 12+) và tự dự phòng sang cảm biến điện thoại.
- *      + Chuỗi dự phòng: GAME_ROTATION_VECTOR -> ROTATION_VECTOR -> GYROSCOPE -> GRAVITY -> ACCELEROMETER.
- *      + Dùng ma trận xoay tương đối R_rel = R_ref^T * R_cur tránh khóa khớp (gimbal lock).
+ *      + Ưu tiên Cảm biến trọng lực (TYPE_GRAVITY) -> Gia tốc kế (TYPE_ACCELEROMETER, có trên hầu hết điện thoại Android) kèm lọc mượt chống rung.
+ *      + Dự phòng: GAME_ROTATION_VECTOR -> ROTATION_VECTOR -> GYROSCOPE nếu thiết bị không có gia tốc kế.
+ *      + Tính góc nghiêng theo công thức atan2(-sx, hypot(sy, sz)): không trôi tâm, không khóa khớp ở mọi tư thế cầm máy.
  */
 class GyroscopeController(
     context: Context,
@@ -44,11 +45,11 @@ class GyroscopeController(
             }
             val sm = context.applicationContext.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
                 ?: return false
-            return sm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null ||
+            return sm.getDefaultSensor(Sensor.TYPE_GRAVITY) != null ||
+                sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null ||
+                sm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null ||
                 sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null ||
-                sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null ||
-                sm.getDefaultSensor(Sensor.TYPE_GRAVITY) != null ||
-                sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null
+                sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null
         }
 
         private fun findPhysicalControllerSensorManager(): SensorManager? {
@@ -60,11 +61,12 @@ class GyroscopeController(
                         (dev.sources and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
                     if (isGamepad && !dev.isVirtual) {
                         val sm = dev.sensorManager
-                        // Chỉ ưu tiên tay cầm vật lý nếu thực sự có cảm biến xoay/gyro (tránh bị gia tốc kế giả chặn mất gyro điện thoại)
-                        val hasTrueGyro = sm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null ||
+                        // Chỉ ưu tiên tay cầm vật lý nếu có cảm biến chuyển động thực (tránh tay cầm giả báo gia tốc kế rỗng chặn cảm biến điện thoại)
+                        val hasTrueMotion = sm.getDefaultSensor(Sensor.TYPE_GRAVITY) != null ||
+                            sm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null ||
                             sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null ||
                             sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null
-                        if (hasTrueGyro) return sm
+                        if (hasTrueMotion) return sm
                     }
                 }
                 null
@@ -94,11 +96,17 @@ class GyroscopeController(
     private val refMatrix = FloatArray(9)
     private val relMatrix = FloatArray(9)
 
+    private var hasFilteredGravity = false
+    private var filtGx = 0f
+    private var filtGy = 0f
+    private var filtGz = 0f
+    private var lastDisplayRotation = -1
+
     private var hasReferencePose = false
     private var refRollRad = 0f
     private var lastHandledRecenterTick = 0L
 
-    // Dùng khi thiết bị chỉ có GYROSCOPE rời (không có RotationVector)
+    // Dự phòng khi thiết bị chỉ có GYROSCOPE rời
     private var integratedX = 0f
     private var lastGyroTimestampNs = 0L
 
@@ -159,6 +167,7 @@ class GyroscopeController(
     }
 
     fun recenter() {
+        hasFilteredGravity = false
         hasReferencePose = false
         integratedX = 0f
         lastGyroTimestampNs = 0L
@@ -168,6 +177,12 @@ class GyroscopeController(
     }
 
     private fun tryRegisterBestSensor(sm: SensorManager): Boolean {
+        // Ưu tiên Trọng lực -> Gia tốc kế (hỗ trợ hầu hết điện thoại Android, không cần chip Gyroscope, không bị trôi tâm)
+        val accelOrGravity = sm.getDefaultSensor(Sensor.TYPE_GRAVITY)
+            ?: sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        if (accelOrGravity != null && sm.registerListener(this, accelOrGravity, SensorManager.SENSOR_DELAY_GAME)) {
+            return true
+        }
         val rotSensor = sm.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
             ?: sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
         if (rotSensor != null && sm.registerListener(this, rotSensor, SensorManager.SENSOR_DELAY_GAME)) {
@@ -175,11 +190,6 @@ class GyroscopeController(
         }
         val gyro = sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
         if (gyro != null && sm.registerListener(this, gyro, SensorManager.SENSOR_DELAY_GAME)) {
-            return true
-        }
-        val accel = sm.getDefaultSensor(Sensor.TYPE_GRAVITY)
-            ?: sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        if (accel != null && sm.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME)) {
             return true
         }
         return false
@@ -190,7 +200,9 @@ class GyroscopeController(
         val controllerSm = findPhysicalControllerSensorManager()
         val systemSm = appContext.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
 
+        hasFilteredGravity = false
         hasReferencePose = false
+        lastDisplayRotation = -1
         integratedX = 0f
         lastGyroTimestampNs = 0L
 
@@ -226,7 +238,9 @@ class GyroscopeController(
         }
         activeSensorManager = null
         isUsingControllerSensor = false
+        hasFilteredGravity = false
         hasReferencePose = false
+        lastDisplayRotation = -1
         integratedX = 0f
         lastGyroTimestampNs = 0L
         if (wasListening || lastDispatchedX != 0f || lastDispatchedY != 0f) {
@@ -245,9 +259,45 @@ class GyroscopeController(
             recenter()
         }
 
+        val curRot = getDisplayRotation()
+        if (lastDisplayRotation != -1 && lastDisplayRotation != curRot) {
+            hasFilteredGravity = false
+            hasReferencePose = false
+            integratedX = 0f
+            lastGyroTimestampNs = 0L
+        }
+        lastDisplayRotation = curRot
+
         // Chế độ RACING_STEER: chỉ nghiêng trái/phải điều khiển Cần Trái (L - trục X), khóa trục dọc Y = 0
         val fullScaleRad = 0.56f
         when (event.sensor.type) {
+            Sensor.TYPE_GRAVITY,
+            Sensor.TYPE_ACCELEROMETER -> {
+                val (rawSx, rawSy, rawSz) = remapVectorToScreenAxes(event.values[0], event.values[1], event.values[2])
+                // Bộ lọc thông thấp (EMA) giúp gia tốc kế mượt như con quay, giảm nhiễu khi chạm màn hình / rung máy
+                val alpha = if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) 0.78f else 0.35f
+                if (!hasFilteredGravity) {
+                    filtGx = rawSx
+                    filtGy = rawSy
+                    filtGz = rawSz
+                    hasFilteredGravity = true
+                } else {
+                    filtGx = alpha * filtGx + (1f - alpha) * rawSx
+                    filtGy = alpha * filtGy + (1f - alpha) * rawSy
+                    filtGz = alpha * filtGz + (1f - alpha) * rawSz
+                }
+
+                // Góc nghiêng trái/phải so với mặt phẳng trọng lực: hoạt động ổn định cả khi cầm đứng, nghiêng hay nằm chơi
+                val rollRight = atan2(-filtGx, hypot(filtGy, filtGz).coerceAtLeast(0.01f))
+                if (!hasReferencePose) {
+                    refRollRad = rollRight
+                    hasReferencePose = true
+                }
+                val dRoll = normalizeAngleRad(rollRight - refRollRad)
+                val outX = processAxis(dRoll / fullScaleRad, sensitivityXPercent, deadzonePercent, invertX)
+                dispatchOutput(false, outX, 0f, force = false)
+            }
+
             Sensor.TYPE_GAME_ROTATION_VECTOR,
             Sensor.TYPE_ROTATION_VECTOR -> {
                 SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
@@ -282,19 +332,6 @@ class GyroscopeController(
                     dispatchOutput(false, outX, 0f, force = false)
                 }
                 lastGyroTimestampNs = nowNs
-            }
-
-            Sensor.TYPE_GRAVITY,
-            Sensor.TYPE_ACCELEROMETER -> {
-                val (sx, sy, _) = remapVectorToScreenAxes(event.values[0], event.values[1], event.values[2])
-                val rollRight = atan2(-sx, sy)
-                if (!hasReferencePose) {
-                    refRollRad = rollRight
-                    hasReferencePose = true
-                }
-                val dRoll = normalizeAngleRad(rollRight - refRollRad)
-                val outX = processAxis(dRoll / fullScaleRad, sensitivityXPercent, deadzonePercent, invertX)
-                dispatchOutput(false, outX, 0f, force = false)
             }
         }
     }
