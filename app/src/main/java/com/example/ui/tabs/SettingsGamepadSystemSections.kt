@@ -1,0 +1,1183 @@
+package com.example.ui.tabs
+
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.cloudplay.GamepadDetector
+import com.example.data.AppConfig
+import com.example.data.GamepadHapticLevel
+import com.example.data.GamepadLayoutPreset
+import com.example.data.SettingsRepository
+import com.example.ui.components.gamepadActionButton
+import com.example.ui.components.gamepadClickable
+import com.example.ui.components.gamepadControllerScope
+import com.example.ui.theme.DirectCyan
+import com.example.ui.theme.JetBrainsMonoFontFamily
+import com.example.ui.theme.SpaceGroteskFontFamily
+import com.example.ui.theme.TextPrimary
+import com.example.ui.theme.TextSecondary
+import com.example.ui.theme.XboxCardBorder
+import com.example.ui.theme.XboxNeonGreen
+import com.example.ui.theme.XboxSurface
+import com.example.ui.theme.XboxSurfaceVariant
+
+@Composable
+internal fun SettingsGamepadTouchSection(
+    config: AppConfig,
+    isEn: Boolean,
+    expandControls: Boolean,
+    onToggleExpand: () -> Unit,
+    onRequestResetGamepadConfirm: () -> Unit
+) {
+    val context = LocalContext.current
+    val gamepadDetector = remember(context) { GamepadDetector(context) }
+    androidx.compose.runtime.DisposableEffect(gamepadDetector) {
+        onDispose { gamepadDetector.release() }
+    }
+    val gamepadStatus by gamepadDetector.status.collectAsState()
+
+    fun triggerControllerTestRumble() {
+        try {
+            // Try vibrating connected physical gamepad motor first if supported
+            var vibratedGamepad = false
+            for (id in android.view.InputDevice.getDeviceIds()) {
+                val dev = android.view.InputDevice.getDevice(id) ?: continue
+                val isPad = (dev.sources and android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD ||
+                    (dev.sources and android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK
+                if (isPad && !dev.isVirtual) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val vm = dev.vibratorManager
+                        if (vm.vibratorIds.isNotEmpty()) {
+                            vm.defaultVibrator.vibrate(VibrationEffect.createOneShot(140L, 220))
+                            vibratedGamepad = true
+                        }
+                    } else {
+                        @Suppress("DEPRECATION")
+                        val v = dev.vibrator
+                        if (v.hasVibrator()) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                v.vibrate(VibrationEffect.createOneShot(140L, 220))
+                            } else {
+                                v.vibrate(140L)
+                            }
+                            vibratedGamepad = true
+                        }
+                    }
+                }
+            }
+            if (!vibratedGamepad) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val vm = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                    val vib = vm?.defaultVibrator
+                    if (vib != null && vib.hasVibrator()) {
+                        vib.vibrate(VibrationEffect.createOneShot(120L, 210))
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    val v = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                    if (v != null && v.hasVibrator()) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            v.vibrate(VibrationEffect.createOneShot(120L, 210))
+                        } else {
+                            v.vibrate(120L)
+                        }
+                    }
+                }
+            }
+            Toast.makeText(
+                context,
+                if (isEn) "📳 Vibration test signal sent" else "📳 Đã gửi tín hiệu thử rung tay cầm / điện thoại",
+                Toast.LENGTH_SHORT
+            ).show()
+        } catch (_: Exception) {}
+    }
+
+    CollapsibleSettingsGroup(
+        title = if (isEn) "Gamepad & Touch Controls" else "Tay cầm & Cảm ứng",
+        subtitle = if (gamepadStatus.hasPhysicalController) {
+            gamepadStatus.summaryBadge(isEn)
+        } else if (config.showVirtualController) {
+            if (isEn) "Virtual Gamepad: ON" else "Tay cầm ảo: Đang bật"
+        } else {
+            if (isEn) "Virtual Gamepad: OFF" else "Tay cầm ảo: Đang tắt"
+        },
+        icon = Icons.Default.Gamepad,
+        expanded = expandControls,
+        onToggle = onToggleExpand,
+        testTag = "settings_group_controls"
+    ) {
+        // Hardware Controller Status & Rumble Test Card
+        SettingsCard(title = if (isEn) "Controller Hardware & Diagnostics" else "Trạng thái & Kiểm tra Tay cầm") {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(XboxSurface)
+                    .border(
+                        1.dp,
+                        if (gamepadStatus.hasPhysicalController) XboxNeonGreen else XboxCardBorder,
+                        RoundedCornerShape(12.dp)
+                    )
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(if (gamepadStatus.hasPhysicalController) XboxNeonGreen else TextSecondary)
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = if (gamepadStatus.hasPhysicalController) {
+                                gamepadStatus.controllerName
+                            } else {
+                                if (isEn) "No physical controller detected" else "Chưa kết nối tay cầm Bluetooth / USB"
+                            },
+                            color = if (gamepadStatus.hasPhysicalController) XboxNeonGreen else TextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Text(
+                            text = if (gamepadStatus.hasPhysicalController) {
+                                val rumbleStr = if (gamepadStatus.supportsRumble) {
+                                    if (isEn) "Rumble Ready" else "Có mô-tơ rung"
+                                } else {
+                                    if (isEn) "Standard Input" else "Chuẩn nút cơ bản"
+                                }
+                                val idPart = if (gamepadStatus.vendorProductHex.isNotEmpty()) " • ID ${gamepadStatus.vendorProductHex}" else ""
+                                "${gamepadStatus.controllerBrand} • ${gamepadStatus.connectionTransport}$idPart • $rumbleStr"
+                            } else {
+                                if (isEn) {
+                                    "Connect Xbox, PlayStation DualSense/DS4, Razer Kishi, Backbone, GameSir or 8BitDo"
+                                } else {
+                                    "Hỗ trợ tự nhận diện Xbox, PlayStation, Nintendo, Razer Kishi, Backbone, GameSir, 8BitDo"
+                                }
+                            },
+                            color = TextSecondary,
+                            fontSize = 10.sp,
+                            fontFamily = if (gamepadStatus.hasPhysicalController) JetBrainsMonoFontFamily else null
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFF16352A),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, XboxNeonGreen),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .gamepadClickable(cornerRadius = 8.dp) {
+                            gamepadDetector.checkControllers()
+                            triggerControllerTestRumble()
+                        }
+                        .testTag("settings_test_controller_rumble_btn")
+                ) {
+                    Text(
+                        text = if (isEn) "📳 Test Rumble" else "📳 Thử rung",
+                        color = XboxNeonGreen,
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+
+        // Con quay hồi chuyển (Gyroscope) - Mặc định TẮT để nhường quyền cho cảm biến gốc của game Xbox nếu không bật
+        SettingsCard(title = if (isEn) "Gyroscope Motion Control (VR / Racing / Aim)" else "🧭 Con quay hồi chuyển (Bắn súng / VR / Đua xe)") {
+            SettingToggleRow(
+                title = if (isEn) "Enable App Gyroscope Emulation" else "Bật con quay hồi chuyển của ứng dụng",
+                subtitle = if (isEn) {
+                    "Default OFF so native Xbox game motion sensors work untouched. Turn ON when a game lacks native gyro support."
+                } else {
+                    "Mặc định TẮT để dùng con quay hồi chuyển gốc của Xbox (nếu game hỗ trợ sẵn). Chỉ bật khi bạn muốn nghiêng máy/tay cầm để ngắm bắn, nhìn VR hoặc lái xe."
+                },
+                checked = config.gyroEnabled,
+                onCheckedChange = { enabled ->
+                    SettingsRepository.updateGyroEnabled(enabled)
+                    if (enabled) {
+                        com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                    }
+                },
+                activeColor = XboxNeonGreen,
+                switchTestTag = "settings_switch_gyro_enabled"
+            )
+
+            if (config.gyroEnabled) {
+                Text(
+                    text = config.tr("Chế độ nghiêng theo thể loại game", "Gyroscope Mode by Game Genre"),
+                    color = TextPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    com.example.data.GyroControlMode.entries.forEach { mode ->
+                        val selected = config.gyroMode == mode
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .gamepadClickable(cornerRadius = 10.dp) {
+                                    SettingsRepository.updateGyroMode(mode)
+                                    com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                                }
+                                .testTag("settings_gyro_mode_${mode.name.lowercase()}_btn"),
+                            color = if (selected) Color(0xFF16352A) else XboxSurface,
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (selected) XboxNeonGreen else XboxCardBorder
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = config.tr(mode.titleVi, mode.titleEn),
+                                    color = if (selected) XboxNeonGreen else TextPrimary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = config.tr(mode.descVi, mode.descEn),
+                                    color = TextSecondary,
+                                    fontSize = 10.5.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(XboxSurface)
+                        .border(1.dp, XboxCardBorder, RoundedCornerShape(12.dp))
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    LabeledSlider(
+                        label = if (config.gyroMode == com.example.data.GyroControlMode.RACING_STEER) {
+                            config.tr("Độ nhạy nghiêng vô-lăng (Trái / Phải)", "Steering Sensitivity (Left / Right)")
+                        } else {
+                            config.tr("Độ nhạy xoay ngang (Trái / Phải)", "Horizontal Sensitivity (X)")
+                        },
+                        valueText = "${(config.gyroSensitivityX * 100f).toInt()}%",
+                        value = config.gyroSensitivityX,
+                        onValueChange = { SettingsRepository.updateGyroSensitivityX(it) },
+                        valueRange = 0.10f..3.00f,
+                        accentColor = XboxNeonGreen
+                    )
+
+                    if (config.gyroMode != com.example.data.GyroControlMode.RACING_STEER) {
+                        LabeledSlider(
+                            label = config.tr("Độ nhạy xoay dọc (Lên / Xuống)", "Vertical Sensitivity (Y)"),
+                            valueText = "${(config.gyroSensitivityY * 100f).toInt()}%",
+                            value = config.gyroSensitivityY,
+                            onValueChange = { SettingsRepository.updateGyroSensitivityY(it) },
+                            valueRange = 0.10f..3.00f,
+                            accentColor = DirectCyan
+                        )
+                    }
+
+                    LabeledSlider(
+                        label = config.tr("Vùng chết chống rung tay", "Anti-Shake Deadzone"),
+                        valueText = "${(config.gyroDeadzone * 100f).toInt()}%",
+                        value = config.gyroDeadzone,
+                        onValueChange = { SettingsRepository.updateGyroDeadzone(it) },
+                        valueRange = 0.00f..0.20f,
+                        accentColor = XboxNeonGreen
+                    )
+                }
+
+                SettingToggleRow(
+                    title = config.tr("Chỉ bật khi đang giữ cò trái (LT)", "Activate Only While Holding LT (ADS)"),
+                    subtitle = config.tr(
+                        "Tiện cho game bắn súng: chỉ kích hoạt con quay khi đang giữ LT ngắm bắn",
+                        "Useful for shooters: only apply gyro motion while holding Left Trigger to aim"
+                    ),
+                    checked = config.gyroHoldLtOnly,
+                    onCheckedChange = { SettingsRepository.updateGyroHoldLtOnly(it) },
+                    activeColor = DirectCyan,
+                    switchTestTag = "settings_switch_gyro_hold_lt"
+                )
+
+                SettingToggleRow(
+                    title = config.tr("Đảo chiều ngang (Trái ↔ Phải)", "Invert Horizontal Axis"),
+                    subtitle = config.tr("Đảo ngược hướng nghiêng trái / phải", "Reverse left / right tilt direction"),
+                    checked = config.gyroInvertX,
+                    onCheckedChange = { SettingsRepository.updateGyroInvertX(it) },
+                    switchTestTag = "settings_switch_gyro_invert_x"
+                )
+
+                if (config.gyroMode != com.example.data.GyroControlMode.RACING_STEER) {
+                    SettingToggleRow(
+                        title = config.tr("Đảo chiều dọc (Lên ↔ Xuống)", "Invert Vertical Axis"),
+                        subtitle = config.tr("Đảo ngược hướng ngẩng lên / cúi xuống", "Reverse up / down tilt direction"),
+                        checked = config.gyroInvertY,
+                        onCheckedChange = { SettingsRepository.updateGyroInvertY(it) },
+                        switchTestTag = "settings_switch_gyro_invert_y"
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                        Toast.makeText(
+                            context,
+                            config.tr("🎯 Đã đặt lại tâm con quay hồi chuyển theo tư thế hiện tại", "🎯 Gyroscope center reset to current posture"),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .gamepadActionButton(cornerRadius = 10.dp) {
+                            com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                            Toast.makeText(
+                                context,
+                                config.tr("🎯 Đã đặt lại tâm con quay hồi chuyển theo tư thế hiện tại", "🎯 Gyroscope center reset to current posture"),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        .testTag("settings_gyro_recenter_btn"),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, XboxNeonGreen),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color(0xFF16352A)
+                    )
+                ) {
+                    Text(
+                        text = config.tr("🎯 Đặt lại tâm con quay hồi chuyển (0°)", "🎯 Recenter Gyroscope Neutral Pose (0°)"),
+                        color = XboxNeonGreen,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        SettingsCard(title = if (isEn) "Touch Gamepad" else "Tay cầm ảo trên màn hình") {
+            SettingToggleRow(
+                title = if (isEn) "Show Virtual Gamepad" else "Bật tay cầm ảo",
+                subtitle = if (isEn) "On-screen buttons with custom drag layout" else "Hiện nút bấm ảo, kéo thả vị trí tự do",
+                checked = config.showVirtualController,
+                onCheckedChange = { SettingsRepository.updateShowVirtualController(it) },
+                switchTestTag = "settings_switch_virtual_controller"
+            )
+
+            SettingToggleRow(
+                title = if (isEn) "Auto-Hide Virtual Gamepad on Physical Controller" else "Tự ẩn tay cầm ảo khi cắm tay cầm thật",
+                subtitle = if (isEn) "Automatically hide on-screen buttons when a Bluetooth/USB controller is connected" else "Tự động ẩn nút cảm ứng trên màn hình khi phát hiện tay cầm Bluetooth/USB",
+                checked = config.autoHideVirtualOnPhysicalController,
+                onCheckedChange = { SettingsRepository.updateAutoHideVirtualOnPhysicalController(it) },
+                activeColor = DirectCyan,
+                switchTestTag = "settings_switch_auto_hide_virtual_pad"
+            )
+
+            SettingToggleRow(
+                title = if (isEn) "Save Layout Per Game" else "Lưu bố cục riêng theo từng game",
+                subtitle = if (isEn) "Remember custom button positions, sizes, and hidden buttons separately for each game" else "Tự nhớ vị trí, kích thước và các nút ẩn riêng cho từng tựa game đang chơi",
+                checked = config.usePerGameGamepadLayout,
+                onCheckedChange = { SettingsRepository.updateUsePerGameGamepadLayout(it) },
+                activeColor = XboxNeonGreen,
+                switchTestTag = "settings_switch_per_game_layout"
+            )
+
+            val savedPerGameCount = remember(config.perGameLayoutsJson) {
+                SettingsRepository.parseAllPerGameLayouts(config.perGameLayoutsJson).size
+            }
+            val isGlobalLayoutActive = !config.usePerGameGamepadLayout
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        SettingsRepository.updateUsePerGameGamepadLayout(false)
+                        Toast.makeText(
+                            context,
+                            if (isEn) {
+                                "✓ Active: Global Layout applied to all games"
+                            } else {
+                                "✓ Đang áp dụng bố cục chung cho tất cả game"
+                            },
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .gamepadActionButton(cornerRadius = 10.dp) {
+                            SettingsRepository.updateUsePerGameGamepadLayout(false)
+                            Toast.makeText(
+                                context,
+                                if (isEn) {
+                                    "✓ Active: Global Layout applied to all games"
+                                } else {
+                                    "✓ Đang áp dụng bố cục chung cho tất cả game"
+                                },
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        .semantics {
+                            contentDescription = if (isEn) "Use Global Layout" else "Dùng bố cục chung"
+                        }
+                        .testTag("settings_use_global_gamepad_layout_btn"),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        if (isGlobalLayoutActive) 1.4.dp else 1.dp,
+                        if (isGlobalLayoutActive) DirectCyan else XboxCardBorder
+                    ),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (isGlobalLayoutActive) Color(0xFF10313A) else XboxSurface
+                    )
+                ) {
+                    Text(
+                        text = if (isGlobalLayoutActive) {
+                            config.tr("✓ Đang dùng bố cục chung", "✓ Using Global Layout")
+                        } else {
+                            config.tr("Dùng bố cục chung", "Use Global Layout")
+                        },
+                        color = DirectCyan,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        SettingsRepository.clearAllPerGameLayouts()
+                        SettingsRepository.resetGamepadCustomOffsets()
+                        Toast.makeText(
+                            context,
+                            if (isEn) "✓ Reset all gamepad layouts to default" else "✓ Đã đặt lại bố cục tay cầm ảo về mặc định",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .gamepadActionButton(cornerRadius = 10.dp) {
+                            SettingsRepository.clearAllPerGameLayouts()
+                            SettingsRepository.resetGamepadCustomOffsets()
+                            Toast.makeText(
+                                context,
+                                if (isEn) "✓ Reset all gamepad layouts to default" else "✓ Đã đặt lại bố cục tay cầm ảo về mặc định",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        .semantics {
+                            contentDescription = if (isEn) "Reset Gamepad Layout" else "Đặt lại bố cục tay cầm"
+                        }
+                        .testTag("settings_reset_per_game_layouts_btn"),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, XboxCardBorder),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = XboxSurface
+                    )
+                ) {
+                    Text(
+                        text = if (savedPerGameCount > 0) {
+                            "${config.tr("Đặt lại", "Reset")} ($savedPerGameCount)"
+                        } else {
+                            config.tr("Đặt lại", "Reset")
+                        },
+                        color = XboxNeonGreen,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(XboxSurface)
+                    .border(1.dp, XboxCardBorder, RoundedCornerShape(12.dp))
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                LabeledSlider(
+                    label = if (isEn) "Button Size" else "Kích thước nút",
+                    valueText = "${(config.gamepadScale * 100).toInt()}%",
+                    value = config.gamepadScale,
+                    onValueChange = { SettingsRepository.updateGamepadScale(it) },
+                    valueRange = 0.75f..1.35f,
+                    accentColor = XboxNeonGreen
+                )
+                LabeledSlider(
+                    label = if (isEn) "Opacity" else "Độ đậm mờ",
+                    valueText = "${(config.gamepadOpacity * 100).toInt()}%",
+                    value = config.gamepadOpacity,
+                    onValueChange = { SettingsRepository.updateGamepadOpacity(it) },
+                    valueRange = 0.25f..0.95f,
+                    accentColor = DirectCyan
+                )
+                LabeledSlider(
+                    label = if (isEn) "Stick Sensitivity" else "Độ nhạy cần điều khiển",
+                    valueText = "${(config.gamepadSensitivity * 100).toInt()}%",
+                    value = config.gamepadSensitivity,
+                    onValueChange = { SettingsRepository.updateGamepadSensitivity(it) },
+                    valueRange = 0.60f..1.60f,
+                    accentColor = XboxNeonGreen
+                )
+            }
+
+            Text(
+                text = config.tr("Độ rung khi bấm nút cảm ứng", "Touch Button Vibration"),
+                color = TextPrimary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                GamepadHapticLevel.entries.forEach { level ->
+                    val selected = config.gamepadHapticLevel == level
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .gamepadClickable(cornerRadius = 8.dp) {
+                                SettingsRepository.updateGamepadHapticLevel(level)
+                            }
+                            .semantics {
+                                contentDescription = if (isEn) "Touch vibration ${level.localizedTitle(true)}" else "Rung khi bấm ${level.localizedTitle(false)}"
+                            },
+                        color = if (selected) Color(0xFF16352A) else XboxSurface,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (selected) XboxNeonGreen else XboxCardBorder
+                        )
+                    ) {
+                        Text(
+                            text = level.localizedTitle(isEn),
+                            color = if (selected) XboxNeonGreen else TextSecondary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 7.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text = if (isEn) "In-Game Rumble to Phone (Virtual Pad Only)" else "Rung phản hồi từ Game sang Điện thoại (Khi dùng tay cầm ảo)",
+                color = TextPrimary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = if (isEn) {
+                    "Forwards game vibrationActuator effects to phone vibrator when playing with virtual controls. Physical controllers keep their native actuator."
+                } else {
+                    "Chuyển lệnh rung của game sang bộ rung điện thoại khi chơi bằng tay cầm ảo (có giới hạn nhịp chống nóng máy). Tay cầm thật giữ nguyên rung gốc."
+                },
+                color = TextSecondary,
+                fontSize = 10.sp
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                GamepadHapticLevel.entries.forEach { level ->
+                    val selected = config.gameRumbleLevel == level
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .gamepadClickable(cornerRadius = 8.dp) {
+                                SettingsRepository.updateGameRumbleLevel(level)
+                            }
+                            .semantics {
+                                contentDescription = if (isEn) "Game rumble ${level.localizedTitle(true)}" else "Rung của game ${level.localizedTitle(false)}"
+                            }
+                            .testTag("settings_game_rumble_${level.name.lowercase()}_btn"),
+                        color = if (selected) Color(0xFF10313A) else XboxSurface,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (selected) DirectCyan else XboxCardBorder
+                        )
+                    ) {
+                        Text(
+                            text = level.localizedTitle(isEn),
+                            color = if (selected) DirectCyan else TextSecondary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 7.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+
+            SettingToggleRow(
+                title = if (isEn) "🏃 Auto-Sprint" else "🏃 Đẩy kịch cần trái để chạy nhanh",
+                subtitle = if (isEn) "Push left stick forward to sprint" else "Tự chạy nhanh khi đẩy cần hết cỡ",
+                checked = config.gamepadSprintLockEnabled,
+                onCheckedChange = { SettingsRepository.updateGamepadSprintLockEnabled(it) }
+            )
+
+            if (config.gamepadCustomOffsets.isNotBlank()) {
+                OutlinedButton(
+                    onClick = onRequestResetGamepadConfirm,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .gamepadActionButton(cornerRadius = 10.dp, onClick = onRequestResetGamepadConfirm)
+                        .semantics {
+                            contentDescription = if (isEn) "Reset Default Layout" else "Đặt lại bố cục mặc định"
+                        }
+                        .testTag("settings_reset_gamepad_positions_btn"),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, XboxCardBorder),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = XboxSurface
+                    )
+                ) {
+                    Text(
+                        text = if (isEn) "Reset Default Layout" else "Đặt lại bố cục mặc định",
+                        color = DirectCyan,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Thẻ Nâng cao cho Tay cầm (8 thanh vùng chết của cần ảo + cần thật, đổi vị trí nút A/B & X/Y,
+ * đổi nút tay cầm thật Remap và tổ hợp phím tắt View + nút), nằm trong mục "Nâng cao" (Tầng 2).
+ */
+@Composable
+internal fun SettingsAdvancedGamepadControlsCard(
+    config: AppConfig,
+    isEn: Boolean
+) {
+    val context = LocalContext.current
+    var activeRemapSourceBtn by remember { mutableStateOf<Int?>(null) }
+    var activeShortcutTargetAction by remember { mutableStateOf<String?>(null) }
+
+    SettingsCard(title = if (isEn) "Stick Deadzones, Button Remap & Shortcuts" else "Vùng chết cần, Đổi nút & Phím tắt tay cầm") {
+        // 1. 4 thanh vùng chết cần ảo
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(XboxSurface)
+                .border(1.dp, XboxCardBorder, RoundedCornerShape(12.dp))
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = config.tr("Vùng chết trong / ngoài (Cần ảo)", "Virtual Stick Inner / Outer Deadzones"),
+                    color = DirectCyan,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = config.tr("Đặt lại", "Reset"),
+                    color = XboxNeonGreen,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .gamepadClickable(cornerRadius = 6.dp) {
+                            SettingsRepository.resetVirtualStickDeadzones()
+                        }
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .semantics {
+                            contentDescription = if (isEn) "Reset virtual stick deadzones" else "Đặt lại vùng chết cần ảo"
+                        }
+                        .testTag("settings_reset_virtual_deadzone_btn")
+                )
+            }
+            LabeledSlider(
+                label = if (isEn) "Left Stick Inner Deadzone" else "Cần trái - Vùng chết trong",
+                valueText = "${(config.leftStickInnerDeadzone * 100).toInt()}%",
+                value = config.leftStickInnerDeadzone,
+                onValueChange = { SettingsRepository.updateLeftStickInnerDeadzone(it) },
+                valueRange = 0.00f..0.30f,
+                accentColor = DirectCyan
+            )
+            LabeledSlider(
+                label = if (isEn) "Left Stick Outer Threshold" else "Cần trái - Ngưỡng ngoài",
+                valueText = "${(config.leftStickOuterDeadzone * 100).toInt()}%",
+                value = config.leftStickOuterDeadzone,
+                onValueChange = { SettingsRepository.updateLeftStickOuterDeadzone(it) },
+                valueRange = 0.70f..1.00f,
+                accentColor = XboxNeonGreen
+            )
+            LabeledSlider(
+                label = if (isEn) "Right Stick Inner Deadzone" else "Cần phải - Vùng chết trong",
+                valueText = "${(config.rightStickInnerDeadzone * 100).toInt()}%",
+                value = config.rightStickInnerDeadzone,
+                onValueChange = { SettingsRepository.updateRightStickInnerDeadzone(it) },
+                valueRange = 0.00f..0.30f,
+                accentColor = DirectCyan
+            )
+            LabeledSlider(
+                label = if (isEn) "Right Stick Outer Threshold" else "Cần phải - Ngưỡng ngoài",
+                valueText = "${(config.rightStickOuterDeadzone * 100).toInt()}%",
+                value = config.rightStickOuterDeadzone,
+                onValueChange = { SettingsRepository.updateRightStickOuterDeadzone(it) },
+                valueRange = 0.70f..1.00f,
+                accentColor = XboxNeonGreen
+            )
+        }
+
+        // 2. 4 thanh vùng chết tay cầm thật
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(XboxSurface)
+                .border(1.dp, XboxCardBorder, RoundedCornerShape(12.dp))
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isEn) "Physical Stick Inner / Outer Deadzones" else "Vùng chết trong / ngoài (Tay cầm thật)",
+                        color = DirectCyan,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (isEn) {
+                            "Default: 0% inner / 100% outer (passthrough without stacking on game deadzone)"
+                        } else {
+                            "Mặc định: Trong 0% / Ngoài 100% (giữ nguyên tín hiệu gốc, chỉ lọc khi bạn tự chỉnh)"
+                        },
+                        color = TextSecondary,
+                        fontSize = 9.5.sp
+                    )
+                }
+                Text(
+                    text = if (isEn) "Reset" else "Đặt lại",
+                    color = XboxNeonGreen,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .gamepadClickable(cornerRadius = 6.dp) {
+                            SettingsRepository.resetPhysicalStickDeadzones()
+                        }
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .semantics {
+                            contentDescription = if (isEn) "Reset physical stick deadzones" else "Đặt lại vùng chết tay cầm thật"
+                        }
+                        .testTag("settings_reset_physical_deadzone_btn")
+                )
+            }
+            LabeledSlider(
+                label = if (isEn) "Physical Left Stick - Inner" else "Cần trái thật - Vùng chết trong",
+                valueText = "${(config.physLeftStickInnerDeadzone * 100).toInt()}%",
+                value = config.physLeftStickInnerDeadzone,
+                onValueChange = { SettingsRepository.updatePhysLeftStickInnerDeadzone(it) },
+                valueRange = 0.00f..0.30f,
+                accentColor = DirectCyan
+            )
+            LabeledSlider(
+                label = if (isEn) "Physical Left Stick - Outer" else "Cần trái thật - Ngưỡng ngoài",
+                valueText = "${(config.physLeftStickOuterDeadzone * 100).toInt()}%",
+                value = config.physLeftStickOuterDeadzone,
+                onValueChange = { SettingsRepository.updatePhysLeftStickOuterDeadzone(it) },
+                valueRange = 0.70f..1.00f,
+                accentColor = XboxNeonGreen
+            )
+            LabeledSlider(
+                label = if (isEn) "Physical Right Stick - Inner" else "Cần phải thật - Vùng chết trong",
+                valueText = "${(config.physRightStickInnerDeadzone * 100).toInt()}%",
+                value = config.physRightStickInnerDeadzone,
+                onValueChange = { SettingsRepository.updatePhysRightStickInnerDeadzone(it) },
+                valueRange = 0.00f..0.30f,
+                accentColor = DirectCyan
+            )
+            LabeledSlider(
+                label = if (isEn) "Physical Right Stick - Outer" else "Cần phải thật - Ngưỡng ngoài",
+                valueText = "${(config.physRightStickOuterDeadzone * 100).toInt()}%",
+                value = config.physRightStickOuterDeadzone,
+                onValueChange = { SettingsRepository.updatePhysRightStickOuterDeadzone(it) },
+                valueRange = 0.70f..1.00f,
+                accentColor = XboxNeonGreen
+            )
+        }
+
+        // 3. Bố cục nút bấm (Tiêu chuẩn Xbox / Đảo nút A↔B, X↔Y)
+        Text(
+            text = config.tr("Bố cục nút bấm", "Button Layout"),
+            color = TextPrimary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            GamepadLayoutPreset.entries.forEach { preset ->
+                val isSelected = config.gamepadLayoutPreset == preset
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .border(
+                            1.dp,
+                            if (isSelected) XboxNeonGreen else XboxCardBorder,
+                            RoundedCornerShape(10.dp)
+                        )
+                        .gamepadClickable(cornerRadius = 10.dp) {
+                            SettingsRepository.updateGamepadLayoutPreset(preset)
+                        },
+                    color = if (isSelected) Color(0xFF16352A) else XboxSurface
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = preset.localizedTitle(isEn),
+                                color = if (isSelected) XboxNeonGreen else TextPrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                text = preset.localizedDesc(isEn),
+                                color = TextSecondary,
+                                fontSize = 10.sp
+                            )
+                        }
+                        if (isSelected) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = XboxNeonGreen, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Đổi nút cho tay cầm thật (Remap)
+        val activeButtonMap = remember(config.physicalGamepadButtonMap) {
+            SettingsRepository.parsePhysicalButtonMap(config.physicalGamepadButtonMap)
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (isEn) "Physical Controller Button Remapping" else "Đổi nút cho tay cầm thật (Remap)",
+                    color = TextPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (isEn) {
+                        "Applies only to physical Bluetooth/USB controllers. Virtual gamepad is unaffected."
+                    } else {
+                        "Chỉ áp dụng cho đầu vào từ tay cầm thật (Bluetooth/USB), không ảnh hưởng tay cầm ảo."
+                    },
+                    color = TextSecondary,
+                    fontSize = 10.sp
+                )
+            }
+            OutlinedButton(
+                onClick = {
+                    SettingsRepository.resetPhysicalGamepadButtonMap()
+                    Toast.makeText(
+                        context,
+                        if (isEn) "Reset physical controller button mapping" else "Đã đặt lại ánh xạ nút tay cầm thật",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
+                modifier = Modifier
+                    .gamepadActionButton(cornerRadius = 8.dp) {
+                        SettingsRepository.resetPhysicalGamepadButtonMap()
+                        Toast.makeText(
+                            context,
+                            if (isEn) "Reset physical controller button mapping" else "Đã đặt lại ánh xạ nút tay cầm thật",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    .semantics {
+                        contentDescription = if (isEn) "Reset physical button mapping" else "Đặt lại ánh xạ nút tay cầm thật"
+                    }
+                    .testTag("settings_reset_physical_remap_btn"),
+                shape = RoundedCornerShape(8.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, XboxCardBorder),
+                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                    containerColor = XboxSurface
+                )
+            ) {
+                Text(
+                    text = if (isEn) "Reset" else "Đặt lại",
+                    color = XboxNeonGreen,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        SettingsRepository.STANDARD_GAMEPAD_BUTTONS.chunked(4).forEach { rowButtons ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                rowButtons.forEach { (btnIdx, shortName, _) ->
+                    val mappedTarget = activeButtonMap[btnIdx] ?: btnIdx
+                    val targetLabel = SettingsRepository.getGamepadButtonShortLabel(mappedTarget)
+                    val isRemapped = mappedTarget != btnIdx
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .gamepadClickable(cornerRadius = 8.dp) {
+                                activeRemapSourceBtn = btnIdx
+                            }
+                            .semantics {
+                                contentDescription = if (isEn) {
+                                    "Remap physical button $shortName, currently mapped to $targetLabel"
+                                } else {
+                                    "Đổi nút $shortName trên tay cầm thật, đang gán thành $targetLabel"
+                                }
+                            }
+                            .testTag("settings_remap_btn_$btnIdx"),
+                        color = if (isRemapped) Color(0xFF16352A) else XboxSurface,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isRemapped) XboxNeonGreen else XboxCardBorder
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = shortName,
+                                color = TextSecondary,
+                                fontSize = 9.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = if (isRemapped) "→ $targetLabel" else targetLabel,
+                                color = if (isRemapped) XboxNeonGreen else TextPrimary,
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+                repeat(4 - rowButtons.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+
+        // 5. Tổ hợp phím tắt trên tay cầm (Giữ View + nút)
+        SettingToggleRow(
+            title = if (isEn) "Controller Combo Shortcuts (Hold View + Button)" else "Tổ hợp phím tắt trên tay cầm (Giữ View + nút)",
+            subtitle = if (isEn) {
+                "Hold View (Back) for 400ms + press trigger button. Single View presses pass to the game immediately."
+            } else {
+                "Giữ nút View (Back) 400ms + bấm nút phụ để bật/tắt nhanh. Bấm View đơn lẻ vẫn vào game ngay lập tức."
+            },
+            checked = config.controllerShortcutsEnabled,
+            onCheckedChange = { SettingsRepository.updateControllerShortcutsEnabled(it) },
+            activeColor = XboxNeonGreen,
+            switchTestTag = "settings_switch_controller_shortcuts"
+        )
+
+        if (config.controllerShortcutsEnabled) {
+            val shortcutItems = listOf(
+                Triple(
+                    "toggle_stats",
+                    if (isEn) "Show / Hide Stream Stats Overlay" else "Ẩn / hiện bảng thông số luồng phát",
+                    config.shortcutToggleStatsButton
+                ),
+                Triple(
+                    "toggle_virtual_pad",
+                    if (isEn) "Show / Hide Virtual Gamepad" else "Bật / tắt tay cầm ảo trên màn hình",
+                    config.shortcutToggleVirtualPadButton
+                ),
+                Triple(
+                    "toggle_recording",
+                    if (isEn) "Start / Stop ZeroLag Screen Recording" else "Bật / tắt quay màn hình ZeroLag",
+                    config.shortcutToggleRecordingButton
+                )
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(XboxSurface)
+                    .border(1.dp, XboxCardBorder, RoundedCornerShape(10.dp))
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                shortcutItems.forEach { (actionKey, actionTitle, assignedBtnIdx) ->
+                    val btnShort = SettingsRepository.getGamepadButtonShortLabel(assignedBtnIdx)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = actionTitle,
+                            color = TextPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f).padding(end = 8.dp)
+                        )
+                        Surface(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .gamepadClickable(cornerRadius = 8.dp) {
+                                    activeShortcutTargetAction = actionKey
+                                }
+                                .semantics {
+                                    contentDescription = if (isEn) {
+                                        "Change shortcut button for $actionTitle, currently View plus $btnShort"
+                                    } else {
+                                        "Đổi nút phím tắt cho $actionTitle, hiện tại là View cộng $btnShort"
+                                    }
+                                }
+                                .testTag("settings_shortcut_btn_$actionKey"),
+                            color = Color(0xFF10313A),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, DirectCyan)
+                        ) {
+                            Text(
+                                text = "View + $btnShort",
+                                color = DirectCyan,
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = { SettingsRepository.resetControllerShortcuts() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .gamepadActionButton(cornerRadius = 8.dp) {
+                            SettingsRepository.resetControllerShortcuts()
+                        }
+                        .semantics {
+                            contentDescription = if (isEn) "Reset controller shortcuts" else "Đặt lại tổ hợp phím tắt tay cầm"
+                        }
+                        .testTag("settings_reset_controller_shortcuts_btn"),
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, XboxCardBorder),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = XboxSurfaceVariant
+                    )
+                ) {
+                    Text(
+                        text = if (isEn) "Reset Default Shortcuts" else "Đặt lại phím tắt mặc định",
+                        color = XboxNeonGreen,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+
+    if (activeRemapSourceBtn != null) {
+        val srcIdx = activeRemapSourceBtn ?: 0
+        com.example.ui.components.AdaptiveGamepadRemapDialog(
+            srcIdx = srcIdx,
+            isEn = isEn,
+            physicalGamepadButtonMap = config.physicalGamepadButtonMap,
+            onSelectDestButton = { dstIdx ->
+                SettingsRepository.updatePhysicalGamepadSingleButtonMap(srcIdx, dstIdx)
+            },
+            onDismiss = { activeRemapSourceBtn = null }
+        )
+    }
+
+    if (activeShortcutTargetAction != null) {
+        val actionKey = activeShortcutTargetAction ?: ""
+        com.example.ui.components.AdaptiveGamepadShortcutDialog(
+            isEn = isEn,
+            onSelectButton = { btnIdx ->
+                when (actionKey) {
+                    "toggle_stats" -> SettingsRepository.updateShortcutToggleStatsButton(btnIdx)
+                    "toggle_virtual_pad" -> SettingsRepository.updateShortcutToggleVirtualPadButton(btnIdx)
+                    "toggle_recording" -> SettingsRepository.updateShortcutToggleRecordingButton(btnIdx)
+                }
+            },
+            onDismiss = { activeShortcutTargetAction = null }
+        )
+    }
+}

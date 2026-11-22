@@ -1,0 +1,3623 @@
+package com.example.cloudplay
+
+import android.util.Log
+import android.webkit.JavascriptInterface
+import com.example.vpn.VpnManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.lang.ref.WeakReference
+
+data class TranslationInfo(
+    val isEnabled: Boolean = true,
+    val translatedCount: Int = 0
+)
+
+data class HardwareCodecSupport(
+    val hwH264Baseline: Boolean = true,
+    val hwH264Main: Boolean = true,
+    val hwH264High: Boolean = true,
+    val hwVp9: Boolean = false,
+    val hwAv1: Boolean = false
+)
+
+class XboxBridge(
+    private val controller: StreamController,
+    private var webViewRef: WeakReference<android.webkit.WebView>? = null
+) {
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    @Volatile
+    private var currentNavigatedUrl: String? = null
+
+    @Volatile
+    private var exitPreviewSignalListener: ((String) -> Unit)? = null
+
+    fun setWebView(webView: android.webkit.WebView) {
+        webViewRef = WeakReference(webView)
+    }
+
+    fun setExitPreviewSignalListener(listener: ((String) -> Unit)?) {
+        exitPreviewSignalListener = listener
+    }
+
+    fun updateCurrentUrl(url: String?) {
+        if (!url.isNullOrBlank()) {
+            currentNavigatedUrl = url
+        }
+    }
+
+    /**
+     * Cancels the CoroutineScope and clears WebView reference when WebView or Activity is destroyed.
+     */
+    fun release() {
+        exitPreviewSignalListener = null
+        webViewRef?.clear()
+        webViewRef = null
+        scope.cancel()
+    }
+
+    fun cancel() {
+        release()
+    }
+
+    companion object {
+        private const val TAG = "XboxBridge"
+        private val _translationInfo = MutableStateFlow(TranslationInfo())
+        val translationInfo: StateFlow<TranslationInfo> = _translationInfo.asStateFlow()
+
+        val TRUSTED_DOMAINS = listOf(
+            "xbox.com",
+            "xboxlive.com",
+            "xboxservices.com",
+            "live.com",
+            "live.net",
+            "microsoft.com",
+            "microsoftonline.com",
+            "msauth.net"
+        )
+
+        fun isTrustedDomainHost(host: String?): Boolean {
+            if (host.isNullOrBlank()) return false
+            val cleanHost = host.lowercase()
+            return TRUSTED_DOMAINS.any { domain -> cleanHost == domain || cleanHost.endsWith(".$domain") }
+        }
+
+        fun isXboxHost(url: String?): Boolean {
+            if (url.isNullOrBlank()) return false
+            val parsedScheme: String? = try {
+                android.net.Uri.parse(url)?.scheme?.lowercase()
+            } catch (_: Exception) {
+                null
+            } ?: try {
+                java.net.URI(url).scheme?.lowercase()
+            } catch (_: Exception) {
+                null
+            }
+            if (parsedScheme != "https") return false
+
+            val host: String = try {
+                android.net.Uri.parse(url)?.host?.lowercase()
+            } catch (_: Exception) {
+                null
+            } ?: try {
+                java.net.URI(url).host?.lowercase()
+            } catch (_: Exception) {
+                null
+            } ?: return false
+
+            return host == "xbox.com" || host.endsWith(".xbox.com")
+        }
+
+        fun isTrustedHost(url: String?): Boolean {
+            if (url.isNullOrBlank()) return false
+            val parsedScheme: String? = try {
+                android.net.Uri.parse(url)?.scheme?.lowercase()
+            } catch (_: Exception) {
+                null
+            } ?: try {
+                java.net.URI(url).scheme?.lowercase()
+            } catch (_: Exception) {
+                null
+            }
+            if (parsedScheme != "https") return false
+
+            val host: String = try {
+                android.net.Uri.parse(url)?.host?.lowercase()
+            } catch (_: Exception) {
+                null
+            } ?: try {
+                java.net.URI(url).host?.lowercase()
+            } catch (_: Exception) {
+                null
+            } ?: return false
+
+            return isTrustedDomainHost(host)
+        }
+
+        @Volatile
+        private var cachedHardwareCodecSupport: HardwareCodecSupport? = null
+
+        @Volatile
+        private var lastInjectionCacheKey: String? = null
+
+        @Volatile
+        private var lastInjectionScript: String? = null
+
+        fun queryHardwareCodecSupport(): HardwareCodecSupport {
+            cachedHardwareCodecSupport?.let { return it }
+            var h264Any = false
+            var h264Baseline = false
+            var h264Main = false
+            var h264High = false
+            var vp9 = false
+            var av1 = false
+            try {
+                val codecList = android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS)
+                for (info in codecList.codecInfos) {
+                    if (info.isEncoder) continue
+                    val nameLower = info.name.lowercase()
+                    val isSoftware = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        info.isSoftwareOnly
+                    } else {
+                        nameLower.startsWith("omx.google.") ||
+                            nameLower.startsWith("c2.android.") ||
+                            nameLower.contains(".sw.") ||
+                            nameLower.contains("ffmpeg")
+                    }
+                    if (isSoftware) continue
+
+                    for (type in info.supportedTypes) {
+                        when (type.lowercase()) {
+                            android.media.MediaFormat.MIMETYPE_VIDEO_AVC.lowercase(), "video/avc" -> {
+                                h264Any = true
+                                try {
+                                    val caps = info.getCapabilitiesForType(type)
+                                    val profileLevels = caps?.profileLevels
+                                    if (profileLevels != null && profileLevels.isNotEmpty()) {
+                                        for (pl in profileLevels) {
+                                            when (pl.profile) {
+                                                android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline,
+                                                android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileConstrainedBaseline -> h264Baseline = true
+                                                android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileMain -> h264Main = true
+                                                android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileHigh,
+                                                android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileConstrainedHigh,
+                                                android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileHigh10 -> h264High = true
+                                            }
+                                        }
+                                    } else {
+                                        h264Baseline = true
+                                        h264Main = true
+                                        h264High = true
+                                    }
+                                } catch (_: Exception) {
+                                    h264Baseline = true
+                                    h264Main = true
+                                    h264High = true
+                                }
+                            }
+                            android.media.MediaFormat.MIMETYPE_VIDEO_VP9.lowercase(), "video/x-vnd.on2.vp9" -> {
+                                vp9 = true
+                            }
+                            android.media.MediaFormat.MIMETYPE_VIDEO_AV1.lowercase(), "video/av01" -> {
+                                av1 = true
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                h264Any = true
+                h264Baseline = true
+                h264Main = true
+                h264High = true
+            }
+            if (h264Any && !h264Baseline && !h264Main && !h264High) {
+                h264Baseline = true
+                h264Main = true
+                h264High = true
+            }
+            val result = HardwareCodecSupport(
+                hwH264Baseline = h264Baseline,
+                hwH264Main = h264Main,
+                hwH264High = h264High,
+                hwVp9 = vp9,
+                hwAv1 = av1
+            )
+            cachedHardwareCodecSupport = result
+            return result
+        }
+
+        fun getInjectionScript(
+            clarityBoost: Boolean,
+            clarityPreset: String = "BALANCED",
+            maxBitrateMbps: Int = 15,
+            antiAfk: Boolean = true,
+            targetCountry: String = "JP",
+            targetIp: String = "138.199.21.239",
+            userLocale: String = "en-US",
+            xcloudTranslate: Boolean = true,
+            preserveTitles: Boolean = true,
+            bilingualMode: Boolean = false,
+            hideStreamStats: Boolean = true,
+            cellularMode: String = "saver",
+            networkTuningMode: String = "auto",
+            speedFirstPriority: Boolean = true,
+            effectiveBitrateMbps: Int = 8,
+            lowEndDeviceMode: Boolean = false,
+            virtualGamepadEnabled: Boolean = false,
+            renderScaleFactor: Float = 1.0f,
+            fpsCap: Int = 60,
+            gpuLoadReduction: Boolean = true,
+            isCellular: Boolean = false
+        ): String {
+            val currentConfig = com.example.data.SettingsRepository.config.value
+            val isEnglishUi = currentConfig.isEnglishUI()
+            val autoExitPreviewEnabled = currentConfig.autoExitPreviewHandlerEnabled &&
+                currentConfig.xboxWebUiMode == com.example.data.XboxWebUiMode.CLASSIC
+            val targetTranslateLang = currentConfig.getTargetTranslateLanguageCode()
+            val cacheKey = "$clarityBoost|$clarityPreset|$maxBitrateMbps|$antiAfk|$targetCountry|$targetIp|$userLocale|$xcloudTranslate|$preserveTitles|$bilingualMode|$hideStreamStats|$cellularMode|$networkTuningMode|$speedFirstPriority|$effectiveBitrateMbps|$lowEndDeviceMode|$virtualGamepadEnabled|$renderScaleFactor|$fpsCap|$gpuLoadReduction|$isCellular|$isEnglishUi|$autoExitPreviewEnabled|$targetTranslateLang|${currentConfig.hashCode()}"
+            if (cacheKey == lastInjectionCacheKey) {
+                lastInjectionScript?.let { return it }
+            }
+            val hwCaps = queryHardwareCodecSupport()
+            val translatorScript = XboxTranslator.getTranslatorScript(
+                enabled = xcloudTranslate,
+                preserveGameTitles = preserveTitles,
+                bilingualMode = bilingualMode,
+                hideStreamStats = hideStreamStats,
+                targetLanguage = targetTranslateLang
+            )
+            val physMapJson = org.json.JSONObject().apply {
+                com.example.data.SettingsRepository.parsePhysicalButtonMap(currentConfig.physicalGamepadButtonMap).forEach { (k, v) ->
+                    put(k.toString(), v)
+                }
+            }.toString()
+            val initPhysConfJson = org.json.JSONObject().apply {
+                put("buttonMap", org.json.JSONObject(physMapJson))
+                put("leftInner", currentConfig.physLeftStickInnerDeadzone.toDouble())
+                put("leftOuter", currentConfig.physLeftStickOuterDeadzone.toDouble())
+                put("rightInner", currentConfig.physRightStickInnerDeadzone.toDouble())
+                put("rightOuter", currentConfig.physRightStickOuterDeadzone.toDouble())
+                put("shortcutsEnabled", currentConfig.controllerShortcutsEnabled)
+                put("shortcutStatsBtn", currentConfig.shortcutToggleStatsButton)
+                put("shortcutVpadBtn", currentConfig.shortcutToggleVirtualPadButton)
+                put("shortcutRecBtn", currentConfig.shortcutToggleRecordingButton)
+            }.toString()
+            return """
+                (function() {
+                    window.__cloudPlayIsEnglishUi = $isEnglishUi;
+                    if (window.__cloudPlayInjected) {
+                        if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: "$targetCountry", ip: "$targetIp", locale: "$userLocale" });
+                        if (window.__setClarityPreset) window.__setClarityPreset($clarityBoost ? "$clarityPreset" : "OFF");
+                        if (window.__toggleClarityBoost) window.__toggleClarityBoost($clarityBoost);
+                        if (window.__toggleXCloudTranslation) window.__toggleXCloudTranslation($xcloudTranslate);
+                        if (window.__setXCloudTranslationConfig) window.__setXCloudTranslationConfig({ preserveTitles: $preserveTitles, bilingual: $bilingualMode, hideStats: $hideStreamStats });
+                        if (window.__toggleStreamStatsOverlay) window.__toggleStreamStatsOverlay($hideStreamStats);
+                        if (window.__updateNetworkProfile) window.__updateNetworkProfile({ cellularMode: "$cellularMode", networkTuningMode: "$networkTuningMode", speedFirst: $speedFirstPriority, targetBitrate: $effectiveBitrateMbps, lowEndDeviceMode: $lowEndDeviceMode, isCellular: $isCellular });
+                        if (window.__updateGraphicsTuning) window.__updateGraphicsTuning({ renderScale: $renderScaleFactor, fpsCap: $fpsCap, gpuLoadReduction: $gpuLoadReduction, lowEndDeviceMode: $lowEndDeviceMode });
+                        if (window.__setVirtualGamepadEnabled) window.__setVirtualGamepadEnabled($virtualGamepadEnabled);
+                        if (window.__setAutoExitPreviewEnabled) window.__setAutoExitPreviewEnabled($autoExitPreviewEnabled);
+                        if (window.__updatePhysicalControllerConfig) window.__updatePhysicalControllerConfig($initPhysConfJson);
+                        if ($lowEndDeviceMode && window.__pauseTranslator) window.__pauseTranslator();
+                        return;
+                    }
+                    window.__cloudPlayInjected = true;
+                    window.__virtualGamepadEnabled = $virtualGamepadEnabled;
+                    window.__autoExitPreviewEnabled = $autoExitPreviewEnabled;
+                    window.__setAutoExitPreviewEnabled = function(enabled) {
+                        window.__autoExitPreviewEnabled = !!enabled;
+                        if (!enabled) {
+                            window.__cpExitPreviewStage = 'IDLE';
+                        }
+                    };
+                    window.__isRecordingPerformanceMode = false;
+                    window.__physControllerConfig = $initPhysConfJson;
+                    window.__updatePhysicalControllerConfig = function(conf) {
+                        if (!conf) return;
+                        window.__physControllerConfig = Object.assign(window.__physControllerConfig || {}, conf);
+                    };
+
+                    window.__cpExitPreviewStage = window.__cpExitPreviewStage || 'IDLE';
+                    window.__cpExitPreviewInFlightFetches = 0;
+                    window.__cpExitPreviewCompletedFetches = 0;
+
+                    function isFortniteSession() {
+                        const h = (location.href || '').toLowerCase();
+                        return h.indexOf('fortnite') !== -1 || h.indexOf('bt5p2x999vh2') !== -1 || !!window.__fortniteArenaMode;
+                    }
+                    window.__isFortniteSession = isFortniteSession;
+
+                    window.__networkProfile = {
+                        cellularMode: "$cellularMode",
+                        networkTuningMode: "$networkTuningMode",
+                        speedFirst: $speedFirstPriority,
+                        targetBitrate: $effectiveBitrateMbps,
+                        lowEndDeviceMode: $lowEndDeviceMode,
+                        isCellular: $isCellular
+                    };
+
+                    window.__graphicsTuning = {
+                        renderScale: $renderScaleFactor,
+                        fpsCap: $fpsCap,
+                        gpuLoadReduction: $gpuLoadReduction,
+                        lowEndDeviceMode: $lowEndDeviceMode
+                    };
+
+                    window.__updateNetworkProfile = function(conf) {
+                        if (!conf) return;
+                        window.__networkProfile = Object.assign(window.__networkProfile || {}, conf);
+                        if (window.__networkProfile.lowEndDeviceMode && window.__pauseTranslator) {
+                            window.__pauseTranslator();
+                        }
+                        if (window.__applyGpuAndRenderScaleCss) window.__applyGpuAndRenderScaleCss();
+                    };
+
+                    let cachedStreamVideo = null;
+                    function findActiveStreamVideo() {
+                        if (cachedStreamVideo && cachedStreamVideo.isConnected && cachedStreamVideo.readyState >= 1) {
+                            return cachedStreamVideo;
+                        }
+                        const v = document.querySelector('video#stream-video, video[data-testid="stream-video"], #segmented-video video, video');
+                        if (v && v.isConnected) {
+                            cachedStreamVideo = v;
+                        }
+                        return v;
+                    }
+                    window.__findActiveStreamVideo = findActiveStreamVideo;
+
+                    function applyReceiverBufferTarget(receiver, kind, videoSec) {
+                        if (!receiver) return;
+                        try {
+                            // CRITICAL FIX: Không ép playoutDelayHint hoặc jitterBufferTarget xuống 8ms-18ms (dưới 1 khung hình 16.67ms).
+                            // Việc ép bộ đệm xuống dưới 1 frame làm cạn bộ đệm VCMTiming của Chromium, gây rớt khung hình liên tục,
+                            // kích hoạt bão gói tin RTCP PLI / NACK khiến máy chủ Xbox lầm tưởng là lag mạng (hiện biểu tượng cảnh báo Ping)
+                            // và gửi dồn dập IDR Keyframe khổng lồ làm thời gian giải mã (decodeTimeMs) tăng vọt.
+                            // Đặt về null để bộ ước lượng Jitter tự nhiên của WebRTC (JitterEstimator + NetEq) tự cân bằng mượt mà.
+                            if ('playoutDelayHint' in receiver && receiver.playoutDelayHint !== null) {
+                                receiver.playoutDelayHint = null;
+                            }
+                            if ('jitterBufferTarget' in receiver && receiver.jitterBufferTarget !== null) {
+                                receiver.jitterBufferTarget = null;
+                            }
+                        } catch (e) {}
+                    }
+
+                    window.__setAdaptiveBitrate = function(targetMbps, smoothGlide) {
+                        const mbps = Math.max(1.0, Math.min(20.0, parseFloat(targetMbps) || 10.0));
+                        if (window.__networkProfile) {
+                            window.__networkProfile.targetBitrate = mbps;
+                        }
+                        // Đảm bảo các receiver đang chạy được giải phóng khỏi mọi giới hạn bộ đệm nhân tạo trước đó
+                        try {
+                            const pc = window.__activePeerConnection;
+                            if (pc && typeof pc.getReceivers === 'function') {
+                                const receivers = pc.getReceivers();
+                                for (let i = 0; i < receivers.length; i++) {
+                                    const r = receivers[i];
+                                    if (r && r.track && (r.track.kind === 'video' || r.track.kind === 'audio')) {
+                                        applyReceiverBufferTarget(r, r.track.kind, null);
+                                    }
+                                }
+                            }
+                        } catch (e) {}
+                    };
+
+                    function notify(method, arg) {
+                        try {
+                            if (method === 'onStreamConnected') {
+                                if (window.__pauseTranslator) window.__pauseTranslator();
+                            } else if (method === 'onStreamDisconnected') {
+                                const isLowEnd = !!(window.__networkProfile && window.__networkProfile.lowEndDeviceMode);
+                                if (!isLowEnd && window.__resumeTranslator) window.__resumeTranslator();
+                            }
+                            if (window.CloudPlayBridge && window.CloudPlayBridge[method]) {
+                                window.CloudPlayBridge[method](arg);
+                            }
+                        } catch(e) {
+                            console.error("CloudPlayBridge notification error: " + e);
+                        }
+                    }
+
+                    let targetCountry = "$targetCountry";
+                    let bypassIp = "$targetIp";
+                    let preferredLocale = "$userLocale";
+
+                    window.__updateRegionAndLocale = function(conf) {
+                        if (!conf) return;
+                        if (conf.country) targetCountry = conf.country;
+                        if (conf.ip) bypassIp = conf.ip;
+                        if (conf.locale) {
+                            preferredLocale = conf.locale;
+                            try {
+                                document.cookie = "MSPC-LOCALE=" + preferredLocale + ";domain=.xbox.com;path=/;max-age=31536000";
+                            } catch(e) {}
+                        }
+                    };
+
+                    // Set locale cookie to enforce user's selected language
+                    try {
+                        document.cookie = "MSPC-LOCALE=" + preferredLocale + ";domain=.xbox.com;path=/;max-age=31536000";
+                    } catch(e) {}
+
+                    // ==========================================
+                    // 1. Smart Region Header Interceptor
+                    // ==========================================
+                    try {
+                        const NATIVE_FETCH = window.fetch;
+                        window.fetch = async function(request, init) {
+                            let url = typeof request === 'string' ? request : String((request && (request.url || request.href)) || '');
+                            if (bypassIp && (url.includes('/v2/login/user') || url.includes('/sessions/cloud/play'))) {
+                                if (typeof request === 'string') {
+                                    init = init || {};
+                                    init.headers = Object.assign({}, init.headers, {
+                                        'X-Forwarded-For': bypassIp,
+                                        'X-Client-IP': bypassIp,
+                                        'X-Real-IP': bypassIp
+                                    });
+                                } else if (request instanceof Request) {
+                                    try {
+                                        request.headers.set('X-Forwarded-For', bypassIp);
+                                        request.headers.set('X-Client-IP', bypassIp);
+                                        request.headers.set('X-Real-IP', bypassIp);
+                                    } catch (hdrErr) {}
+                                }
+                            }
+
+                            let response;
+                            const trackExitFetch = (window.__cpExitPreviewStage === 'MODAL_OPENING' || window.__cpExitPreviewStage === 'OPTING_OUT');
+                            if (trackExitFetch) {
+                                window.__cpExitPreviewInFlightFetches = (window.__cpExitPreviewInFlightFetches || 0) + 1;
+                            }
+                            try {
+                                response = await NATIVE_FETCH(request, init);
+                            } catch(err) {
+                                if (trackExitFetch) {
+                                    window.__cpExitPreviewInFlightFetches = Math.max(0, (window.__cpExitPreviewInFlightFetches || 1) - 1);
+                                    window.__cpExitPreviewCompletedFetches = (window.__cpExitPreviewCompletedFetches || 0) + 1;
+                                }
+                                throw err;
+                            }
+                            if (trackExitFetch) {
+                                window.__cpExitPreviewInFlightFetches = Math.max(0, (window.__cpExitPreviewInFlightFetches || 1) - 1);
+                                window.__cpExitPreviewCompletedFetches = (window.__cpExitPreviewCompletedFetches || 0) + 1;
+                            }
+
+                            // Intercept /v2/login/user to ensure target region is selected and active
+                            if (url.includes('/v2/login/user') && response && response.ok) {
+                                try {
+                                    const clone = response.clone();
+                                    const data = await clone.json();
+                                    if (data) {
+                                        let targetName = targetCountry === 'KR' ? 'KOREACENTRAL' : 
+                                                         (targetCountry === 'US' ? 'WESTUS' : 'JAPANEAST');
+
+                                        let foundTargetRegion = false;
+                                        if (data.offeringSettings && Array.isArray(data.offeringSettings.regions)) {
+                                            data.offeringSettings.allowRegionSelection = true;
+                                            let found = data.offeringSettings.regions.find(r => r && r.name && r.name.toUpperCase() === targetName);
+                                            if (found) {
+                                                found.isDefault = true;
+                                                data.offeringSettings.regions.forEach(r => { if (r !== found) r.isDefault = false; });
+                                                foundTargetRegion = true;
+                                            } else if (data.offeringSettings.regions.length > 0) {
+                                                data.offeringSettings.regions[0].isDefault = true;
+                                                foundTargetRegion = true;
+                                            }
+                                        }
+
+                                        if (foundTargetRegion) {
+                                            window.__lastUnlockSignal = 'UNLOCK_OK';
+                                            const oldBanner = document.getElementById('__cloudplay_unlock_fail_banner');
+                                            if (oldBanner) oldBanner.remove();
+                                            notify('onRegionUnlockSignal', 'UNLOCK_OK');
+                                            notify('onRegionBypassed', JSON.stringify({
+                                                country: targetCountry,
+                                                ip: bypassIp,
+                                                targetRegion: targetName
+                                            }));
+                                        }
+
+                                        const modifiedBody = JSON.stringify(data);
+                                        try {
+                                            return new Response(modifiedBody, {
+                                                status: response.status,
+                                                statusText: response.statusText,
+                                                headers: response.headers
+                                            });
+                                        } catch (respErr) {
+                                            Object.defineProperty(response, 'json', { value: () => Promise.resolve(data) });
+                                            Object.defineProperty(response, 'text', { value: () => Promise.resolve(modifiedBody) });
+                                        }
+                                    }
+                                } catch(e) {
+                                    // Ignore non-JSON login responses cleanly
+                                }
+                            }
+
+                            return response;
+                        };
+
+                        // Patch XMLHttpRequest for older components
+                        const origXhrOpen = XMLHttpRequest.prototype.open;
+                        const origXhrSend = XMLHttpRequest.prototype.send;
+                        XMLHttpRequest.prototype.open = function(method, url) {
+                            this._url = typeof url === 'string' ? url : String((url && url.href) || url || '');
+                            return origXhrOpen.apply(this, arguments);
+                        };
+                        XMLHttpRequest.prototype.send = function(data) {
+                            if (bypassIp && this._url && (this._url.includes('/v2/login/user') || this._url.includes('/sessions/cloud/play'))) {
+                                try {
+                                    this.setRequestHeader('X-Forwarded-For', bypassIp);
+                                    this.setRequestHeader('X-Client-IP', bypassIp);
+                                    this.setRequestHeader('X-Real-IP', bypassIp);
+                                } catch(e) {}
+                            }
+                            return origXhrSend.apply(this, arguments);
+                        };
+                    } catch(e) {
+                        console.error("Failed to setup fetch/xhr interceptor", e);
+                    }
+
+                    // ==========================================
+                    // 2. Spoof Geolocation to Tokyo, Japan
+                    // ==========================================
+                    try {
+                        const fakePosition = {
+                            coords: {
+                                latitude: 35.6762,
+                                longitude: 139.6503,
+                                accuracy: 15,
+                                altitude: null,
+                                altitudeAccuracy: null,
+                                heading: null,
+                                speed: null
+                            },
+                            timestamp: Date.now()
+                        };
+                        navigator.geolocation.getCurrentPosition = function(success) {
+                            if (success) success(fakePosition);
+                        };
+                        navigator.geolocation.watchPosition = function(success) {
+                            if (success) success(fakePosition);
+                            return 1;
+                        };
+                    } catch(e) {}
+
+                    // ==========================================
+                    // 3. In-WebView Live IP & Region probe
+                    // ==========================================
+                    setTimeout(async function() {
+                        if (location.hostname && (location.hostname.indexOf('xbox.com') !== -1 || location.hostname.indexOf('live.com') !== -1 || location.hostname.indexOf('microsoft') !== -1)) {
+                            return;
+                        }
+                        try {
+                            const res = await window.fetch('https://api.country.is/');
+                            if (res.ok) {
+                                const geo = await res.json();
+                                notify('onWebViewIpDetected', JSON.stringify(geo));
+                            }
+                        } catch(e) {
+                            try {
+                                const res2 = await window.fetch('https://ipwho.is/');
+                                if (res2.ok) {
+                                    const geo2 = await res2.json();
+                                    notify('onWebViewIpDetected', JSON.stringify(geo2));
+                                }
+                            } catch(err) {}
+                        }
+                    }, 1500);
+
+                    // ==========================================
+                    // 4. Hook MediaCapabilities & RTCPeerConnection for Hardware Decode Priority, SDP Munging & Telemetry
+                    // ==========================================
+                    try {
+                        const hwCodecCaps = {
+                            h264Baseline: ${hwCaps.hwH264Baseline},
+                            h264Main: ${hwCaps.hwH264Main},
+                            h264High: ${hwCaps.hwH264High},
+                            vp9: ${hwCaps.hwVp9},
+                            av1: ${hwCaps.hwAv1}
+                        };
+                        window.__hwCodecCaps = hwCodecCaps;
+                        if (navigator.mediaCapabilities && typeof navigator.mediaCapabilities.decodingInfo === 'function') {
+                            const origDecodingInfo = navigator.mediaCapabilities.decodingInfo.bind(navigator.mediaCapabilities);
+                            navigator.mediaCapabilities.decodingInfo = async function(config) {
+                                try {
+                                    if (config && config.video && config.video.contentType) {
+                                        const ct = config.video.contentType.toLowerCase();
+                                        if (ct.indexOf('avc1') !== -1 || ct.indexOf('h264') !== -1) {
+                                            const hasFastBaselineOrMain = hwCodecCaps.h264Baseline || hwCodecCaps.h264Main;
+                                            if (ct.indexOf('avc1.42') !== -1) {
+                                                const supported = hwCodecCaps.h264Baseline || hwCodecCaps.h264Main || hwCodecCaps.h264High;
+                                                if (supported) {
+                                                    return { supported: true, smooth: true, powerEfficient: true };
+                                                }
+                                            } else if (ct.indexOf('avc1.4d') !== -1) {
+                                                const supported = hwCodecCaps.h264Main || hwCodecCaps.h264Baseline || hwCodecCaps.h264High;
+                                                if (supported) {
+                                                    return { supported: true, smooth: true, powerEfficient: true };
+                                                }
+                                            } else if (ct.indexOf('avc1.64') !== -1) {
+                                                // Báo powerEfficient = false cho High Profile khi máy có hỗ trợ Baseline/Main
+                                                // để máy chủ Xbox ưu tiên cấp luồng Constrained Baseline (không giữ khung hình trong bộ đệm DPB).
+                                                if (hwCodecCaps.h264High) {
+                                                    return {
+                                                        supported: true,
+                                                        smooth: true,
+                                                        powerEfficient: !hasFastBaselineOrMain
+                                                    };
+                                                }
+                                            } else if (hasFastBaselineOrMain || hwCodecCaps.h264High) {
+                                                return { supported: true, smooth: true, powerEfficient: true };
+                                            }
+                                            return origDecodingInfo(config);
+                                        }
+                                        // Chỉ tắt VP9 / AV1 khi thiết bị thực sự không có bộ giải mã phần cứng cho chúng
+                                        if (ct.indexOf('vp9') !== -1) {
+                                            if (!hwCodecCaps.vp9) {
+                                                return { supported: false, smooth: false, powerEfficient: false };
+                                            }
+                                            return origDecodingInfo(config);
+                                        }
+                                        if (ct.indexOf('av01') !== -1 || ct.indexOf('av1') !== -1) {
+                                            if (!hwCodecCaps.av1) {
+                                                return { supported: false, smooth: false, powerEfficient: false };
+                                            }
+                                            return origDecodingInfo(config);
+                                        }
+                                    }
+                                } catch(mcErr) {}
+                                return origDecodingInfo(config);
+                            };
+                        }
+                    } catch(e) {}
+
+                    function prioritizeHardwareH264Codecs(pc) {
+                        try {
+                            if (!pc || !window.RTCRtpReceiver || typeof RTCRtpReceiver.getCapabilities !== 'function') return;
+                            const caps = RTCRtpReceiver.getCapabilities('video');
+                            if (!caps || !Array.isArray(caps.codecs) || caps.codecs.length === 0) return;
+
+                            // Sắp xếp H.264 ưu tiên Constrained Baseline (42e0 / 4200) -> Main (4d) -> High (64)
+                            // nhằm triệt tiêu độ trễ giữ khung hình trong bộ đệm giải mã phần cứng (DPB reordering = 0).
+                            const h264Baseline = [];
+                            const h264Main = [];
+                            const h264Other = [];
+                            const fecCodecs = [];
+                            const others = [];
+
+                            for (let i = 0; i < caps.codecs.length; i++) {
+                                const c = caps.codecs[i];
+                                const mime = (c.mimeType || '').toLowerCase();
+                                const fmtp = (c.sdpFmtpLine || '').toLowerCase();
+                                if (mime === 'video/h264') {
+                                    if (fmtp.indexOf('profile-level-id=42e0') !== -1 || fmtp.indexOf('profile-level-id=4200') !== -1 || fmtp.indexOf('profile-level-id=42') !== -1) {
+                                        if (fmtp.indexOf('packetization-mode=1') !== -1) {
+                                            h264Baseline.unshift(c);
+                                        } else {
+                                            h264Baseline.push(c);
+                                        }
+                                    } else if (fmtp.indexOf('profile-level-id=4d') !== -1) {
+                                        if (fmtp.indexOf('packetization-mode=1') !== -1) {
+                                            h264Main.unshift(c);
+                                        } else {
+                                            h264Main.push(c);
+                                        }
+                                    } else {
+                                        h264Other.push(c);
+                                    }
+                                } else if (mime === 'video/rtx' || mime === 'video/red' || mime === 'video/ulpfec') {
+                                    fecCodecs.push(c);
+                                } else {
+                                    others.push(c);
+                                }
+                            }
+                            const sortedCodecs = h264Baseline.concat(h264Main, h264Other, fecCodecs, others);
+
+                            const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
+                            for (let i = 0; i < transceivers.length; i++) {
+                                const t = transceivers[i];
+                                if (t && typeof t.setCodecPreferences === 'function') {
+                                    const receiverKind = t.receiver && t.receiver.track ? t.receiver.track.kind : '';
+                                    const senderKind = t.sender && t.sender.track ? t.sender.track.kind : '';
+                                    if (receiverKind === 'video' || senderKind === 'video') {
+                                        try { t.setCodecPreferences(sortedCodecs); } catch( prefErr ) {}
+                                    }
+                                }
+                            }
+                        } catch(e) {}
+                    }
+
+                    function mungeSdpForLowLatencyHardwareDecode(rawSdp) {
+                        if (!rawSdp || typeof rawSdp !== 'string') return rawSdp;
+                        try {
+                            let sdp = rawSdp;
+                            const gt = window.__graphicsTuning || {};
+                            const isLowEndMode = !!(gt.lowEndDeviceMode || (window.__networkProfile && window.__networkProfile.lowEndDeviceMode));
+                            const isCellularMode = !!(window.__networkProfile && window.__networkProfile.isCellular);
+                            const rawMbps = isLowEndMode ? 6 : ((window.__networkProfile && window.__networkProfile.targetBitrate) ? window.__networkProfile.targetBitrate : $effectiveBitrateMbps);
+                            const maxSafeMbps = isLowEndMode ? 8 : (isCellularMode ? 10 : 15);
+                            const activeMbps = Math.max(4, Math.min(maxSafeMbps, Math.round(rawMbps)));
+                            const targetKbps = activeMbps * 1000;
+
+                            // Chuẩn RFC 4566 Section 5: dòng b=AS:<kbps> trong khối m=video PHẢI đứng SAU dòng c=IN ...
+                            // Nếu đặt b=AS: trước c=IN ..., bộ phân tích JSEP của Chromium sẽ từ chối hoặc bỏ qua.
+                            const videoIdx = sdp.indexOf('m=video ');
+                            if (videoIdx !== -1) {
+                                const beforeVideo = sdp.substring(0, videoIdx);
+                                const fromVideo = sdp.substring(videoIdx);
+                                const nextMediaRelIdx = fromVideo.substring(8).search(/\r?\nm=/);
+                                let videoSection = nextMediaRelIdx !== -1 ? fromVideo.substring(0, nextMediaRelIdx + 8) : fromVideo;
+                                const afterVideo = nextMediaRelIdx !== -1 ? fromVideo.substring(nextMediaRelIdx + 8) : '';
+
+                                if (videoSection.indexOf('\nb=AS:') === -1 && videoSection.indexOf('\nb=TIAS:') === -1) {
+                                    if (/c=IN [^\r\n]+\r\n/.test(videoSection)) {
+                                        videoSection = videoSection.replace(/(c=IN [^\r\n]+\r\n)/, '$1b=AS:' + targetKbps + '\r\n');
+                                    } else {
+                                        videoSection = videoSection.replace(/(m=video [^\r\n]+\r\n)/, '$1b=AS:' + targetKbps + '\r\n');
+                                    }
+                                }
+                                sdp = beforeVideo + videoSection + afterVideo;
+                            }
+
+                            // Bổ sung sprop-max-don-diff=0 cho các dòng a=fmtp của H.264 để báo MediaCodec xuất frame ngay
+                            sdp = sdp.replace(/(a=fmtp:\d+ [^\r\n]*profile-level-id=[0-9a-fA-F]+[^\r\n]*)/g, function(line) {
+                                if (line.indexOf('sprop-max-don-diff') === -1) {
+                                    return line + ';sprop-max-don-diff=0';
+                                }
+                                return line;
+                            });
+
+                            // Ưu tiên hồ sơ codec H.264 Constrained Baseline (profile-level-id=42e01f) lên đầu danh sách m=video
+                            // để WebRTC thương lượng cấu hình tối ưu độ trễ giải mã phần cứng MediaCodec
+                            try {
+                                const fmtpMatches = sdp.match(/a=fmtp:(\d+)[^\r\n]*profile-level-id=42[eE]01[fF]/i);
+                                if (fmtpMatches && fmtpMatches[1]) {
+                                    const preferredPt = fmtpMatches[1];
+                                    sdp = sdp.replace(/(m=video \d+ [A-Z\/]+)( [0-9 ]+)/, function(match, mPrefix, ptList) {
+                                        const pts = ptList.trim().split(/\s+/).filter(function(p){ return p.length > 0; });
+                                        const idx = pts.indexOf(preferredPt);
+                                        if (idx > 0) {
+                                            pts.splice(idx, 1);
+                                            pts.unshift(preferredPt);
+                                            return mPrefix + ' ' + pts.join(' ');
+                                        }
+                                        return match;
+                                    });
+                                }
+                            } catch(_) {}
+
+                            if (isLowEndMode && window.__pauseTranslator) {
+                                window.__pauseTranslator();
+                            }
+
+                            return sdp;
+                        } catch(e) {
+                            return rawSdp;
+                        }
+                    }
+
+                    window.__lastTelemetrySentAt = 0;
+                    window.__lastSentTelemetrySnapshot = null;
+
+                    function attachPeerConnectionHooks(pc) {
+                        if (!pc || pc.__cpHooked) return pc;
+                        pc.__cpHooked = true;
+
+                        if (window.__activeStatsIntervalId) {
+                            clearInterval(window.__activeStatsIntervalId);
+                            window.__activeStatsIntervalId = null;
+                        }
+                        window.__activePeerConnection = pc;
+                        window.__allPeerConnections = window.__allPeerConnections || [];
+                        if (window.__allPeerConnections.indexOf(pc) === -1) {
+                            window.__allPeerConnections.push(pc);
+                        }
+                        if (window.__allPeerConnections.length > 8) {
+                            window.__allPeerConnections.shift();
+                        }
+
+                        pc.addEventListener('track', function(evt) {
+                            try {
+                                if (evt.track) {
+                                    window.__activeWebRtcTracks = window.__activeWebRtcTracks || {};
+                                    window.__activeWebRtcTracks[evt.track.kind] = evt.track;
+                                    if (evt.track.kind === 'audio') {
+                                        window.__capturedGameAudioTrack = evt.track;
+                                    }
+                                    if (evt.receiver && (evt.track.kind === 'video' || evt.track.kind === 'audio')) {
+                                        applyReceiverBufferTarget(evt.receiver, evt.track.kind, null);
+                                    }
+                                }
+                                if (evt.streams && evt.streams[0]) {
+                                    window.__activeWebRtcMediaStream = evt.streams[0];
+                                    const aTr = evt.streams[0].getAudioTracks ? evt.streams[0].getAudioTracks() : [];
+                                    if (aTr && aTr.length > 0 && aTr[0].readyState === 'live') {
+                                        window.__capturedGameAudioTrack = aTr[0];
+                                    }
+                                }
+                            } catch(trackErr) {}
+                        });
+
+                        let statsIntervalId = null;
+                        function stopStatsPolling() {
+                            if (statsIntervalId !== null) {
+                                clearInterval(statsIntervalId);
+                                if (window.__activeStatsIntervalId === statsIntervalId) {
+                                    window.__activeStatsIntervalId = null;
+                                }
+                                statsIntervalId = null;
+                            }
+                        }
+
+                        pc.addEventListener('iceconnectionstatechange', function() {
+                            const state = pc.iceConnectionState;
+                            if (state === 'disconnected' || state === 'closed' || state === 'failed') {
+                                stopStatsPolling();
+                                if (window.__activePeerConnection === pc) {
+                                    window.__activePeerConnection = null;
+                                }
+                                notify('onStreamDisconnected', 'ice_closed');
+                            }
+                        });
+                        pc.addEventListener('connectionstatechange', function() {
+                            const state = pc.connectionState;
+                            if (state === 'disconnected' || state === 'closed' || state === 'failed') {
+                                stopStatsPolling();
+                                if (window.__activePeerConnection === pc) {
+                                    window.__activePeerConnection = null;
+                                }
+                                notify('onStreamDisconnected', 'pc_closed');
+                            }
+                        });
+
+                        let lastBytes = 0;
+                        let lastTimestamp = Date.now();
+                        let lastFrames = 0;
+                        let lastTotalDecodeTime = 0;
+                        let lastFramesDecodedForDecode = 0;
+                        let smoothedDecodeMs = 0.0;
+                        let lastJitterBufferDelay = 0;
+                        let lastJitterBufferEmitted = 0;
+                        let lastStunResponses = 0;
+                        let lastTotalRttSec = 0.0;
+
+                        statsIntervalId = setInterval(async function() {
+                            if (pc.connectionState === 'closed' || pc.connectionState === 'failed' ||
+                                pc.iceConnectionState === 'closed' || pc.iceConnectionState === 'failed') {
+                                stopStatsPolling();
+                                return;
+                            }
+                            try {
+                                const stats = await pc.getStats();
+                                let currentBytes = 0;
+                                let rtt = 0;
+                                let nominatedRtt = 0;
+                                let jitter = 0;
+                                let packetsLost = 0;
+                                let packetsReceived = 0;
+                                let framesDecoded = 0;
+                                let framesDropped = 0;
+                                let freezeCount = 0;
+                                let totalFreezesDurationSec = 0.0;
+                                let rawJitterBufferDelay = 0.0;
+                                let rawJitterBufferEmitted = 0;
+                                let currentTotalDecodeTime = 0;
+                                let nativeFps = 0;
+
+                                let selectedPairId = null;
+                                stats.forEach(report => {
+                                    if (report.type === 'transport' && report.selectedCandidatePairId) {
+                                        selectedPairId = report.selectedCandidatePairId;
+                                    }
+                                });
+
+                                stats.forEach(report => {
+                                    if (report.type === 'inbound-rtp' && (report.kind === 'video' || report.mediaType === 'video' || (!report.kind && report.framesDecoded !== undefined))) {
+                                        const rptBytes = report.bytesReceived || 0;
+                                        const rptFrames = report.framesDecoded || 0;
+                                        // Chỉ lấy thông số từ luồng video chính đang hoạt động (tránh ghi đè bởi SSRC phụ có 0 frame)
+                                        if (rptFrames >= framesDecoded && rptBytes >= currentBytes) {
+                                            currentBytes = rptBytes;
+                                            packetsLost = report.packetsLost || 0;
+                                            packetsReceived = report.packetsReceived || 0;
+                                            if (report.jitter !== undefined) {
+                                                jitter = Math.round(report.jitter * 1000);
+                                            }
+                                            framesDecoded = rptFrames;
+                                            framesDropped = report.framesDropped || 0;
+                                            if (report.freezeCount !== undefined) {
+                                                freezeCount = report.freezeCount;
+                                            }
+                                            if (report.totalFreezesDuration !== undefined) {
+                                                totalFreezesDurationSec = parseFloat(Number(report.totalFreezesDuration).toFixed(2));
+                                            }
+                                            if (report.jitterBufferDelay !== undefined) {
+                                                rawJitterBufferDelay = report.jitterBufferDelay;
+                                            }
+                                            if (report.jitterBufferEmittedCount !== undefined) {
+                                                rawJitterBufferEmitted = report.jitterBufferEmittedCount;
+                                            }
+                                            if (report.framesPerSecond !== undefined && report.framesPerSecond > 0) {
+                                                nativeFps = Math.round(report.framesPerSecond);
+                                            }
+                                            if (report.totalDecodeTime !== undefined) {
+                                                currentTotalDecodeTime = report.totalDecodeTime;
+                                            }
+                                        }
+                                    } else if (report.type === 'candidate-pair' && (report.state === 'succeeded' || report.nominated || (selectedPairId && report.id === selectedPairId))) {
+                                        const isActivePair = (selectedPairId && report.id === selectedPairId) || report.nominated === true;
+                                        let pairRtt = 0;
+                                        if (report.currentRoundTripTime !== undefined && report.currentRoundTripTime > 0) {
+                                            pairRtt = Math.round(report.currentRoundTripTime * 1000);
+                                        } else if (report.responsesReceived !== undefined && report.totalRoundTripTime !== undefined &&
+                                            report.responsesReceived > lastStunResponses && lastStunResponses > 0 &&
+                                            report.totalRoundTripTime >= lastTotalRttSec) {
+                                            const deltaResp = report.responsesReceived - lastStunResponses;
+                                            const deltaRttSec = report.totalRoundTripTime - lastTotalRttSec;
+                                            if (deltaResp > 0 && deltaRttSec > 0) {
+                                                pairRtt = Math.round((deltaRttSec / deltaResp) * 1000);
+                                            }
+                                        } else if (report.roundTripTime !== undefined && report.roundTripTime > 0) {
+                                            pairRtt = Math.round(report.roundTripTime * 1000);
+                                        }
+                                        if (isActivePair && report.responsesReceived !== undefined) {
+                                            lastStunResponses = report.responsesReceived;
+                                            if (report.totalRoundTripTime !== undefined) {
+                                                lastTotalRttSec = report.totalRoundTripTime;
+                                            }
+                                        }
+                                        if (pairRtt > 0) {
+                                            if (isActivePair) {
+                                                nominatedRtt = pairRtt;
+                                            } else if (rtt === 0) {
+                                                rtt = pairRtt;
+                                            }
+                                        }
+                                    } else if (report.type === 'remote-inbound-rtp' && report.roundTripTime !== undefined && report.roundTripTime > 0) {
+                                        if (rtt === 0) {
+                                            rtt = Math.round(report.roundTripTime * 1000);
+                                        }
+                                    }
+                                });
+
+                                if (nominatedRtt > 0) {
+                                    rtt = nominatedRtt;
+                                }
+
+                                const now = Date.now();
+                                const timeDiff = (now - lastTimestamp) / 1000;
+                                let bitrateMbps = 0.0;
+                                let fps = nativeFps;
+                                if (timeDiff > 0 && lastBytes > 0 && currentBytes >= lastBytes) {
+                                    bitrateMbps = parseFloat((((currentBytes - lastBytes) * 8) / (timeDiff * 1000000)).toFixed(2));
+                                    if (fps <= 0 && lastFrames > 0 && framesDecoded >= lastFrames) {
+                                        fps = Math.round((framesDecoded - lastFrames) / timeDiff);
+                                    }
+                                    if (fps > 120) fps = 120;
+                                }
+                                lastBytes = currentBytes;
+                                lastTimestamp = now;
+                                lastFrames = framesDecoded;
+
+                                // Đo thời gian giải mã phần cứng thực tế kết hợp lọc nhiễu khi ít khung hình (màn hình chờ / chuyển cảnh)
+                                let decodeTimeMs = smoothedDecodeMs;
+                                if (lastTotalDecodeTime > 0 && currentTotalDecodeTime >= lastTotalDecodeTime &&
+                                    lastFramesDecodedForDecode > 0 && framesDecoded > lastFramesDecodedForDecode) {
+                                    const deltaDecodeSec = currentTotalDecodeTime - lastTotalDecodeTime;
+                                    const deltaFrames = framesDecoded - lastFramesDecodedForDecode;
+                                    // Chỉ cập nhật phép chia khi có từ 12 khung hình giải mã trở lên trong chu kỳ để tránh sai số vọt ảo lúc chuyển cảnh
+                                    if (deltaFrames >= 12 && deltaDecodeSec >= 0) {
+                                        const rawDecodeMs = Math.min(28.0, Math.max(0.5, (deltaDecodeSec / deltaFrames) * 1000.0));
+                                        smoothedDecodeMs = smoothedDecodeMs > 0.0
+                                            ? (smoothedDecodeMs * 0.70 + rawDecodeMs * 0.30)
+                                            : rawDecodeMs;
+                                        decodeTimeMs = parseFloat(smoothedDecodeMs.toFixed(1));
+                                        lastTotalDecodeTime = currentTotalDecodeTime;
+                                        lastFramesDecodedForDecode = framesDecoded;
+                                    }
+                                } else if (lastFramesDecodedForDecode === 0 && framesDecoded > 0) {
+                                    lastTotalDecodeTime = currentTotalDecodeTime;
+                                    lastFramesDecodedForDecode = framesDecoded;
+                                }
+
+                                // Measure real WebRTC jitter buffer delay (ms)
+                                let jitterBufferDelayMs = 0.0;
+                                if (rawJitterBufferEmitted > lastJitterBufferEmitted && rawJitterBufferDelay >= lastJitterBufferDelay && lastJitterBufferEmitted > 0) {
+                                    const dDelay = rawJitterBufferDelay - lastJitterBufferDelay;
+                                    const dEmitted = rawJitterBufferEmitted - lastJitterBufferEmitted;
+                                    if (dEmitted > 0) {
+                                        jitterBufferDelayMs = parseFloat(((dDelay / dEmitted) * 1000.0).toFixed(1));
+                                    }
+                                } else if (rawJitterBufferEmitted > 0 && rawJitterBufferDelay > 0) {
+                                    jitterBufferDelayMs = parseFloat(((rawJitterBufferDelay / rawJitterBufferEmitted) * 1000.0).toFixed(1));
+                                }
+                                lastJitterBufferDelay = rawJitterBufferDelay;
+                                lastJitterBufferEmitted = rawJitterBufferEmitted;
+
+                                // Fallback to <video> playback quality if inbound-rtp frames were not populated yet
+                                const vEl = findActiveStreamVideo();
+                                if (vEl && !vEl.paused && vEl.videoWidth > 0) {
+                                    if (typeof vEl.getVideoPlaybackQuality === 'function') {
+                                        const q = vEl.getVideoPlaybackQuality();
+                                        if (q && q.totalVideoFrames > 0) {
+                                            if (fps <= 0 && vEl.__lastQFrames > 0 && vEl.__lastQTs > 0) {
+                                                const dt = (now - vEl.__lastQTs) / 1000;
+                                                if (dt > 0 && q.totalVideoFrames >= vEl.__lastQFrames) {
+                                                    fps = Math.min(120, Math.round((q.totalVideoFrames - vEl.__lastQFrames) / dt));
+                                                }
+                                            }
+                                            vEl.__lastQFrames = q.totalVideoFrames;
+                                            vEl.__lastQTs = now;
+                                            if (framesDropped <= 0 && q.droppedVideoFrames > 0) {
+                                                framesDropped = q.droppedVideoFrames;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                const totalPackets = packetsReceived + packetsLost;
+                                const lostPercent = totalPackets > 0 ? parseFloat(((packetsLost / totalPackets) * 100).toFixed(1)) : 0.0;
+
+                                // Only mark stream connected once REAL video frames are decoded (never while the green rocket ship is still warming up!)
+                                if ((framesDecoded > 3 || (fps > 0 && currentBytes > 40000)) && !notifiedStreamConnection) {
+                                    notifiedStreamConnection = true;
+                                    notify('onStreamConnected', 'webrtc_frames_active');
+                                }
+
+                                if (fps > 0 || currentBytes > 0 || rtt > 0) {
+                                    window.__lastKnownRttMs = rtt;
+                                    window.__lastKnownJitterMs = jitter;
+
+                                    // Chỉ tự động giảm nhẹ bộ lọc làm nét khi decodeTimeMs > 18.0ms kéo dài >= 5 mẫu liên tiếp kèm tụt FPS thực tế
+                                    const prevSnap = window.__lastSentTelemetrySnapshot;
+                                    const hasRealDropOrLowFps = (fps > 0 && fps < 52) || (prevSnap && framesDropped > prevSnap.framesDropped + 2);
+                                    if (decodeTimeMs > 18.0 && hasRealDropOrLowFps) {
+                                        window.__highDecodeStreakForClarity = (window.__highDecodeStreakForClarity || 0) + 1;
+                                        if (window.__highDecodeStreakForClarity >= 3 && window.__clarityBoostActive && window.__setClarityPreset) {
+                                            window.__highDecodeStreakForClarity = 0;
+                                            window.__clarityBoostActive = false;
+                                            window.__setClarityPreset('OFF');
+                                            notify('onClarityAutoDisabled', String(decodeTimeMs));
+                                        }
+                                    } else if (decodeTimeMs <= 16.0) {
+                                        window.__highDecodeStreakForClarity = 0;
+                                    }
+
+                                    const prev = window.__lastSentTelemetrySnapshot;
+                                    const elapsedSinceSent = now - (window.__lastTelemetrySentAt || 0);
+                                    const isOverThreshold = (decodeTimeMs > 18.0 || jitter > 15 || (prev && framesDropped > prev.framesDropped) || lostPercent > 2.0);
+                                    const hasMeaningfulDelta = !prev ||
+                                        elapsedSinceSent >= 4500 ||
+                                        (isOverThreshold && elapsedSinceSent >= 2000) ||
+                                        Math.abs(fps - prev.fps) >= 3 ||
+                                        Math.abs(rtt - prev.rttMs) >= Math.max(4, Math.round(prev.rttMs * 0.05)) ||
+                                        Math.abs(jitter - prev.jitterMs) >= 3 ||
+                                        Math.abs(decodeTimeMs - prev.decodeTimeMs) >= 1.0 ||
+                                        framesDropped !== prev.framesDropped ||
+                                        freezeCount !== prev.freezeCount;
+
+                                    if (hasMeaningfulDelta) {
+                                        window.__lastTelemetrySentAt = now;
+                                        const payloadObj = {
+                                            hasStatsSample: true,
+                                            fps: fps,
+                                            bitrateMbps: bitrateMbps,
+                                            decodeTimeMs: decodeTimeMs,
+                                            rttMs: rtt,
+                                            jitterMs: jitter,
+                                            packetsLostPercent: lostPercent,
+                                            framesDropped: framesDropped,
+                                            framesDecoded: framesDecoded,
+                                            freezeCount: freezeCount,
+                                            totalFreezesDurationSec: totalFreezesDurationSec,
+                                            jitterBufferDelayMs: jitterBufferDelayMs
+                                        };
+                                        window.__lastSentTelemetrySnapshot = payloadObj;
+                                        notify('onStreamTelemetry', JSON.stringify(payloadObj));
+                                    }
+                                }
+                            } catch(err) {}
+                        }, 2500);
+                        window.__activeStatsIntervalId = statsIntervalId;
+                        return pc;
+                    }
+
+                    try {
+                        const OrigPeerConnection = window.RTCPeerConnection;
+                        if (OrigPeerConnection && OrigPeerConnection.prototype) {
+                            // 1. Hook prototype methods so even if Xbox cached RTCPeerConnection constructor, every instance is captured!
+                            const proto = OrigPeerConnection.prototype;
+                            if (typeof proto.setRemoteDescription === 'function' && !proto.__cpProtoHooked) {
+                                proto.__cpProtoHooked = true;
+                                const origProtoSetRemote = proto.setRemoteDescription;
+                                proto.setRemoteDescription = function(desc) {
+                                    const self = this;
+                                    try {
+                                        attachPeerConnectionHooks(self);
+                                    } catch (e) {}
+                                    const res = origProtoSetRemote.apply(self, arguments);
+                                    if (res && typeof res.then === 'function') {
+                                        return res.then(function(val) {
+                                            try { prioritizeHardwareH264Codecs(self); } catch (e) {}
+                                            return val;
+                                        });
+                                    }
+                                    try { prioritizeHardwareH264Codecs(self); } catch (e) {}
+                                    return res;
+                                };
+
+                                if (typeof proto.createAnswer === 'function') {
+                                    const origCreateAnswer = proto.createAnswer;
+                                    proto.createAnswer = function() {
+                                        const self = this;
+                                        try {
+                                            attachPeerConnectionHooks(self);
+                                            prioritizeHardwareH264Codecs(self);
+                                        } catch (e) {}
+                                        const p = origCreateAnswer.apply(self, arguments);
+                                        if (p && typeof p.then === 'function') {
+                                            return p.then(function(answer) {
+                                                try {
+                                                    if (answer && answer.sdp) {
+                                                        const munged = mungeSdpForLowLatencyHardwareDecode(answer.sdp);
+                                                        return { type: answer.type, sdp: munged };
+                                                    }
+                                                } catch (e) {}
+                                                return answer;
+                                            });
+                                        }
+                                        return p;
+                                    };
+                                }
+
+                                if (typeof proto.createOffer === 'function') {
+                                    const origCreateOffer = proto.createOffer;
+                                    proto.createOffer = function() {
+                                        const self = this;
+                                        try {
+                                            attachPeerConnectionHooks(self);
+                                            prioritizeHardwareH264Codecs(self);
+                                        } catch (e) {}
+                                        const p = origCreateOffer.apply(self, arguments);
+                                        if (p && typeof p.then === 'function') {
+                                            return p.then(function(offer) {
+                                                try {
+                                                    if (offer && offer.sdp) {
+                                                        const munged = mungeSdpForLowLatencyHardwareDecode(offer.sdp);
+                                                        return { type: offer.type, sdp: munged };
+                                                    }
+                                                } catch (e) {}
+                                                return offer;
+                                            });
+                                        }
+                                        return p;
+                                    };
+                                }
+
+                                if (typeof proto.setLocalDescription === 'function') {
+                                    const origProtoSetLocal = proto.setLocalDescription;
+                                    proto.setLocalDescription = function(desc) {
+                                        try {
+                                            attachPeerConnectionHooks(this);
+                                            prioritizeHardwareH264Codecs(this);
+                                            if (desc && desc.sdp) {
+                                                const munged = mungeSdpForLowLatencyHardwareDecode(desc.sdp);
+                                                return origProtoSetLocal.call(this, { type: desc.type, sdp: munged });
+                                            }
+                                        } catch (e) {}
+                                        return origProtoSetLocal.apply(this, arguments);
+                                    };
+                                }
+
+                                if (typeof proto.addIceCandidate === 'function') {
+                                    const origProtoAddIce = proto.addIceCandidate;
+                                    proto.addIceCandidate = function(...iceArgs) {
+                                        try { attachPeerConnectionHooks(this); } catch (e) {}
+                                        return origProtoAddIce.apply(this, iceArgs);
+                                    };
+                                }
+                            }
+
+                            // 2. Also wrap window.RTCPeerConnection constructor
+                            window.RTCPeerConnection = function(...args) {
+                                const pc = new OrigPeerConnection(...args);
+                                return attachPeerConnectionHooks(pc);
+                            };
+                            window.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        }
+                    } catch(e) {
+                        console.error("Failed to hook RTCPeerConnection: " + e);
+                    }
+
+                    // ==========================================
+                    // 5. Event-Driven SPA Navigation & Video Media Stream Detection
+                    // ==========================================
+                    let lastUrl = location.href;
+                    let notifiedStreamConnection = false;
+                    let regionCheckCountForUrl = 0;
+                    const discoveredCardUrls = new Set();
+
+                    function extractActiveGameDomMetadata(overrideUrl, clickedEl, forceLaunchFlag) {
+                        try {
+                            const href = overrideUrl || location.href;
+                            const isGameOrLaunchUrl = href && (
+                                href.indexOf('/play/games/') !== -1 ||
+                                href.indexOf('/play/launch/') !== -1 ||
+                                href.indexOf('/products/') !== -1 ||
+                                href.indexOf('/launch/') !== -1
+                            );
+                            const isStreamActiveNow = !!window.__activePeerConnection || notifiedStreamConnection || !!forceLaunchFlag;
+                            if (!isGameOrLaunchUrl && !isStreamActiveNow) return null;
+                            let title = '';
+                            if (clickedEl) {
+                                title = (clickedEl.getAttribute('aria-label') || clickedEl.getAttribute('title') || clickedEl.innerText || '').trim();
+                            }
+                            if (!title || title.length < 2 || /^(play|chơi|chơi ngay|launch|cloud)$/i.test(title)) {
+                                const h1 = document.querySelector('h1');
+                                if (h1 && h1.textContent) title = h1.textContent.trim();
+                            }
+                            if (!title || title.length < 2) {
+                                title = (document.title || '').replace(/\s*[•|\-–—]\s*Xbox.*$/i, '').trim();
+                            }
+                            let imgUrl = '';
+                            if (clickedEl) {
+                                const cardImg = clickedEl.querySelector('img[src]');
+                                if (cardImg && cardImg.src) imgUrl = cardImg.src;
+                            }
+                            if (!imgUrl) {
+                                const ogImg = document.querySelector('meta[property="og:image"]');
+                                if (ogImg && ogImg.content) imgUrl = ogImg.content;
+                            }
+                            if (!imgUrl) {
+                                const storeImg = document.querySelector('img[src*="store-images.s-microsoft.com"]');
+                                if (storeImg && storeImg.src) imgUrl = storeImg.src;
+                            }
+                            const supportsTouch = !!document.querySelector('[aria-label*="touch" i], [data-testid*="touch" i]');
+                            const isLaunch = (href && (href.indexOf('/play/launch/') !== -1 || href.indexOf('/launch/') !== -1)) || isStreamActiveNow;
+                            return {
+                                title: title || '',
+                                url: href,
+                                imageUrl: imgUrl || '',
+                                supportsTouch: supportsTouch,
+                                isLaunch: isLaunch
+                            };
+                        } catch(e) {
+                            return null;
+                        }
+                    }
+
+                    function rememberActiveGameUrlAndTitle(urlCandidate, titleCandidate) {
+                        try {
+                            const u = (urlCandidate || '').trim();
+                            if (u && (u.indexOf('/products/') !== -1 || u.indexOf('/play/games/') !== -1 || u.indexOf('/games/') !== -1 || u.indexOf('/launch/') !== -1)) {
+                                window.__cpLastActiveGameUrl = u;
+                            }
+                            const t = (titleCandidate || '').trim();
+                            if (t && t.length >= 2 && !/^(xbox|xbox cloud gaming|xbox cloud game|play|chơi|chơi ngay)$/i.test(t)) {
+                                window.__cpLastActiveGameTitle = t;
+                            }
+                        } catch (e) {}
+                    }
+
+                    function reportActiveWebGame(overrideUrl, clickedEl, forceLaunchFlag) {
+                        const meta = extractActiveGameDomMetadata(overrideUrl, clickedEl, forceLaunchFlag);
+                        if (meta) {
+                            rememberActiveGameUrlAndTitle(meta.url, meta.title);
+                            notify('onWebGameDetected', JSON.stringify(meta));
+                        } else if (overrideUrl) {
+                            rememberActiveGameUrlAndTitle(overrideUrl, '');
+                        }
+                    }
+
+                    let lastReportedProfileKey = '';
+                    let lastJumpBackCount = 0;
+
+                    function scanVisibleCatalogGameCards() {
+                        if (notifiedStreamConnection || location.href.indexOf('/play/launch/') !== -1 || location.href.indexOf('/launch/') !== -1 || !!window.__activePeerConnection) return;
+                        try {
+                            // 1. Detect Xbox Gamertag, Gamerpic & Subscription Tier from xbox.com/play header
+                            const profileBtn = document.querySelector(
+                                'button[aria-label*="Profile" i], button[aria-label*="Hồ sơ" i], button[data-testid*="profile" i], [data-testid*="gamerpic" i], [class*="ProfileButton" i]'
+                            );
+                            if (profileBtn) {
+                                const avatarImg = profileBtn.querySelector('img[src]') || document.querySelector('img[alt*="gamerpic" i], img[class*="gamerpic" i], img[src*="ssl-images-microsoft.com"], img[src*="xboxlive.com"]');
+                                const avatarSrc = avatarImg ? (avatarImg.currentSrc || avatarImg.src || '') : '';
+                                let rawLabel = (profileBtn.getAttribute('aria-label') || profileBtn.innerText || (avatarImg ? avatarImg.alt : '') || '').trim();
+                                rawLabel = rawLabel.replace(/^(profile|hồ sơ|account|tài khoản|open profile menu for)\s*[:\-]?\s*/i, '').split('\n')[0].trim();
+                                if (rawLabel && rawLabel.length >= 2 && rawLabel.length <= 28 && !/sign\s*in|đăng\s*nhập/i.test(rawLabel)) {
+                                    const subBadgeEl = document.querySelector('[class*=" ultimate" i], [data-testid*="ultimate" i], [aria-label*="Ultimate" i]');
+                                    const tier = subBadgeEl ? 'Game Pass Ultimate' : 'Xbox Cloud Account';
+                                    const pKey = rawLabel + '|' + avatarSrc;
+                                    if (pKey !== lastReportedProfileKey) {
+                                        lastReportedProfileKey = pKey;
+                                        notify('onXboxProfileDetected', JSON.stringify({
+                                            gamertag: rawLabel,
+                                            avatarUrl: avatarSrc,
+                                            tier: tier
+                                        }));
+                                    }
+                                }
+                            }
+
+                            // 2. Detect "Jump back in" (Chơi gần đây trên Xbox Cloud) carousel
+                            const sections = document.querySelectorAll('section, [aria-label*="Jump back in" i], [aria-label*="Recently played" i], [data-testid*="jump" i]');
+                            const jumpItems = [];
+                            for (let s = 0; s < sections.length; s++) {
+                                const sec = sections[s];
+                                const heading = sec.querySelector('h2, h3, [role="heading"]');
+                                const hText = ((heading ? heading.innerText : '') + ' ' + (sec.getAttribute('aria-label') || '')).toLowerCase();
+                                if (hText.indexOf('jump back in') !== -1 || hText.indexOf('recently played') !== -1 || hText.indexOf('tiếp tục') !== -1 || hText.indexOf('gần đây') !== -1) {
+                                    const jLinks = sec.querySelectorAll('a[href*="/play/games/"], a[href*="/play/launch/"], a[href*="/products/"]');
+                                    for (let j = 0; j < jLinks.length && jumpItems.length < 8; j++) {
+                                        const ja = jLinks[j];
+                                        const jHref = (ja.href || ja.getAttribute('href') || '').split('?')[0];
+                                        if (!jHref) continue;
+                                        const jImg = ja.querySelector('img[src]');
+                                        const jImgSrc = jImg ? (jImg.currentSrc || jImg.src || '') : '';
+                                        let jTitle = (ja.getAttribute('aria-label') || (jImg ? jImg.alt : '') || ja.innerText || '').trim();
+                                        jTitle = jTitle.split('\n')[0].replace(/^(play|chơi)\s+/i, '').trim();
+                                        jumpItems.push({ title: jTitle, url: jHref, imageUrl: jImgSrc });
+                                    }
+                                }
+                            }
+                            if (jumpItems.length > 0 && jumpItems.length !== lastJumpBackCount) {
+                                lastJumpBackCount = jumpItems.length;
+                                notify('onXboxJumpBackInDetected', JSON.stringify(jumpItems));
+                            }
+
+                            // 3. Scrape visible Xbox Cloud catalog game cards
+                            const links = document.querySelectorAll('a[href*="/play/games/"], a[href*="/products/"]');
+                            if (!links || links.length === 0) return;
+                            const batch = [];
+                            for (let i = 0; i < links.length && batch.length < 24; i++) {
+                                const a = links[i];
+                                const rawHref = a.href || a.getAttribute('href') || '';
+                                if (!rawHref || (rawHref.indexOf('/play/games/') === -1 && rawHref.indexOf('/products/') === -1)) continue;
+                                const cleanUrl = rawHref.split('?')[0];
+                                if (discoveredCardUrls.has(cleanUrl)) continue;
+                                const img = a.querySelector('img[src]');
+                                const imgSrc = img ? (img.currentSrc || img.src || '') : '';
+                                let title = (a.getAttribute('aria-label') || (img ? img.alt : '') || a.innerText || '').trim();
+                                title = title.split('\n')[0].replace(/^(play|chơi)\s+/i, '').trim();
+                                if (!title && !imgSrc) continue;
+                                discoveredCardUrls.add(cleanUrl);
+                                batch.push({
+                                    title: title,
+                                    url: cleanUrl,
+                                    imageUrl: imgSrc,
+                                    supportsTouch: !!(a.innerHTML && a.innerHTML.toLowerCase().indexOf('touch') !== -1)
+                                });
+                            }
+                            if (batch.length > 0) {
+                                notify('onCatalogCardsDiscovered', JSON.stringify(batch));
+                            }
+                        } catch(e) {}
+                    }
+
+                    if (location.href.indexOf('/play/launch/') !== -1 || location.href.indexOf('/launch/') !== -1) {
+                        rememberActiveGameUrlAndTitle(location.href, document.title);
+                        reportActiveWebGame(location.href, null, true);
+                        notify('onGameLaunchInitiated', document.title || 'Xbox Game');
+                    } else if (location.href.indexOf('/play/games/') !== -1 || location.href.indexOf('/products/') !== -1 || location.href.indexOf('/games/') !== -1) {
+                        rememberActiveGameUrlAndTitle(location.href, document.title);
+                        setTimeout(function() { reportActiveWebGame(location.href, null, false); }, 600);
+                    }
+
+                    function handleNavigationChange() {
+                        if (location.href !== lastUrl) {
+                            const wasInLaunch = lastUrl.indexOf('/play/launch/') !== -1 || lastUrl.indexOf('/launch/') !== -1;
+                            const nowInLaunch = location.href.indexOf('/play/launch/') !== -1 || location.href.indexOf('/launch/') !== -1;
+                            const nowInGamePage = location.href.indexOf('/play/games/') !== -1 || location.href.indexOf('/products/') !== -1 || location.href.indexOf('/games/') !== -1;
+                            lastUrl = location.href;
+                            notifiedStreamConnection = false;
+                            regionCheckCountForUrl = 0;
+                            if (nowInLaunch || nowInGamePage) {
+                                rememberActiveGameUrlAndTitle(location.href, document.title);
+                            }
+                            notify('onUrlChanged', location.href);
+                            if (nowInLaunch || nowInGamePage) {
+                                reportActiveWebGame(location.href, null, nowInLaunch);
+                                setTimeout(function() { reportActiveWebGame(location.href, null, nowInLaunch); }, 900);
+                            }
+                            if (nowInLaunch) {
+                                notify('onGameLaunchInitiated', document.title || 'Xbox Game');
+                            } else if (wasInLaunch && !nowInLaunch) {
+                                window.__activePeerConnection = null;
+                                removeFortniteMultiTouchClawCss();
+                                const isLowEnd = !!(window.__networkProfile && window.__networkProfile.lowEndDeviceMode);
+                                if (!isLowEnd && window.__resumeTranslator) {
+                                    window.__resumeTranslator();
+                                }
+                            }
+                        }
+                    }
+
+                    // Hook History API (pushState / replaceState) + popstate / hashchange for zero-overhead SPA tracking
+                    try {
+                        const origPushState = history.pushState;
+                        const origReplaceState = history.replaceState;
+                        if (origPushState) {
+                            history.pushState = function() {
+                                const ret = origPushState.apply(this, arguments);
+                                handleNavigationChange();
+                                return ret;
+                            };
+                        }
+                        if (origReplaceState) {
+                            history.replaceState = function() {
+                                const ret = origReplaceState.apply(this, arguments);
+                                handleNavigationChange();
+                                return ret;
+                            };
+                        }
+                        window.addEventListener('popstate', handleNavigationChange);
+                        window.addEventListener('hashchange', handleNavigationChange);
+                    } catch(e) {}
+
+                    // Listen for video media events (playing / loadeddata / timeupdate) in capture phase
+                    function handleVideoMediaEvent(e) {
+                        const target = e ? e.target : null;
+                        const isLaunchPage = location.href.indexOf('/play/launch/') !== -1 || !!window.__activePeerConnection;
+                        if (target && target.tagName === 'VIDEO' && isLaunchPage && !notifiedStreamConnection) {
+                            optimizeVideoElementLowLatency(target);
+                            if ((target.currentTime > 0 || target.readyState >= 2) && !target.paused) {
+                                notifiedStreamConnection = true;
+                                reportActiveWebGame(location.href, null);
+                                notify('onStreamConnected', 'video_active');
+                            }
+                        }
+                    }
+                    document.addEventListener('playing', handleVideoMediaEvent, true);
+                    document.addEventListener('loadeddata', handleVideoMediaEvent, true);
+                    document.addEventListener('canplay', handleVideoMediaEvent, true);
+                    document.addEventListener('ended', function(e) {
+                        const target = e ? e.target : null;
+                        if (target && target.tagName === 'VIDEO' && notifiedStreamConnection) {
+                            notifiedStreamConnection = false;
+                            notify('onStreamDisconnected', 'video_ended');
+                        }
+                    }, true);
+
+                    function hasPlayButtonOnPage() {
+                        if (document.querySelector('a[href*="/play/launch/"], [class*="PlayButton" i], [data-testid*="PlayButton" i], [data-testid*="launch-button" i]')) {
+                            return true;
+                        }
+                        const els = document.querySelectorAll('button, a[role="button"], [data-testid*="play" i], [data-testid*="launch" i], [data-testid*="primary" i]');
+                        for (let i = 0; i < els.length; i++) {
+                            const el = els[i];
+                            const txt = ((el.innerText || el.textContent || '') + ' ' + (el.getAttribute('aria-label') || '') + ' ' + (el.getAttribute('data-testid') || '') + ' ' + (el.className || '')).trim().toLowerCase();
+                            if (/\bplay\b/.test(txt) || txt.includes('play with cloud') || txt.includes('chơi ngay') || txt.includes('chơi trên đám mây') || txt.includes('playbutton') || txt.includes('launchgame')) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+
+                    function showUnlockFailBannerDom() {
+                        if (document.getElementById('__cloudplay_unlock_fail_banner')) return;
+                        const bar = document.createElement('div');
+                        bar.id = '__cloudplay_unlock_fail_banner';
+                        bar.setAttribute('translate', 'no');
+                        bar.setAttribute('data-cloudplay-ui', '1');
+                        bar.className = 'notranslate';
+                        bar.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:2147483647;background:rgba(12,20,15,0.96);border:1.5px solid #ef4444;border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,0.65);font-family:sans-serif;max-width:92vw;color:#fff;';
+                        const isViUi = !window.__cloudPlayIsEnglishUi;
+                        const msg = document.createElement('span');
+                        msg.style.cssText = 'font-size:12.5px;font-weight:700;line-height:1.35;';
+                        msg.textContent = isViUi
+                            ? 'Máy chủ này không mở khóa được vùng, đổi sang máy chủ khác?'
+                            : 'This server cannot unlock the region, switch to another server?';
+                        const btnOk = document.createElement('button');
+                        btnOk.style.cssText = 'background:#107C10;color:#fff;border:1px solid #22c55e;border-radius:9px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;';
+                        btnOk.textContent = isViUi ? 'Chuyển máy chủ' : 'Switch server';
+                        btnOk.onclick = function() {
+                            bar.remove();
+                            if (window.CloudPlayBridge && window.CloudPlayBridge.confirmSwitchBestServer) {
+                                window.CloudPlayBridge.confirmSwitchBestServer();
+                            }
+                        };
+                        const btnClose = document.createElement('button');
+                        btnClose.style.cssText = 'background:transparent;color:#9ca3af;border:none;padding:4px 6px;font-size:12px;cursor:pointer;';
+                        btnClose.textContent = '✕';
+                        btnClose.onclick = function() {
+                            bar.remove();
+                            if (window.CloudPlayBridge && window.CloudPlayBridge.dismissUnlockFailPrompt) {
+                                window.CloudPlayBridge.dismissUnlockFailPrompt();
+                            }
+                        };
+                        bar.appendChild(msg);
+                        bar.appendChild(btnOk);
+                        bar.appendChild(btnClose);
+                        if (document.body) document.body.appendChild(bar);
+                    }
+
+                    function hasActionLoadingSpinner() {
+                        return !!document.querySelector('[data-testid*="PlayButton" i] [role="progressbar"], [data-testid*="launch" i] [role="progressbar"], button[aria-busy="true"], [class*="PlayButton" i] [class*="spinner" i], [class*="ActionButtons" i] [role="progressbar"]');
+                    }
+
+                    function checkRegionLockDomState() {
+                        // Never read document.body.innerText during active stream, on /launch/ page, or more than 4 times per URL (avoids layout reflow)
+                        if (notifiedStreamConnection || !document.body || location.href.indexOf('/launch/') !== -1) return;
+                        if (hasPlayButtonOnPage()) {
+                            const oldBanner = document.getElementById('__cloudplay_unlock_fail_banner');
+                            if (oldBanner) oldBanner.remove();
+                            if (window.__lastUnlockSignal === 'UNLOCK_FAIL') {
+                                window.__lastUnlockSignal = 'UNLOCK_OK';
+                                notify('onRegionUnlockSignal', 'UNLOCK_OK');
+                                if (window.CloudPlayBridge && window.CloudPlayBridge.dismissUnlockFailPrompt) {
+                                    window.CloudPlayBridge.dismissUnlockFailPrompt();
+                                }
+                            }
+                            return;
+                        }
+                        if (hasActionLoadingSpinner() || regionCheckCountForUrl >= 4) return;
+                        regionCheckCountForUrl++;
+                        const bodyText = (document.body.textContent || '').toLowerCase();
+                        const hasRegionUnsupportedText =
+                            bodyText.includes('unavailable in your region') ||
+                            bodyText.includes('not available in your region') ||
+                            bodyText.includes('view supported regions') ||
+                            bodyText.includes('không khả dụng tại khu vực') ||
+                            bodyText.includes('xem các khu vực được hỗ trợ');
+                        if (hasRegionUnsupportedText && !hasPlayButtonOnPage()) {
+                            if (window.__lastUnlockSignal !== 'UNLOCK_FAIL') {
+                                window.__lastUnlockSignal = 'UNLOCK_FAIL';
+                                notify('onRegionUnlockSignal', 'UNLOCK_FAIL');
+                            }
+                        }
+                    }
+
+                    function ensureFortniteMultiTouchClawCss() {
+                        if (location.href.indexOf('/play/launch/') === -1) return;
+                        if (document.getElementById('__cloudplay_fortnite_claw_css')) return;
+                        try {
+                            const style = document.createElement('style');
+                            style.id = '__cloudplay_fortnite_claw_css';
+                            // Chỉ áp dụng touch-action: none lên đúng thẻ video/canvas của luồng game đang phát,
+                            // TUYỆT ĐỐI KHÔNG gắn lên [data-testid*="touch"] hay [data-testid*="media"] vì sẽ khóa bấm nút trên danh mục game!
+                            style.textContent = 'video#stream-video, video[data-testid="stream-video"], #segmented-video video, #game-stream video, #game-stream canvas { touch-action: none !important; overscroll-behavior: none !important; user-select: none !important; -webkit-user-select: none !important; -webkit-touch-callout: none !important; -webkit-user-drag: none !important; -webkit-tap-highlight-color: transparent !important; }';
+                            (document.head || document.documentElement).appendChild(style);
+                        } catch(e) {}
+                    }
+
+                    function removeFortniteMultiTouchClawCss() {
+                        try {
+                            const el = document.getElementById('__cloudplay_fortnite_claw_css');
+                            if (el) el.remove();
+                            if (document.documentElement && !window.__isRecordingPerformanceMode) {
+                                document.documentElement.style.touchAction = '';
+                                document.documentElement.style.userSelect = '';
+                                document.documentElement.style.webkitUserSelect = '';
+                            }
+                        } catch(e) {}
+                    }
+
+                    function tryAutoBypassFortniteControllerModal() {
+                        if (!isFortniteSession() || location.href.indexOf('/launch/') === -1) return;
+                        try {
+                            const buttons = document.querySelectorAll('button, [role="button"]');
+                            for (let i = 0; i < buttons.length; i++) {
+                                const b = buttons[i];
+                                const t = ((b.innerText || b.textContent || '') + ' ' + (b.getAttribute('aria-label') || '')).toLowerCase();
+                                if (t.includes('continue anyway') || t.includes('tiếp tục') || t.includes('play with touch') || t.includes('chơi bằng cảm ứng')) {
+                                    b.click();
+                                    break;
+                                }
+                            }
+                        } catch(e) {}
+                    }
+
+                    function optimizeVideoElementLowLatency(video) {
+                        if (!video || video.__cpLowLatencyTuned) return;
+                        video.__cpLowLatencyTuned = true;
+                        try {
+                            video.playsInline = true;
+                            video.autoplay = true;
+                            if ('disablePictureInPicture' in video) video.disablePictureInPicture = true;
+                            if ('disableRemotePlayback' in video) video.disableRemotePlayback = true;
+                            video.style.touchAction = 'none';
+                            video.style.userSelect = 'none';
+                            video.style.webkitUserSelect = 'none';
+                            ensureFortniteMultiTouchClawCss();
+                        } catch(e) {}
+                    }
+
+                    // Lightweight fallback check (2500ms) for edge cases where video mounts silently & region lock check
+                    setInterval(function() {
+                        handleNavigationChange();
+                        if (!notifiedStreamConnection && regionCheckCountForUrl < 4) {
+                            checkRegionLockDomState();
+                        }
+                        const isLaunchPage = location.href.indexOf('/play/launch/') !== -1 || !!window.__activePeerConnection;
+                        if (isLaunchPage) {
+                            ensureFortniteMultiTouchClawCss();
+                            const video = findActiveStreamVideo();
+                            if (video) {
+                                optimizeVideoElementLowLatency(video);
+                                if (!notifiedStreamConnection) {
+                                    tryAutoBypassFortniteControllerModal();
+                                    if (video.videoWidth > 0 && video.currentTime > 0.25 && !video.paused) {
+                                        notifiedStreamConnection = true;
+                                        reportActiveWebGame(location.href, null);
+                                        notify('onStreamConnected', 'video_active');
+                                    }
+                                }
+                                // Fallback telemetry chỉ kích hoạt khi vòng lặp WebRTC getStats() chính không hoạt động (quá 5.5s chưa có mẫu)
+                                const nowMs = Date.now();
+                                if (video.videoWidth > 0 && !video.paused && !window.__activeStatsIntervalId && (nowMs - (window.__lastTelemetrySentAt || 0) > 5500)) {
+                                    try {
+                                        let vFps = 0;
+                                        let vDropped = 0;
+                                        if (typeof video.getVideoPlaybackQuality === 'function') {
+                                            const q = video.getVideoPlaybackQuality();
+                                            if (q && q.totalVideoFrames > 0) {
+                                                if (video.__fbLastFrames > 0 && video.__fbLastTs > 0) {
+                                                    const dt = (nowMs - video.__fbLastTs) / 1000;
+                                                    const deltaFrames = q.totalVideoFrames - video.__fbLastFrames;
+                                                    if (dt > 0 && deltaFrames > 0) {
+                                                        vFps = Math.min(120, Math.round(deltaFrames / dt));
+                                                    }
+                                                }
+                                                video.__fbLastFrames = q.totalVideoFrames;
+                                                video.__fbLastTs = nowMs;
+                                                vDropped = q.droppedVideoFrames || 0;
+                                            }
+                                        }
+                                        window.__lastTelemetrySentAt = nowMs;
+                                        notify('onStreamTelemetry', JSON.stringify({
+                                            hasStatsSample: false,
+                                            fps: vFps,
+                                            bitrateMbps: 0.0,
+                                            decodeTimeMs: 0.0,
+                                            rttMs: 0,
+                                            jitterMs: 0,
+                                            packetsLostPercent: 0.0,
+                                            framesDropped: vDropped,
+                                            framesDecoded: 0,
+                                            freezeCount: 0,
+                                            totalFreezesDurationSec: 0.0,
+                                            jitterBufferDelayMs: 0.0
+                                        }));
+                                    } catch (e) {}
+                                }
+                            } else if (!notifiedStreamConnection) {
+                                tryAutoBypassFortniteControllerModal();
+                            }
+                        } else {
+                            removeFortniteMultiTouchClawCss();
+                            scanVisibleCatalogGameCards();
+                        }
+                    }, 2500);
+
+                    let exitPreviewWatcherId = null;
+
+                    function findExitPreviewFeedbackDialog() {
+                        const dialogs = document.querySelectorAll('[role="dialog"], [aria-modal="true"]');
+                        for (let d = 0; d < dialogs.length; d++) {
+                            const dlg = dialogs[d];
+                            const r = dlg.getBoundingClientRect ? dlg.getBoundingClientRect() : null;
+                            if (r && (r.width < 40 || r.height < 40)) continue;
+                            const dTxt = (dlg.textContent || '').toLowerCase();
+                            // Loại trừ tuyệt đối bảng menu Tài khoản (Profile menu) vốn chứa "Thoát khỏi chế độ xem trước" / "Đăng xuất"
+                            const isProfileMenuDrawer = dTxt.includes('sign out') ||
+                                dTxt.includes('đăng xuất') ||
+                                dTxt.includes('exit preview') ||
+                                dTxt.includes('thoát khỏi chế độ xem trước') ||
+                                dTxt.includes('thoat khoi che do xem truoc') ||
+                                dTxt.includes('leave preview');
+                            if (isProfileMenuDrawer) continue;
+
+                            const hasTextarea = !!dlg.querySelector('textarea');
+                            const hasFeedbackText = dTxt.includes('give feedback') ||
+                                dTxt.includes('gửi phản hồi') ||
+                                dTxt.includes('what could we do better') ||
+                                dTxt.includes('làm gì tốt hơn');
+                            const hasCancelAndSubmit = (dTxt.includes('cancel') || dTxt.includes('hủy') || dTxt.includes('huỷ')) &&
+                                (dTxt.includes('submit') || dTxt.includes('gửi') || dTxt.includes('nộp'));
+                            if (hasFeedbackText && (hasTextarea || hasCancelAndSubmit)) {
+                                return dlg;
+                            }
+                        }
+                        return null;
+                    }
+
+                    function getBestExitPreviewGamePayload() {
+                        try {
+                            const cur = location.href || '';
+                            if (cur.indexOf('/products/') !== -1 || cur.indexOf('/play/games/') !== -1 || cur.indexOf('/games/') !== -1 || cur.indexOf('/launch/') !== -1) {
+                                rememberActiveGameUrlAndTitle(cur, document.title);
+                            }
+                            const h1 = document.querySelector('h1');
+                            const domTitle = (h1 && h1.textContent) ? h1.textContent.trim() : '';
+                            if (domTitle && domTitle.length >= 2) {
+                                rememberActiveGameUrlAndTitle('', domTitle);
+                            }
+                        } catch (e) {}
+                        const savedUrl = window.__cpLastActiveGameUrl || '';
+                        const savedTitle = window.__cpLastActiveGameTitle || '';
+                        return savedUrl + '||' + savedTitle;
+                    }
+
+                    function commitExitPreviewNow() {
+                        if (!window.__autoExitPreviewEnabled) return;
+                        if (window.__cpExitPreviewStage === 'COMMITTED') return;
+                        window.__cpExitPreviewStage = 'COMMITTED';
+                        if (exitPreviewWatcherId) {
+                            clearInterval(exitPreviewWatcherId);
+                            exitPreviewWatcherId = null;
+                        }
+                        try {
+                            window.stop();
+                        } catch (e) {}
+                        notify('onRegionUnlockSignal', 'EXIT_PREVIEW_COMMIT|' + getBestExitPreviewGamePayload());
+                    }
+
+                    function startExitPreviewOptOutPhase() {
+                        if (!window.__autoExitPreviewEnabled) return;
+                        if (window.__cpExitPreviewStage === 'OPTING_OUT' || window.__cpExitPreviewStage === 'COMMITTED') return;
+                        window.__cpExitPreviewStage = 'OPTING_OUT';
+                        window.__cpExitPreviewOptOutStartedAt = Date.now();
+                        window.__cpExitPreviewStartHref = location.href;
+                        window.__cpExitPreviewSawSpinner = false;
+                        window.__cpExitPreviewInFlightFetches = 0;
+                        window.__cpExitPreviewCompletedFetches = 0;
+                        notify('onRegionUnlockSignal', 'EXIT_PREVIEW_OPT_OUT_STARTED|' + getBestExitPreviewGamePayload());
+                    }
+
+                    function armExitPreviewModalWatcher() {
+                        if (!window.__autoExitPreviewEnabled) return;
+                        if (window.__cpExitPreviewStage === 'OPTING_OUT' || window.__cpExitPreviewStage === 'COMMITTED') return;
+                        window.__cpExitPreviewStage = 'MODAL_OPENING';
+                        window.__cpExitPreviewArmedAt = Date.now();
+                        window.__cpExitPreviewInFlightFetches = 0;
+                        window.__cpExitPreviewCompletedFetches = 0;
+                        notify('onRegionUnlockSignal', 'EXIT_PREVIEW_ARMED|' + getBestExitPreviewGamePayload());
+                        ensureExitPreviewWatcher();
+                    }
+
+                    function ensureExitPreviewWatcher() {
+                        if (exitPreviewWatcherId) clearInterval(exitPreviewWatcherId);
+                        let modalFoundAt = 0;
+                        let autoClickedCancel = false;
+                        exitPreviewWatcherId = setInterval(function() {
+                            try {
+                                if (!window.__autoExitPreviewEnabled) {
+                                    window.__cpExitPreviewStage = 'IDLE';
+                                    clearInterval(exitPreviewWatcherId);
+                                    exitPreviewWatcherId = null;
+                                    return;
+                                }
+                                const stage = window.__cpExitPreviewStage;
+                                if (stage !== 'MODAL_OPENING' && stage !== 'OPTING_OUT') {
+                                    clearInterval(exitPreviewWatcherId);
+                                    exitPreviewWatcherId = null;
+                                    return;
+                                }
+                                const now = Date.now();
+                                if (now - (window.__cpExitPreviewArmedAt || now) > 25000) {
+                                    window.__cpExitPreviewStage = 'IDLE';
+                                    clearInterval(exitPreviewWatcherId);
+                                    exitPreviewWatcherId = null;
+                                    return;
+                                }
+
+                                // 1. Chặn bàn phím ảo tự bật lên che nút Hủy/Cancel trong hộp thoại phản hồi
+                                const activeEl = document.activeElement;
+                                if (activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT')) {
+                                    try { activeEl.blur(); } catch (e) {}
+                                }
+
+                                const feedbackDialog = findExitPreviewFeedbackDialog();
+
+                                if (stage === 'MODAL_OPENING') {
+                                    if (feedbackDialog) {
+                                        if (modalFoundAt === 0) modalFoundAt = now;
+                                        if (!autoClickedCancel && (now - modalFoundAt >= 280)) {
+                                            const btns = feedbackDialog.querySelectorAll('button, [role="button"]');
+                                            let cancelBtn = null;
+                                            let closeBtn = null;
+                                            for (let b = 0; b < btns.length; b++) {
+                                                const btn = btns[b];
+                                                const bTxt = ((btn.innerText || btn.textContent || '').trim()).toLowerCase();
+                                                const bAria = (btn.getAttribute('aria-label') || '').toLowerCase();
+                                                if (bTxt === 'cancel' || bTxt === 'hủy' || bTxt === 'huỷ' || bAria === 'cancel' || bAria === 'hủy') {
+                                                    cancelBtn = btn;
+                                                    break;
+                                                }
+                                                if (bAria.includes('close') || bAria.includes('đóng') || bTxt === '✕' || bTxt === '×') {
+                                                    closeBtn = btn;
+                                                }
+                                            }
+                                            const targetBtn = cancelBtn || closeBtn;
+                                            if (targetBtn) {
+                                                autoClickedCancel = true;
+                                                startExitPreviewOptOutPhase();
+                                                targetBtn.click();
+                                                return;
+                                            }
+                                        }
+                                    } else if (modalFoundAt > 0) {
+                                        startExitPreviewOptOutPhase();
+                                    }
+                                    return;
+                                }
+
+                                if (stage === 'OPTING_OUT') {
+                                    const optElapsed = now - (window.__cpExitPreviewOptOutStartedAt || now);
+                                    if (optElapsed < 500) return;
+
+                                    const interactives = document.querySelectorAll('header button, nav button, nav a, a[href="/"], [role="navigation"] a, [role="navigation"] button');
+                                    let visibleNavCount = 0;
+                                    for (let i = 0; i < interactives.length && visibleNavCount < 5; i++) {
+                                        const r = interactives[i].getBoundingClientRect ? interactives[i].getBoundingClientRect() : null;
+                                        if (r && r.width > 10 && r.height > 10) visibleNavCount++;
+                                    }
+                                    if (!feedbackDialog && visibleNavCount <= 1) {
+                                        window.__cpExitPreviewSawSpinner = true;
+                                    }
+
+                                    const gamerpics = document.querySelectorAll('img[src*="xboxlive.com"], img[src*="ssl-images-microsoft.com"], img[alt*="gamerpic" i]');
+                                    let hasVisibleGamerpic = false;
+                                    for (let g = 0; g < gamerpics.length; g++) {
+                                        const gr = gamerpics[g].getBoundingClientRect ? gamerpics[g].getBoundingClientRect() : null;
+                                        if (gr && gr.width > 12 && gr.height > 12 && gr.top < 120) {
+                                            hasVisibleGamerpic = true;
+                                            break;
+                                        }
+                                    }
+
+                                    const skeletonReadyAfterSpinner = !feedbackDialog &&
+                                        optElapsed >= 3600 &&
+                                        window.__cpExitPreviewInFlightFetches === 0 &&
+                                        (visibleNavCount >= 2 || window.__cpExitPreviewSawSpinner) &&
+                                        !hasVisibleGamerpic;
+                                    const safePhase2WindowCommit = !feedbackDialog &&
+                                        optElapsed >= 4200 &&
+                                        window.__cpExitPreviewInFlightFetches === 0;
+                                    const hardPhase2Deadline = !feedbackDialog && optElapsed >= 5000;
+
+                                    if (skeletonReadyAfterSpinner || safePhase2WindowCommit || hardPhase2Deadline) {
+                                        commitExitPreviewNow();
+                                    }
+                                }
+                            } catch (wErr) {}
+                        }, 100);
+                    }
+
+                    function isGameplayStreamActiveNow() {
+                        return !!(notifiedStreamConnection || window.__activePeerConnection || (location.pathname && location.pathname.indexOf('/launch/') !== -1));
+                    }
+
+                    // Chỉ tự động phát hiện hộp thoại phản hồi khi người dùng BẬT tự động chuyển & chọn Giao diện cũ
+                    setInterval(function() {
+                        try {
+                            if (!window.__autoExitPreviewEnabled) return;
+                            if (isGameplayStreamActiveNow()) return;
+                            if (location.hostname !== 'play.xbox.com') return;
+                            if (window.__cpExitPreviewStage === 'IDLE') {
+                                const dlg = findExitPreviewFeedbackDialog();
+                                if (dlg) {
+                                    armExitPreviewModalWatcher();
+                                }
+                            }
+                        } catch (e) {}
+                    }, 350);
+
+                    window.__prepareSwitchToClassicUi = function(targetClassicUrl) {
+                        try {
+                            const applyClassicStorageFlags = function(store) {
+                                if (!store) return;
+                                const keysToRemove = [];
+                                for (let i = 0; i < store.length; i++) {
+                                    const k = store.key(i) || '';
+                                    const kl = k.toLowerCase();
+                                    if (kl.indexOf('migrate') !== -1 || kl.indexOf('takahashi') !== -1) {
+                                        keysToRemove.push(k);
+                                    }
+                                }
+                                for (let j = 0; j < keysToRemove.length; j++) {
+                                    try { store.removeItem(keysToRemove[j]); } catch (e) {}
+                                }
+                                try {
+                                    store.setItem('TakahashiOptOut', 'true');
+                                    store.setItem('xcloud_preview_optout', 'true');
+                                } catch (e) {}
+                            };
+                            applyClassicStorageFlags(window.localStorage);
+                            applyClassicStorageFlags(window.sessionStorage);
+
+                            try {
+                                document.cookie = 'TakahashiOptOut=true;domain=.xbox.com;path=/;max-age=31536000;SameSite=Lax';
+                                document.cookie = 'xcloud_preview_optout=true;domain=.xbox.com;path=/;max-age=31536000;SameSite=Lax';
+                            } catch (e) {}
+                        } catch (e) {}
+                        if (targetClassicUrl && typeof targetClassicUrl === 'string') {
+                            try {
+                                location.replace(targetClassicUrl);
+                            } catch (e) {
+                                location.href = targetClassicUrl;
+                            }
+                        }
+                    };
+
+                    function checkTargetForExitPreviewRow(target) {
+                        if (!target || isGameplayStreamActiveNow() || location.hostname !== 'play.xbox.com') return false;
+                        // Chỉ kiểm tra tối đa 4 cấp cha và độ dài chữ <= 65 ký tự để không bao giờ bắt nhầm khung menu Tài khoản lớn
+                        let node = target;
+                        for (let depth = 0; node && node !== document.body && depth < 4; depth++, node = node.parentElement) {
+                            const txt = ((node.textContent || '') + ' ' + ((node.getAttribute && node.getAttribute('aria-label')) || '')).trim().toLowerCase();
+                            if (txt.length >= 6 && txt.length <= 65) {
+                                if (txt.includes('sign out') || txt.includes('đăng xuất') || txt.includes('settings') || txt.includes('cài đặt')) {
+                                    continue;
+                                }
+                                if (txt.includes('exit preview') ||
+                                    txt.includes('leave preview') ||
+                                    txt.includes('thoát khỏi chế độ xem trước') ||
+                                    txt.includes('thoat khoi che do xem truoc') ||
+                                    txt.includes('thoát chế độ xem trước') ||
+                                    txt.includes('thoát xem trước') ||
+                                    txt.includes('thoat xem truoc') ||
+                                    txt.includes('rời khỏi bản xem trước') ||
+                                    txt.includes('rời bản xem trước')) {
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    }
+
+                    document.addEventListener('pointerdown', function(e) {
+                        if (!window.__autoExitPreviewEnabled || isGameplayStreamActiveNow()) return;
+                        const target = e.target;
+                        if (checkTargetForExitPreviewRow(target)) {
+                            armExitPreviewModalWatcher();
+                        }
+                    }, true);
+
+                    document.addEventListener('click', function(e) {
+                        if (isGameplayStreamActiveNow()) return;
+                        const target = e.target;
+                        if (target) {
+                            if (window.__autoExitPreviewEnabled && location.hostname === 'play.xbox.com') {
+                                if (checkTargetForExitPreviewRow(target)) {
+                                    armExitPreviewModalWatcher();
+                                } else if (window.__cpExitPreviewStage === 'MODAL_OPENING') {
+                                    const dlgBtn = target.closest('[role="dialog"] button, [aria-modal="true"] button, button, [role="button"]');
+                                    if (dlgBtn && findExitPreviewFeedbackDialog()) {
+                                        const bTxt = ((dlgBtn.textContent || '').trim()).toLowerCase();
+                                        const bAria = (dlgBtn.getAttribute('aria-label') || '').toLowerCase();
+                                        if (bTxt === 'cancel' || bTxt === 'hủy' || bTxt === 'huỷ' || bTxt === 'submit' || bTxt === 'nộp' || bAria.includes('close') || bAria.includes('đóng') || bTxt === '✕' || bTxt === '×') {
+                                            startExitPreviewOptOutPhase();
+                                        }
+                                    }
+                                }
+                            }
+
+                            const gameLink = target.closest('a[href*="/play/games/"], a[href*="/play/launch/"], a[href*="/products/"]');
+                            if (gameLink && gameLink.href) {
+                                reportActiveWebGame(gameLink.href, gameLink);
+                            }
+                            const btn = target.closest('button, a');
+                            if (btn) {
+                                const txt = (btn.textContent || btn.getAttribute('aria-label') || '').toLowerCase();
+                                const testId = (btn.getAttribute('data-testid') || '').toLowerCase();
+                                if (txt.includes('play') || txt.includes('chơi') || testId.includes('play') || testId.includes('launch')) {
+                                    notifiedStreamConnection = false;
+                                    reportActiveWebGame( (gameLink && gameLink.href) ? gameLink.href : location.href, gameLink || btn );
+                                    notify('onGameLaunchInitiated', document.title || 'Xbox Game');
+                                }
+                            }
+                        }
+                    }, true);
+
+                    // ==========================================
+                    // 6. Synthetic Gamepad Hook & Anti-AFK (Ultra-Low-Latency Direct Bridge + Fortnite Native Touch Coexistence)
+                    // ==========================================
+                    const nowTs = () => (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+                    let virtualGamepadActive = !!window.__virtualGamepadEnabled;
+                    let gamepadConnectedDispatched = false;
+                    let lastRumbleBridgeAt = 0;
+                    window.__hasPhysicalGamepadConnected = false;
+
+                    const virtualVibrationActuator = {
+                        type: "dual-rumble",
+                        playEffect: function(type, params) {
+                            try {
+                                if (window.__deviceThermalThrottled || window.__appInBackground || (window.__hasPhysicalGamepadConnected && !window.__virtualGamepadEnabled)) {
+                                    return Promise.resolve("complete");
+                                }
+                                const p = params || {};
+                                const dur = Math.max(0, Math.min(500, Math.round(Number(p.duration) || 0)));
+                                const strong = Math.max(0, Math.min(1, Number(p.strongMagnitude) || 0));
+                                const weak = Math.max(0, Math.min(1, Number(p.weakMagnitude) || 0));
+                                if (dur <= 10 || (strong < 0.04 && weak < 0.04)) {
+                                    return Promise.resolve("complete");
+                                }
+                                const nowMs = Date.now();
+                                if (nowMs - lastRumbleBridgeAt >= 65) {
+                                    lastRumbleBridgeAt = nowMs;
+                                    if (window.CloudPlayBridge && typeof window.CloudPlayBridge.onGameRumble === 'function') {
+                                        window.CloudPlayBridge.onGameRumble(dur, strong, weak);
+                                    }
+                                }
+                            } catch (e) {}
+                            return Promise.resolve("complete");
+                        },
+                        reset: function() {
+                            try {
+                                if ((!window.__hasPhysicalGamepadConnected || window.__virtualGamepadEnabled) && window.CloudPlayBridge && typeof window.CloudPlayBridge.onGameRumble === 'function') {
+                                    window.CloudPlayBridge.onGameRumble(0, 0, 0);
+                                }
+                            } catch (e) {}
+                            return Promise.resolve("complete");
+                        }
+                    };
+
+                    const virtualGamepadState = {
+                        id: "Xbox 360 Controller (XInput STANDARD GAMEPAD)",
+                        index: 0,
+                        connected: !!window.__virtualGamepadEnabled,
+                        timestamp: nowTs(),
+                        mapping: "standard",
+                        axes: [0, 0, 0, 0],
+                        buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
+                        vibrationActuator: virtualVibrationActuator
+                    };
+
+                    function ensureGamepadConnectedEvent() {
+                        virtualGamepadActive = true;
+                        virtualGamepadState.connected = true;
+                        if (!gamepadConnectedDispatched) {
+                            gamepadConnectedDispatched = true;
+                            try {
+                                const evt = new Event('gamepadconnected');
+                                evt.gamepad = virtualGamepadState;
+                                window.dispatchEvent(evt);
+                            } catch (e) {}
+                        }
+                    }
+
+                    window.__setVirtualGamepadEnabled = function(enabled) {
+                        const isEn = !!enabled;
+                        window.__virtualGamepadEnabled = isEn;
+                        if (isEn) {
+                            ensureGamepadConnectedEvent();
+                        } else {
+                            // Disconnect synthetic gamepad so Fortnite Native Epic Touch Controls activate cleanly without controller conflict
+                            virtualGamepadActive = false;
+                            virtualGamepadState.connected = false;
+                            for (let i = 0; i < 4; i++) virtualGamepadState.axes[i] = 0;
+                            for (let b = 0; b < 17; b++) {
+                                virtualGamepadState.buttons[b].pressed = false;
+                                virtualGamepadState.buttons[b].touched = false;
+                                virtualGamepadState.buttons[b].value = 0;
+                            }
+                            virtualGamepadState.timestamp = nowTs();
+                            if (gamepadConnectedDispatched) {
+                                gamepadConnectedDispatched = false;
+                                try {
+                                    const evt = new Event('gamepaddisconnected');
+                                    evt.gamepad = virtualGamepadState;
+                                    window.dispatchEvent(evt);
+                                } catch (e) {}
+                            }
+                        }
+                    };
+
+                    let virtViewDownAt = 0;
+                    let virtShortcutLatched = {};
+
+                    function checkComboShortcutMatch(btnIdx) {
+                        const cfg = window.__physControllerConfig;
+                        if (!cfg || !cfg.shortcutsEnabled || btnIdx === 8 || btnIdx < 0) return null;
+                        if (btnIdx === cfg.shortcutStatsBtn) return "TOGGLE_STATS";
+                        if (btnIdx === cfg.shortcutVpadBtn) return "TOGGLE_VPAD";
+                        if (btnIdx === cfg.shortcutRecBtn) return "TOGGLE_REC";
+                        return null;
+                    }
+
+                    window.__cpBtn = function(idx, pressed, analogVal) {
+                        if (idx >= 0 && idx < 17) {
+                            ensureGamepadConnectedEvent();
+                            const v = (typeof analogVal === 'number') ? Math.max(0, Math.min(1, analogVal)) : (pressed ? 1.0 : 0.0);
+                            const isPressed = pressed || v > 0.12;
+                            if (idx === 8) {
+                                if (isPressed && virtViewDownAt === 0) {
+                                    virtViewDownAt = Date.now();
+                                } else if (!isPressed) {
+                                    virtViewDownAt = 0;
+                                    virtShortcutLatched = {};
+                                }
+                            } else if (virtViewDownAt > 0 && (Date.now() - virtViewDownAt >= 400)) {
+                                const act = checkComboShortcutMatch(idx);
+                                if (act) {
+                                    if (isPressed) {
+                                        if (!virtShortcutLatched[idx]) {
+                                            virtShortcutLatched[idx] = true;
+                                            if (window.CloudPlayBridge && typeof window.CloudPlayBridge.onControllerShortcut === 'function') {
+                                                window.CloudPlayBridge.onControllerShortcut(act);
+                                            }
+                                        }
+                                        virtualGamepadState.buttons[idx].pressed = false;
+                                        virtualGamepadState.buttons[idx].touched = false;
+                                        virtualGamepadState.buttons[idx].value = 0;
+                                        virtualGamepadState.timestamp = nowTs();
+                                        return;
+                                    } else {
+                                        virtShortcutLatched[idx] = false;
+                                    }
+                                }
+                            }
+                            virtualGamepadState.buttons[idx].pressed = isPressed;
+                            virtualGamepadState.buttons[idx].touched = isPressed || v > 0.01;
+                            virtualGamepadState.buttons[idx].value = v;
+                            virtualGamepadState.timestamp = nowTs();
+                        }
+                    };
+
+                    window.__cpStick = function(xAxis, xVal, yAxis, yVal) {
+                        ensureGamepadConnectedEvent();
+                        if (xAxis >= 0 && xAxis < 4) virtualGamepadState.axes[xAxis] = Math.max(-1, Math.min(1, xVal));
+                        if (yAxis >= 0 && yAxis < 4) virtualGamepadState.axes[yAxis] = Math.max(-1, Math.min(1, yVal));
+                        virtualGamepadState.timestamp = nowTs();
+                    };
+
+                    let gyroInputState = { active: false, rightStick: true, x: 0, y: 0, holdLtOnly: false };
+
+                    window.__cpGyro = function(rightStick, xVal, yVal, holdLtOnly) {
+                        gyroInputState.active = true;
+                        gyroInputState.rightStick = !!rightStick;
+                        gyroInputState.x = Math.max(-1, Math.min(1, xVal || 0));
+                        gyroInputState.y = Math.max(-1, Math.min(1, yVal || 0));
+                        gyroInputState.holdLtOnly = !!holdLtOnly;
+                        if (Math.abs(gyroInputState.x) > 0.005 || Math.abs(gyroInputState.y) > 0.005) {
+                            ensureGamepadConnectedEvent();
+                        }
+                        virtualGamepadState.timestamp = nowTs();
+                    };
+
+                    window.__cpGyroClear = function() {
+                        gyroInputState.active = false;
+                        gyroInputState.x = 0;
+                        gyroInputState.y = 0;
+                        virtualGamepadState.timestamp = nowTs();
+                    };
+
+                    function mixGyroIntoAxesAndButtons(axesArr, buttonsArr) {
+                        if (!gyroInputState.active) return axesArr;
+                        if (gyroInputState.holdLtOnly) {
+                            const ltBtn = buttonsArr && buttonsArr[6];
+                            const ltPressed = !!(ltBtn && (ltBtn.pressed || (ltBtn.value || 0) > 0.15));
+                            if (!ltPressed) return axesArr;
+                        }
+                        const gx = gyroInputState.x || 0;
+                        const gy = gyroInputState.y || 0;
+                        if (Math.abs(gx) < 0.001 && Math.abs(gy) < 0.001) return axesArr;
+                        const out = [axesArr[0] || 0, axesArr[1] || 0, axesArr[2] || 0, axesArr[3] || 0];
+                        if (gyroInputState.rightStick) {
+                            out[2] = Math.max(-1, Math.min(1, out[2] + gx));
+                            out[3] = Math.max(-1, Math.min(1, out[3] + gy));
+                        } else {
+                            out[0] = Math.max(-1, Math.min(1, out[0] + gx));
+                            out[1] = Math.max(-1, Math.min(1, out[1] + gy));
+                        }
+                        return out;
+                    }
+
+                    window.__cpReleaseAll = function() {
+                        virtViewDownAt = 0;
+                        virtShortcutLatched = {};
+                        for (let i = 0; i < 4; i++) virtualGamepadState.axes[i] = 0;
+                        for (let b = 0; b < 17; b++) {
+                            virtualGamepadState.buttons[b].pressed = false;
+                            virtualGamepadState.buttons[b].touched = false;
+                            virtualGamepadState.buttons[b].value = 0;
+                        }
+                        virtualGamepadState.timestamp = nowTs();
+                    };
+
+                    window.addEventListener('virtual_gamepad_button', function(e) {
+                        if (e && e.detail) {
+                            window.__cpBtn(e.detail.index, e.detail.pressed, e.detail.value);
+                        }
+                    });
+
+                    window.addEventListener('virtual_gamepad_axis', function(e) {
+                        if (e && e.detail) {
+                            const axis = e.detail.axis;
+                            const val = e.detail.value;
+                            if (axis >= 0 && axis < 4) {
+                                ensureGamepadConnectedEvent();
+                                virtualGamepadState.axes[axis] = val;
+                                virtualGamepadState.timestamp = nowTs();
+                            }
+                        }
+                    });
+
+                    window.addEventListener('virtual_gamepad_axes_pair', function(e) {
+                        if (e && e.detail) {
+                            window.__cpStick(e.detail.xAxis, e.detail.xVal, e.detail.yAxis, e.detail.yVal);
+                        }
+                    });
+
+                    window.__lastRealUserInputAt = Date.now();
+                    window.__deviceThermalThrottled = false;
+                    window.__appInBackground = false;
+
+                    window.__setDeviceThermalThrottled = function(throttled) {
+                        window.__deviceThermalThrottled = !!throttled;
+                    };
+
+                    window.__setAppInBackground = function(inBg) {
+                        window.__appInBackground = !!inBg;
+                    };
+
+                    window.__touchGamepadTimestampNow = function() {
+                        const nowMs = Date.now();
+                        virtualGamepadState.timestamp = nowTs();
+                        window.__lastUserControlPulseAt = nowMs;
+                        window.__lastRealUserInputAt = nowMs;
+                    };
+
+                    window.addEventListener('pointerdown', function() {
+                        window.__lastRealUserInputAt = Date.now();
+                    }, { passive: true });
+
+                    // Anti-AFK Keep-Alive trigger
+                    if ($antiAfk) {
+                        setInterval(function() {
+                            if (location.href.indexOf('/play/launch/') !== -1 && (window.__virtualGamepadEnabled || virtualGamepadActive)) {
+                                virtualGamepadState.timestamp = nowTs();
+                            }
+                        }, 180000);
+                    }
+
+                    try {
+                        let physViewDownAt = 0;
+                        let physShortcutLatched = {};
+
+                        function applyPhysStickDeadzone(x, y, innerDz, outerDz) {
+                            const inn = (typeof innerDz === 'number') ? innerDz : 0.0;
+                            const out = (typeof outerDz === 'number') ? outerDz : 1.0;
+                            if (inn <= 0.001 && out >= 0.999) {
+                                return [x, y];
+                            }
+                            const mag = Math.hypot(x, y);
+                            if (mag <= inn || mag < 0.0001) {
+                                return [0, 0];
+                            }
+                            const effOuter = Math.max(inn + 0.05, out);
+                            const norm = Math.min(1, Math.max(0, (mag - inn) / (effOuter - inn)));
+                            const scale = norm / mag;
+                            return [
+                                Math.max(-1, Math.min(1, x * scale)),
+                                Math.max(-1, Math.min(1, y * scale))
+                            ];
+                        }
+
+                        const origGetGamepads = navigator.getGamepads ? navigator.getGamepads.bind(navigator) : null;
+
+                        function cloneVirtualGamepadSnapshot() {
+                            const srcBtns = virtualGamepadState.buttons;
+                            const btns = new Array(17);
+                            for (let i = 0; i < 17; i++) {
+                                const b = srcBtns[i];
+                                btns[i] = { pressed: !!b.pressed, touched: !!b.touched, value: b.value || 0 };
+                            }
+                            const srcAxes = virtualGamepadState.axes;
+                            const baseAxes = [srcAxes[0] || 0, srcAxes[1] || 0, srcAxes[2] || 0, srcAxes[3] || 0];
+                            return {
+                                id: virtualGamepadState.id,
+                                index: 0,
+                                connected: virtualGamepadState.connected,
+                                timestamp: virtualGamepadState.timestamp,
+                                mapping: "standard",
+                                axes: mixGyroIntoAxesAndButtons(baseAxes, btns),
+                                buttons: btns,
+                                vibrationActuator: virtualVibrationActuator
+                            };
+                        }
+
+                        navigator.getGamepads = function() {
+                            const real = origGetGamepads ? origGetGamepads() : null;
+                            const pads = [null, null, null, null];
+                            let physPad = null;
+                            if (real) {
+                                const len = Math.min(real.length || 0, 4);
+                                for (let i = 0; i < len; i++) {
+                                    const pad = real[i];
+                                    pads[i] = pad || null;
+                                    if (!physPad && pad && pad.connected) {
+                                        physPad = pad;
+                                    }
+                                }
+                            }
+                            window.__hasPhysicalGamepadConnected = !!physPad;
+                            const shouldExposeVirtual = ((!!window.__virtualGamepadEnabled || virtualGamepadActive || gyroInputState.active) && virtualGamepadState.connected);
+                            if (!physPad) {
+                                physViewDownAt = 0;
+                                if (shouldExposeVirtual) {
+                                    pads[0] = cloneVirtualGamepadSnapshot();
+                                }
+                                return pads;
+                            }
+
+                            const pCfg = window.__physControllerConfig || {};
+                            const bMap = pCfg.buttonMap || null;
+                            const remappedPhysButtons = new Array(17);
+                            for (let s = 0; s < 17; s++) {
+                                remappedPhysButtons[s] = { pressed: false, touched: false, value: 0 };
+                            }
+                            const rawBtns = physPad.buttons || [];
+                            for (let s = 0; s < 17; s++) {
+                                const sb = rawBtns[s];
+                                if (!sb) continue;
+                                let dst = s;
+                                if (bMap) {
+                                    const mapped = bMap[s];
+                                    if (typeof mapped === 'number' && mapped >= 0 && mapped < 17) {
+                                        dst = mapped;
+                                    }
+                                }
+                                const targetSlot = remappedPhysButtons[dst];
+                                if (sb.pressed) targetSlot.pressed = true;
+                                if (sb.touched) targetSlot.touched = true;
+                                const val = sb.value || 0;
+                                if (val > targetSlot.value) targetSlot.value = val;
+                            }
+
+                            // Non-blocking View (button 8) combo shortcut detection:
+                            const viewPressed = !!remappedPhysButtons[8].pressed;
+                            if (viewPressed) {
+                                if (physViewDownAt === 0) {
+                                    physViewDownAt = Date.now();
+                                } else if (pCfg.shortcutsEnabled && (Date.now() - physViewDownAt >= 400)) {
+                                    for (let b = 0; b < 17; b++) {
+                                        if (b === 8) continue;
+                                        const act = checkComboShortcutMatch(b);
+                                        if (act) {
+                                            const btnSlot = remappedPhysButtons[b];
+                                            if (btnSlot.pressed) {
+                                                if (!physShortcutLatched[b]) {
+                                                    physShortcutLatched[b] = true;
+                                                    if (window.CloudPlayBridge && typeof window.CloudPlayBridge.onControllerShortcut === 'function') {
+                                                        window.CloudPlayBridge.onControllerShortcut(act);
+                                                    }
+                                                }
+                                                btnSlot.pressed = false;
+                                                btnSlot.touched = false;
+                                                btnSlot.value = 0;
+                                            } else {
+                                                physShortcutLatched[b] = false;
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (physViewDownAt !== 0) {
+                                physViewDownAt = 0;
+                                for (const k in physShortcutLatched) {
+                                    physShortcutLatched[k] = false;
+                                }
+                            }
+
+                            const pAxes = physPad.axes;
+                            const rawAx0 = (pAxes && typeof pAxes[0] === 'number') ? pAxes[0] : 0;
+                            const rawAx1 = (pAxes && typeof pAxes[1] === 'number') ? pAxes[1] : 0;
+                            const rawAx2 = (pAxes && typeof pAxes[2] === 'number') ? pAxes[2] : 0;
+                            const rawAx3 = (pAxes && typeof pAxes[3] === 'number') ? pAxes[3] : 0;
+                            const leftPair = applyPhysStickDeadzone(rawAx0, rawAx1, pCfg.leftInner, pCfg.leftOuter);
+                            const rightPair = applyPhysStickDeadzone(rawAx2, rawAx3, pCfg.rightInner, pCfg.rightOuter);
+                            const physProcessedAxes = [leftPair[0], leftPair[1], rightPair[0], rightPair[1]];
+
+                            const padIdx = physPad.index || 0;
+                            let outAxes = physProcessedAxes;
+                            let outButtons = remappedPhysButtons;
+                            let outTimestamp = physPad.timestamp || nowTs();
+
+                            if (shouldExposeVirtual) {
+                                const vBtns = virtualGamepadState.buttons;
+                                const mergedButtons = new Array(17);
+                                for (let b = 0; b < 17; b++) {
+                                    const vb = vBtns[b];
+                                    const pb = remappedPhysButtons[b];
+                                    const vv = vb.value || 0;
+                                    const pv = pb.value || 0;
+                                    mergedButtons[b] = {
+                                        pressed: !!(vb.pressed || pb.pressed),
+                                        touched: !!(vb.touched || pb.touched),
+                                        value: vv >= pv ? vv : pv
+                                    };
+                                }
+                                const vAxes = virtualGamepadState.axes;
+                                const mergedAxes = [0, 0, 0, 0];
+                                for (let a = 0; a < 4; a++) {
+                                    const va = vAxes[a] || 0;
+                                    const pa = physProcessedAxes[a] || 0;
+                                    mergedAxes[a] = Math.abs(va) >= Math.abs(pa) ? va : pa;
+                                }
+                                outTimestamp = Math.max(physPad.timestamp || 0, virtualGamepadState.timestamp);
+                                outAxes = mergedAxes;
+                                outButtons = mergedButtons;
+                            }
+                            outAxes = mixGyroIntoAxesAndButtons(outAxes, outButtons);
+
+                            const physVib = physPad.vibrationActuator;
+                            const combinedVibActuator = (shouldExposeVirtual && physVib && typeof physVib.playEffect === 'function') ? {
+                                type: physVib.type || "dual-rumble",
+                                playEffect: function(type, params) {
+                                    try { virtualVibrationActuator.playEffect(type, params); } catch (e) {}
+                                    try { return physVib.playEffect(type, params); } catch (e) { return Promise.resolve("complete"); }
+                                },
+                                reset: function() {
+                                    try { virtualVibrationActuator.reset(); } catch (e) {}
+                                    try { if (typeof physVib.reset === 'function') return physVib.reset(); } catch (e) {}
+                                    return Promise.resolve("complete");
+                                }
+                            } : (physVib || virtualVibrationActuator);
+
+                            const mergedPadObj = {
+                                id: physPad.id || virtualGamepadState.id,
+                                index: padIdx,
+                                connected: true,
+                                timestamp: outTimestamp,
+                                mapping: physPad.mapping || "standard",
+                                axes: outAxes,
+                                buttons: outButtons,
+                                vibrationActuator: combinedVibActuator,
+                                hapticActuators: physPad.hapticActuators
+                            };
+                            pads[padIdx] = mergedPadObj;
+                            if (padIdx !== 0 && !pads[0]) {
+                                pads[0] = Object.assign({}, mergedPadObj, { index: 0 });
+                            }
+                            return pads;
+                        };
+                    } catch(e) {}
+
+                    // ==========================================
+                    // 7. Dynamic Clarity Boost Ultra Controller (Zero-DOM adoptedStyleSheets to prevent React #418 Hydration mismatch)
+                    // ==========================================
+                    window.__cpAdoptedSheets = window.__cpAdoptedSheets || Object.create(null);
+                    window.__cpPendingCss = window.__cpPendingCss || Object.create(null);
+
+                    window.__cpSetDynamicCss = function(key, cssText) {
+                        try {
+                            const nextCss = (cssText || '').trim();
+                            if (!nextCss && !window.__cpAdoptedSheets[key] && !window.__cpPendingCss[key]) {
+                                return;
+                            }
+                            window.__cpPendingCss[key] = nextCss;
+                            if (typeof CSSStyleSheet !== 'undefined' && document && Array.isArray(document.adoptedStyleSheets)) {
+                                let entry = window.__cpAdoptedSheets[key];
+                                if (!entry) {
+                                    if (!nextCss) return;
+                                    const sheet = new CSSStyleSheet();
+                                    entry = { sheet: sheet, lastCss: null };
+                                    window.__cpAdoptedSheets[key] = entry;
+                                    if (document.adoptedStyleSheets.indexOf(sheet) === -1) {
+                                        document.adoptedStyleSheets = document.adoptedStyleSheets.concat([sheet]);
+                                    }
+                                }
+                                if (entry.lastCss !== nextCss && typeof entry.sheet.replaceSync === 'function') {
+                                    entry.sheet.replaceSync(nextCss);
+                                    entry.lastCss = nextCss;
+                                }
+                                return;
+                            }
+                        } catch (e) {}
+                    };
+
+                    document.addEventListener('DOMContentLoaded', function() {
+                        try {
+                            const pending = window.__cpPendingCss || {};
+                            for (const k in pending) {
+                                if (pending[k]) window.__cpSetDynamicCss(k, pending[k]);
+                            }
+                        } catch (e) {}
+                    }, { once: true });
+
+                    let lastAppliedClarityCss = '';
+                    function getPresetCss(preset) {
+                        switch(preset) {
+                            case 'ULTRA_SHARP':
+                                return 'filter: contrast(1.12) saturate(1.14) brightness(1.02) !important; image-rendering: -webkit-optimize-contrast !important; backface-visibility: hidden;';
+                            case 'OLED_PUNCH':
+                                return 'filter: contrast(1.16) saturate(1.20) !important; backface-visibility: hidden;';
+                            case 'OFF':
+                                return '';
+                            case 'BALANCED':
+                            default:
+                                return 'filter: contrast(1.06) saturate(1.08) !important; image-rendering: -webkit-optimize-contrast !important; backface-visibility: hidden;';
+                        }
+                    }
+
+                    window.__currentClarityPreset = "$clarityPreset";
+                    window.__setClarityPreset = function(preset) {
+                        try {
+                            if (preset && preset !== 'OFF') {
+                                window.__currentClarityPreset = preset;
+                            } else if (preset === 'OFF') {
+                                window.__clarityBoostActive = false;
+                            }
+                            const gt = window.__graphicsTuning || {};
+                            const isLowEndOrThermal = !!(gt.lowEndDeviceMode || window.__deviceThermalThrottled || (window.__networkProfile && window.__networkProfile.lowEndDeviceMode));
+                            // Khi bật Chế độ máy yếu hoặc máy đang quá nhiệt, tự động giữ <video> nguyên bản (không gắn CSS filter)
+                            // để Android SurfaceFlinger dùng Hardware Overlay zero-copy trực tiếp khi không quay video.
+                            const css = isLowEndOrThermal ? '' : getPresetCss(preset);
+                            const nextBlock = css ? (`
+                                video#stream-video, video[data-testid="stream-video"], #segmented-video video, canvas#__cp_record_mirror_canvas {
+                                    ` + css + `
+                                }
+                            `) : '';
+                            if (nextBlock !== lastAppliedClarityCss) {
+                                lastAppliedClarityCss = nextBlock;
+                                window.__cpSetDynamicCss('clarity-boost', nextBlock);
+                            }
+                        } catch (e) {}
+                    };
+
+                    window.__toggleClarityBoost = function(active) {
+                        window.__clarityBoostActive = !!active;
+                        if (active) {
+                            window.__highDecodeStreakForClarity = 0;
+                            const targetPreset = (window.__currentClarityPreset && window.__currentClarityPreset !== 'OFF')
+                                ? window.__currentClarityPreset
+                                : "$clarityPreset";
+                            window.__setClarityPreset(targetPreset === 'OFF' ? 'BALANCED' : targetPreset);
+                        } else {
+                            window.__setClarityPreset("OFF");
+                        }
+                    };
+
+                    // ==========================================
+                    // 7B. Graphics Render Scale, Color Filter & Direct Stream Recorder
+                    // ==========================================
+                    let lastAppliedVideoAspectCss = '';
+                    let lastAppliedGpuCss = '';
+
+                    window.__applyVideoAspectAndColorCss = function() {
+                        try {
+                            const gt = window.__graphicsTuning || {};
+                            const isLowEnd = !!(gt.lowEndDeviceMode || (window.__networkProfile && window.__networkProfile.lowEndDeviceMode));
+                            const vc = window.__videoDisplayConfig || {};
+                            const contrast = (typeof vc.contrast === 'number') ? (vc.contrast / 100.0) : 1.00;
+                            const saturation = (typeof vc.saturation === 'number') ? (vc.saturation / 100.0) : 1.00;
+                            const brightness = (typeof vc.brightness === 'number') ? (vc.brightness / 100.0) : 1.00;
+
+                            const isDefaultColor = Math.abs(contrast - 1.00) < 0.015 &&
+                                Math.abs(saturation - 1.00) < 0.015 &&
+                                Math.abs(brightness - 1.00) < 0.015;
+
+                            // Preserve Android zero-copy SurfaceControl Hardware Overlay by keeping <video> free of CSS filters by default or in Low-End mode
+                            if (isDefaultColor || isLowEnd) {
+                                if (lastAppliedVideoAspectCss !== '') {
+                                    lastAppliedVideoAspectCss = '';
+                                    window.__cpSetDynamicCss('video-color', '');
+                                }
+                                return;
+                            }
+
+                            const nextCss = `
+                                video#stream-video, video[data-testid="stream-video"], #segmented-video video, canvas#__cp_record_mirror_canvas {
+                                    filter: contrast(` + contrast.toFixed(2) + `) saturate(` + saturation.toFixed(2) + `) brightness(` + brightness.toFixed(2) + `) !important;
+                                }
+                            `;
+                            if (nextCss !== lastAppliedVideoAspectCss) {
+                                lastAppliedVideoAspectCss = nextCss;
+                                window.__cpSetDynamicCss('video-color', nextCss);
+                            }
+                        } catch (e) {}
+                    };
+
+                    window.__updateVideoDisplayConfig = function(conf) {
+                        if (!conf) return;
+                        window.__videoDisplayConfig = Object.assign(window.__videoDisplayConfig || {}, conf);
+                        window.__applyVideoAspectAndColorCss();
+                    };
+
+                    window.__applyGpuAndRenderScaleCss = function() {
+                        try {
+                            const gt = window.__graphicsTuning || {};
+                            const isLowEnd = !!(gt.lowEndDeviceMode || (window.__networkProfile && window.__networkProfile.lowEndDeviceMode));
+                            const reduceGpu = !!(gt.gpuLoadReduction || isLowEnd);
+
+                            let cssRules = '';
+                            if (reduceGpu) {
+                                // Chỉ tắt hiệu ứng làm mờ nặng (backdrop-filter / box-shadow) để nhẹ GPU;
+                                // Dùng adoptedStyleSheets để không chèn thẻ <style> vào <head> gây lỗi React #418 trên play.xbox.com
+                                cssRules += `
+                                    [class*="background" i], [class*="ambient" i], [class*="blur" i], [class*="shimmer" i] {
+                                        backdrop-filter: none !important;
+                                        -webkit-backdrop-filter: none !important;
+                                        box-shadow: none !important;
+                                    }
+                                `;
+                            }
+                            if (cssRules !== lastAppliedGpuCss) {
+                                lastAppliedGpuCss = cssRules;
+                                window.__cpSetDynamicCss('gpu-load', cssRules);
+                            }
+                        } catch (e) {}
+                    };
+
+                    window.__updateGraphicsTuning = function(conf) {
+                        if (!conf) return;
+                        window.__graphicsTuning = Object.assign(window.__graphicsTuning || {}, conf);
+                        window.__applyGpuAndRenderScaleCss();
+                        window.__applyVideoAspectAndColorCss();
+                        if (typeof window.__setClarityPreset === 'function') {
+                            window.__setClarityPreset(window.__clarityBoostActive ? (window.__currentClarityPreset || 'BALANCED') : 'OFF');
+                        }
+                    };
+
+                    let recordMirrorCanvas = null;
+                    let recordMirrorCtx = null;
+                    let recordMirrorRafId = null;
+                    let lastMirrorRectKey = '';
+
+                    function stopRecordingCanvasMirror() {
+                        if (recordMirrorRafId !== null) {
+                            cancelAnimationFrame(recordMirrorRafId);
+                            recordMirrorRafId = null;
+                        }
+                        if (recordMirrorCanvas) {
+                            try { recordMirrorCanvas.remove(); } catch (e) {}
+                            recordMirrorCanvas = null;
+                        }
+                        recordMirrorCtx = null;
+                        lastMirrorRectKey = '';
+                    }
+
+                    function startRecordingCanvasMirror() {
+                        stopRecordingCanvasMirror();
+
+                        function findActiveStreamVideo() {
+                            const candidates = document.querySelectorAll('video#stream-video, video[data-testid="stream-video"], #segmented-video video, #game-stream video, video');
+                            let best = null;
+                            let bestArea = 0;
+                            for (let i = 0; i < candidates.length; i++) {
+                                const v = candidates[i];
+                                if (!v) continue;
+                                const r = v.getBoundingClientRect ? v.getBoundingClientRect() : null;
+                                const area = r ? (r.width * r.height) : 0;
+                                if ((v.videoWidth > 0 && v.videoHeight > 0) || area > bestArea) {
+                                    best = v;
+                                    bestArea = area;
+                                    if (v.videoWidth > 0 && v.videoHeight > 0 && area > 10000) break;
+                                }
+                            }
+                            return best;
+                        }
+
+                        function renderMirrorTick() {
+                            if (!window.__isRecordingPerformanceMode) {
+                                stopRecordingCanvasMirror();
+                                return;
+                            }
+                            try {
+                                const video = findActiveStreamVideo();
+                                if (video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+                                    if (!recordMirrorCanvas || !recordMirrorCanvas.isConnected) {
+                                        const c = document.createElement('canvas');
+                                        c.id = '__cp_record_mirror_canvas';
+                                        c.style.cssText = 'position:fixed !important;left:0px;top:0px;width:100vw;height:100vh;pointer-events:none !important;user-select:none !important;opacity:0.998 !important;background:transparent !important;transform:translateZ(0) !important;';
+                                        const parent = video.parentElement || document.body || document.documentElement;
+                                        if (parent) {
+                                            if (video.nextSibling) {
+                                                parent.insertBefore(c, video.nextSibling);
+                                            } else {
+                                                parent.appendChild(c);
+                                            }
+                                        }
+                                        recordMirrorCanvas = c;
+                                        recordMirrorCtx = c.getContext('2d', { alpha: false, desynchronized: false }) || c.getContext('2d');
+                                        lastMirrorRectKey = '';
+                                    }
+
+                                    const vw = video.videoWidth;
+                                    const vh = video.videoHeight;
+                                    const maxH = 720;
+                                    const scale = vh > maxH ? (maxH / vh) : 1.0;
+                                    const targetW = Math.max(320, Math.round((vw * scale) / 2) * 2);
+                                    const targetH = Math.max(180, Math.round((vh * scale) / 2) * 2);
+                                    if (recordMirrorCanvas.width !== targetW || recordMirrorCanvas.height !== targetH) {
+                                        recordMirrorCanvas.width = targetW;
+                                        recordMirrorCanvas.height = targetH;
+                                    }
+
+                                    const rect = video.getBoundingClientRect ? video.getBoundingClientRect() : null;
+                                    if (rect && rect.width > 32 && rect.height > 32) {
+                                        const cs = window.getComputedStyle ? window.getComputedStyle(video) : null;
+                                        const objFit = (cs && cs.objectFit) ? cs.objectFit : 'contain';
+                                        const zIdx = (cs && cs.zIndex && cs.zIndex !== 'auto') ? cs.zIndex : 'auto';
+                                        let drawL = rect.left;
+                                        let drawT = rect.top;
+                                        let drawW = rect.width;
+                                        let drawH = rect.height;
+                                        if (objFit === 'contain' && vw > 0 && vh > 0) {
+                                            const videoAspect = vw / vh;
+                                            const boxAspect = rect.width / rect.height;
+                                            if (boxAspect > videoAspect) {
+                                                drawH = rect.height;
+                                                drawW = rect.height * videoAspect;
+                                                drawL = rect.left + (rect.width - drawW) * 0.5;
+                                            } else if (boxAspect < videoAspect) {
+                                                drawW = rect.width;
+                                                drawH = rect.width / videoAspect;
+                                                drawT = rect.top + (rect.height - drawH) * 0.5;
+                                            }
+                                        }
+                                        const rl = Math.round(drawL);
+                                        const rt = Math.round(drawT);
+                                        const rw = Math.round(drawW);
+                                        const rh = Math.round(drawH);
+                                        const nextKey = rl + ',' + rt + ',' + rw + ',' + rh + ',' + objFit + ',' + zIdx;
+                                        if (nextKey !== lastMirrorRectKey) {
+                                            lastMirrorRectKey = nextKey;
+                                            recordMirrorCanvas.style.left = rl + 'px';
+                                            recordMirrorCanvas.style.top = rt + 'px';
+                                            recordMirrorCanvas.style.width = rw + 'px';
+                                            recordMirrorCanvas.style.height = rh + 'px';
+                                            recordMirrorCanvas.style.zIndex = zIdx;
+                                        }
+                                    }
+
+                                    if (recordMirrorCtx) {
+                                        recordMirrorCtx.drawImage(video, 0, 0, recordMirrorCanvas.width, recordMirrorCanvas.height);
+                                    }
+                                }
+                            } catch (e) {}
+
+                            if (window.__isRecordingPerformanceMode) {
+                                recordMirrorRafId = requestAnimationFrame(renderMirrorTick);
+                            }
+                        }
+
+                        recordMirrorRafId = requestAnimationFrame(renderMirrorTick);
+                    }
+
+                    window.__setRecordingPerformanceMode = function(active) {
+                        window.__isRecordingPerformanceMode = !!active;
+                        if (active) {
+                            if (window.__pauseTranslator) window.__pauseTranslator();
+                            if (document.documentElement) {
+                                document.documentElement.style.touchAction = 'none';
+                                document.documentElement.style.userSelect = 'none';
+                                document.documentElement.style.webkitUserSelect = 'none';
+                            }
+                            // Ngăn Chromium tách <video> sang SurfaceControl Hardware Underlay (gây lỗ đen VideoHoleDrawQuad khi PixelCopy chụp Window)
+                            window.__cpSetDynamicCss('recording-compositor-fix', `
+                                video#stream-video, video[data-testid="stream-video"], #segmented-video video, #game-stream video, video {
+                                    border-radius: 1.5px !important;
+                                    opacity: 0.998 !important;
+                                }
+                            `);
+                            startRecordingCanvasMirror();
+                        } else {
+                            stopRecordingCanvasMirror();
+                            window.__cpSetDynamicCss('recording-compositor-fix', '');
+                            const isLowEnd = !!(window.__networkProfile && window.__networkProfile.lowEndDeviceMode);
+                            if (!isLowEnd && location.href.indexOf('/launch/') === -1 && window.__resumeTranslator) {
+                                window.__resumeTranslator();
+                            }
+                        }
+                    };
+
+                    let activeMediaRecorder = null;
+                    let activeClonedTracks = [];
+                    let activeAudioTapCtx = null;
+                    let activeAudioTapSource = null;
+                    let activeAudioTapProcessor = null;
+                    let activeAudioTapGain = null;
+                    let activeAudioTapClone = null;
+                    let activeAudioTapHelperEl = null;
+                    let activeAudioTapRetryTimer = null;
+
+                    // Lazily create shared 48kHz AudioContext ONLY when screen recording is actually started
+                    // (WebView has mediaPlaybackRequiresUserGesture = false so no touchstart listener is needed)
+                    function ensureUnlockedSharedAudioContext() {
+                        try {
+                            const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+                            if (!AudioCtxClass) return null;
+                            if (!window.__sharedRecordAudioCtx || window.__sharedRecordAudioCtx.state === 'closed') {
+                                window.__sharedRecordAudioCtx = new AudioCtxClass({ sampleRate: 48000 });
+                            }
+                            if (window.__sharedRecordAudioCtx.state === 'suspended' && typeof window.__sharedRecordAudioCtx.resume === 'function') {
+                                window.__sharedRecordAudioCtx.resume();
+                            }
+                            return window.__sharedRecordAudioCtx;
+                        } catch (e) {
+                            return null;
+                        }
+                    }
+
+                    // Lightweight reference capture on HTMLMediaElement.play only (no AudioNode.connect hook overhead)
+                    try {
+                        if (typeof HTMLMediaElement !== 'undefined' && HTMLMediaElement.prototype && !HTMLMediaElement.prototype.__audioHooked) {
+                            HTMLMediaElement.prototype.__audioHooked = true;
+                            const origMediaPlay = HTMLMediaElement.prototype.play;
+                            HTMLMediaElement.prototype.play = function(...args) {
+                                try {
+                                    if (this.srcObject && typeof this.srcObject.getAudioTracks === 'function') {
+                                        const at = this.srcObject.getAudioTracks();
+                                        if (at && at.length > 0 && at[0].readyState === 'live') {
+                                            window.__capturedGameAudioTrack = at[0];
+                                            window.__capturedAudioElement = this;
+                                        }
+                                    } else if (this.tagName && this.tagName.toLowerCase() === 'audio') {
+                                        window.__capturedAudioElement = this;
+                                    }
+                                } catch (e) {}
+                                return origMediaPlay.apply(this, args);
+                            };
+                        }
+                    } catch (e) {}
+
+                    window.__findLiveGameAudioTrack = function() {
+                        try {
+                            // 1. Check direct captured track from ontrack / play / AudioContext
+                            if (window.__capturedGameAudioTrack && window.__capturedGameAudioTrack.readyState === 'live') {
+                                return window.__capturedGameAudioTrack;
+                            }
+                            // 2. Check activeWebRtcTracks dictionary
+                            if (window.__activeWebRtcTracks && window.__activeWebRtcTracks.audio && window.__activeWebRtcTracks.audio.readyState === 'live') {
+                                window.__capturedGameAudioTrack = window.__activeWebRtcTracks.audio;
+                                return window.__capturedGameAudioTrack;
+                            }
+                            // 3. Scan ALL RTCPeerConnection instances (not just the latest one)
+                            const pcs = window.__allPeerConnections || (window.__activePeerConnection ? [window.__activePeerConnection] : []);
+                            for (let p = pcs.length - 1; p >= 0; p--) {
+                                const pc = pcs[p];
+                                if (pc && typeof pc.getReceivers === 'function') {
+                                    const recs = pc.getReceivers();
+                                    for (let r = 0; r < recs.length; r++) {
+                                        const t = recs[r] && recs[r].track;
+                                        if (t && t.kind === 'audio' && t.readyState === 'live') {
+                                            window.__capturedGameAudioTrack = t;
+                                            return t;
+                                        }
+                                    }
+                                }
+                            }
+                            // 4. Check captured detached <audio> element
+                            if (window.__capturedAudioElement) {
+                                const el = window.__capturedAudioElement;
+                                if (el.srcObject && typeof el.srcObject.getAudioTracks === 'function') {
+                                    const at = el.srcObject.getAudioTracks();
+                                    if (at && at.length > 0 && at[0].readyState === 'live') {
+                                        window.__capturedGameAudioTrack = at[0];
+                                        return at[0];
+                                    }
+                                }
+                                const capFn = el.captureStream || el.mozCaptureStream;
+                                if (typeof capFn === 'function') {
+                                    const cs = capFn.call(el);
+                                    const at = cs && cs.getAudioTracks ? cs.getAudioTracks() : [];
+                                    if (at && at.length > 0 && at[0].readyState === 'live') {
+                                        window.__capturedGameAudioTrack = at[0];
+                                        return at[0];
+                                    }
+                                }
+                            }
+                            // 5. Check all DOM <audio> and <video> elements
+                            const mediaEls = document.querySelectorAll('audio, video');
+                            for (let m = 0; m < mediaEls.length; m++) {
+                                const mEl = mediaEls[m];
+                                if (mEl.srcObject && typeof mEl.srcObject.getAudioTracks === 'function') {
+                                    const at = mEl.srcObject.getAudioTracks();
+                                    if (at && at.length > 0 && at[0].readyState === 'live') {
+                                        window.__capturedGameAudioTrack = at[0];
+                                        return at[0];
+                                    }
+                                }
+                            }
+                        } catch (e) {}
+                        return null;
+                    };
+
+                    window.__stopLiveAudioPcmTap = function() {
+                        if (activeAudioTapRetryTimer) {
+                            clearInterval(activeAudioTapRetryTimer);
+                            activeAudioTapRetryTimer = null;
+                        }
+                        try {
+                            if (activeAudioTapProcessor) {
+                                activeAudioTapProcessor.onaudioprocess = null;
+                                activeAudioTapProcessor.disconnect();
+                            }
+                        } catch (e) {}
+                        try {
+                            if (activeAudioTapSource && !activeAudioTapSource.__isExistingGameNode) {
+                                activeAudioTapSource.disconnect();
+                            }
+                        } catch (e) {}
+                        try {
+                            if (activeAudioTapGain) activeAudioTapGain.disconnect();
+                        } catch (e) {}
+                        try {
+                            if (activeAudioTapHelperEl) {
+                                activeAudioTapHelperEl.pause();
+                                activeAudioTapHelperEl.srcObject = null;
+                                activeAudioTapHelperEl.remove();
+                            }
+                        } catch (e) {}
+                        try {
+                            if (activeAudioTapClone) activeAudioTapClone.stop();
+                        } catch (e) {}
+                        activeAudioTapProcessor = null;
+                        activeAudioTapSource = null;
+                        activeAudioTapGain = null;
+                        activeAudioTapClone = null;
+                        activeAudioTapHelperEl = null;
+                        activeAudioTapCtx = null;
+                    };
+
+                    window.__startLiveAudioPcmTap = function() {
+                        window.__stopLiveAudioPcmTap();
+                        function buildPcmProcessor(ctx) {
+                            const processor = ctx.createScriptProcessor(4096, 2, 2);
+                            processor.__isCloudPlayTapNode = true;
+                            const zeroGain = ctx.createGain();
+                            zeroGain.__isCloudPlayTapNode = true;
+                            zeroGain.gain.value = 0.0;
+                            const reusablePcm16 = new Int16Array(8192);
+                            const reusableBytes = new Uint8Array(reusablePcm16.buffer);
+
+                            processor.onaudioprocess = function(audioEvt) {
+                                try {
+                                    if (!window.CloudPlayBridge || !window.CloudPlayBridge.onScreenRecordAudioPcm) return;
+                                    const inBuf = audioEvt.inputBuffer;
+                                    const chCount = inBuf.numberOfChannels || 1;
+                                    const left = inBuf.getChannelData(0);
+                                    const right = chCount > 1 ? inBuf.getChannelData(1) : left;
+                                    const frames = Math.min(left.length, 4096);
+                                    let hasSignal = false;
+                                    for (let i = 0, j = 0; i < frames; i++) {
+                                        let sL = left[i];
+                                        let sR = right[i];
+                                        if (!hasSignal && (sL > 0.0002 || sL < -0.0002 || sR > 0.0002 || sR < -0.0002)) {
+                                            hasSignal = true;
+                                        }
+                                        sL = sL < -1.0 ? -1.0 : (sL > 1.0 ? 1.0 : sL);
+                                        sR = sR < -1.0 ? -1.0 : (sR > 1.0 ? 1.0 : sR);
+                                        reusablePcm16[j++] = sL < 0 ? (sL * 0x8000) : (sL * 0x7FFF);
+                                        reusablePcm16[j++] = sR < 0 ? (sR * 0x8000) : (sR * 0x7FFF);
+                                    }
+                                    // Skip bridge IPC on pure silence; native AAC encoder automatically fills continuous silent frames
+                                    if (!hasSignal) return;
+                                    const byteLen = frames * 4;
+                                    let binary = '';
+                                    const chunkLen = 8192;
+                                    for (let offset = 0; offset < byteLen; offset += chunkLen) {
+                                        const slice = reusableBytes.subarray(offset, Math.min(offset + chunkLen, byteLen));
+                                        binary += String.fromCharCode.apply(null, slice);
+                                    }
+                                    const b64 = window.btoa(binary);
+                                    window.CloudPlayBridge.onScreenRecordAudioPcm(b64, ctx.sampleRate || 48000, 2);
+                                } catch (pcmErr) {}
+                            };
+                            processor.connect(zeroGain);
+                            zeroGain.connect(ctx.destination);
+                            return { processor: processor, zeroGain: zeroGain };
+                        }
+
+                        function tryAttachAudioTap() {
+                            if (activeAudioTapProcessor) return true;
+                            // Path A: Tap xCloud's own running WebAudio destination node directly if present
+                            if (window.__lastConnectedGameAudioNode && window.__lastConnectedGameAudioCtx && window.__lastConnectedGameAudioCtx.state !== 'closed') {
+                                try {
+                                    const gameCtx = window.__lastConnectedGameAudioCtx;
+                                    if (gameCtx.state === 'suspended' && typeof gameCtx.resume === 'function') gameCtx.resume();
+                                    const nodes = buildPcmProcessor(gameCtx);
+                                    window.__lastConnectedGameAudioNode.__isExistingGameNode = true;
+                                    window.__lastConnectedGameAudioNode.connect(nodes.processor);
+                                    activeAudioTapCtx = gameCtx;
+                                    activeAudioTapSource = window.__lastConnectedGameAudioNode;
+                                    activeAudioTapProcessor = nodes.processor;
+                                    activeAudioTapGain = nodes.zeroGain;
+                                    return true;
+                                } catch (e) {}
+                            }
+
+                            // Path B: Tap WebRTC live audio MediaStreamTrack + helper <audio> pump (fixes Chromium crbug.com/933677)
+                            const liveTrack = window.__findLiveGameAudioTrack();
+                            if (!liveTrack) return false;
+                            const ctx = ensureUnlockedSharedAudioContext();
+                            if (!ctx) return false;
+                            try {
+                                if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+                                    ctx.resume();
+                                }
+                                const cloned = (typeof liveTrack.clone === 'function') ? liveTrack.clone() : liveTrack;
+                                if (cloned !== liveTrack) activeAudioTapClone = cloned;
+                                const mediaStream = new MediaStream([cloned]);
+
+                                // Chromium WebRTC WebAudio workaround (crbug.com/933677):
+                                // Attach mediaStream to a playing near-zero-volume <audio> element so Chromium decodes & pumps PCM samples
+                                try {
+                                    const helperAudio = document.createElement('audio');
+                                    helperAudio.srcObject = mediaStream;
+                                    helperAudio.muted = false;
+                                    helperAudio.volume = 0.001;
+                                    helperAudio.autoplay = true;
+                                    helperAudio.playsInline = true;
+                                    helperAudio.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;';
+                                    if (document.body) document.body.appendChild(helperAudio);
+                                    const playPromise = helperAudio.play();
+                                    if (playPromise && typeof playPromise.catch === 'function') {
+                                        playPromise.catch(function() {});
+                                    }
+                                    activeAudioTapHelperEl = helperAudio;
+                                } catch (helperErr) {}
+
+                                const source = ctx.createMediaStreamSource(mediaStream);
+                                const nodes = buildPcmProcessor(ctx);
+                                source.connect(nodes.processor);
+
+                                activeAudioTapCtx = ctx;
+                                activeAudioTapSource = source;
+                                activeAudioTapProcessor = nodes.processor;
+                                activeAudioTapGain = nodes.zeroGain;
+                                return true;
+                            } catch (e) {
+                                return false;
+                            }
+                        }
+
+                        if (!tryAttachAudioTap()) {
+                            activeAudioTapRetryTimer = setInterval(function() {
+                                if (tryAttachAudioTap() && activeAudioTapRetryTimer) {
+                                    clearInterval(activeAudioTapRetryTimer);
+                                    activeAudioTapRetryTimer = null;
+                                }
+                            }, 800);
+                        }
+                    };
+
+                    function cleanupClonedRecordingTracks() {
+                        try {
+                            if (activeClonedTracks && activeClonedTracks.length > 0) {
+                                for (let i = 0; i < activeClonedTracks.length; i++) {
+                                    try { activeClonedTracks[i].stop(); } catch (e) {}
+                                }
+                            }
+                        } catch (e) {}
+                        activeClonedTracks = [];
+                    }
+
+                    window.__startZeroLagStreamRecorder = function(width, height, fps, bitrateBps, captureEngine) {
+                        try {
+                            // Always start the WebAudio stereo PCM tap so native AAC audio encoding captures game sound in ALL modes
+                            window.__startLiveAudioPcmTap();
+
+                            if (captureEngine === 'HARDWARE_SCREEN') {
+                                return "FALLBACK_NATIVE";
+                            }
+                            if (typeof MediaRecorder === 'undefined') return "FALLBACK_NATIVE";
+
+                            if (activeMediaRecorder && activeMediaRecorder.state !== 'inactive') {
+                                try { activeMediaRecorder.stop(); } catch (e) {}
+                            }
+                            cleanupClonedRecordingTracks();
+
+                            const video = document.querySelector('video#stream-video, video[data-testid="stream-video"], #segmented-video video, video');
+                            let rawSourceStream = null;
+                            if (video && video.srcObject && typeof video.srcObject.getVideoTracks === 'function' && video.srcObject.getVideoTracks().length > 0) {
+                                rawSourceStream = video.srcObject;
+                            } else if (window.__activeWebRtcMediaStream && typeof window.__activeWebRtcMediaStream.getVideoTracks === 'function' && window.__activeWebRtcMediaStream.getVideoTracks().length > 0) {
+                                rawSourceStream = window.__activeWebRtcMediaStream;
+                            } else if (window.__activeWebRtcTracks && window.__activeWebRtcTracks.video) {
+                                const tracksArr = [window.__activeWebRtcTracks.video];
+                                if (window.__activeWebRtcTracks.audio) tracksArr.push(window.__activeWebRtcTracks.audio);
+                                rawSourceStream = new MediaStream(tracksArr);
+                            } else if (video && typeof video.captureStream === 'function') {
+                                rawSourceStream = video.captureStream(fps || 30);
+                            } else if (video && typeof video.mozCaptureStream === 'function') {
+                                rawSourceStream = video.mozCaptureStream(fps || 30);
+                            }
+
+                            if (!rawSourceStream) return "FALLBACK_NATIVE";
+
+                            // Clone tracks so recording reads passively from WebRTC receiver buffer with 0% side effect on live <video> playback
+                            const vTracks = rawSourceStream.getVideoTracks ? rawSourceStream.getVideoTracks() : [];
+                            if (!vTracks || vTracks.length === 0) return "FALLBACK_NATIVE";
+                            const clonedVideoTrack = (typeof vTracks[0].clone === 'function') ? vTracks[0].clone() : vTracks[0];
+                            if (clonedVideoTrack !== vTracks[0]) activeClonedTracks.push(clonedVideoTrack);
+
+                            // Comprehensive Live Game Audio Track Finder
+                            let rawAudioTrack = window.__findLiveGameAudioTrack();
+                            if (!rawAudioTrack && rawSourceStream.getAudioTracks) {
+                                const aTracks = rawSourceStream.getAudioTracks();
+                                if (aTracks && aTracks.length > 0 && aTracks[0].readyState === 'live') {
+                                    rawAudioTrack = aTracks[0];
+                                }
+                            }
+
+                            let clonedAudioTrack = null;
+                            if (rawAudioTrack) {
+                                try {
+                                    clonedAudioTrack = (typeof rawAudioTrack.clone === 'function') ? rawAudioTrack.clone() : rawAudioTrack;
+                                    if (clonedAudioTrack !== rawAudioTrack) activeClonedTracks.push(clonedAudioTrack);
+                                } catch(e) {
+                                    clonedAudioTrack = rawAudioTrack;
+                                }
+                            }
+
+                            const streamWithAudio = clonedAudioTrack
+                                ? new MediaStream([clonedVideoTrack, clonedAudioTrack])
+                                : null;
+                            const streamVideoOnly = new MediaStream([clonedVideoTrack]);
+
+                            // Strictly separate audio-capable MIME types from video-only MIME types so audio is NEVER stripped
+                            const mimeCandidatesWithAudio = [
+                                'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+                                'video/mp4;codecs=avc1,mp4a.40.2',
+                                'video/mp4;codecs=h264,aac',
+                                'video/mp4;codecs=avc1,opus',
+                                'video/mp4',
+                                'video/webm;codecs=h264,opus',
+                                'video/webm;codecs=vp8,opus',
+                                'video/webm;codecs=vp9,opus',
+                                'video/webm',
+                                ''
+                            ];
+                            const mimeCandidatesVideoOnly = [
+                                'video/mp4;codecs=avc1.42E01E',
+                                'video/mp4;codecs=avc1',
+                                'video/mp4',
+                                'video/webm;codecs=h264',
+                                'video/webm;codecs=vp8',
+                                'video/webm',
+                                ''
+                            ];
+
+                            const attempts = streamWithAudio
+                                ? [
+                                    { stream: streamWithAudio, mimes: mimeCandidatesWithAudio },
+                                    { stream: streamVideoOnly, mimes: mimeCandidatesVideoOnly }
+                                  ]
+                                : [
+                                    { stream: streamVideoOnly, mimes: mimeCandidatesVideoOnly }
+                                  ];
+
+                            let recorder = null;
+                            let actualMime = 'video/mp4';
+
+                            outerLoop:
+                            for (let aIdx = 0; aIdx < attempts.length; aIdx++) {
+                                const targetStream = attempts[aIdx].stream;
+                                const mimes = attempts[aIdx].mimes;
+                                for (let mIdx = 0; mIdx < mimes.length; mIdx++) {
+                                    const candidateMime = mimes[mIdx];
+                                    if (candidateMime && MediaRecorder.isTypeSupported && !MediaRecorder.isTypeSupported(candidateMime)) {
+                                        continue;
+                                    }
+                                    try {
+                                        const opts = {
+                                            videoBitsPerSecond: bitrateBps || 4500000,
+                                            audioBitsPerSecond: 128000
+                                        };
+                                        if (candidateMime) opts.mimeType = candidateMime;
+                                        const testRec = new MediaRecorder(targetStream, opts);
+                                        actualMime = testRec.mimeType || candidateMime || 'video/mp4';
+                                        testRec.ondataavailable = function(evt) {
+                                            if (!evt || !evt.data || evt.data.size === 0) return;
+                                            const isFinal = (testRec.state === 'inactive');
+                                            const reader = new FileReader();
+                                            reader.onloadend = function() {
+                                                if (reader.result && window.CloudPlayBridge && window.CloudPlayBridge.onScreenRecordChunk) {
+                                                    window.CloudPlayBridge.onScreenRecordChunk(reader.result, isFinal, actualMime);
+                                                }
+                                            };
+                                            reader.readAsDataURL(evt.data);
+                                        };
+                                        testRec.onstop = function() {
+                                            cleanupClonedRecordingTracks();
+                                            setTimeout(function() {
+                                                if (window.CloudPlayBridge && window.CloudPlayBridge.onScreenRecordChunk) {
+                                                    window.CloudPlayBridge.onScreenRecordChunk("", true, actualMime);
+                                                }
+                                            }, 180);
+                                        };
+                                        // 2000ms timeslice cuts IPC overhead in half for zero micro-stutter
+                                        testRec.start(2000);
+                                        recorder = testRec;
+                                        break outerLoop;
+                                    } catch (tryErr) {
+                                        // Continue to next codec/stream candidate
+                                    }
+                                }
+                            }
+
+                            if (!recorder) {
+                                cleanupClonedRecordingTracks();
+                                return "FALLBACK_NATIVE";
+                            }
+
+                            activeMediaRecorder = recorder;
+                            return "DIRECT_STREAM:" + actualMime;
+                        } catch (err) {
+                            cleanupClonedRecordingTracks();
+                            return "FALLBACK_NATIVE";
+                        }
+                    };
+
+                    window.__stopZeroLagStreamRecorder = function() {
+                        try {
+                            window.__stopLiveAudioPcmTap();
+                        } catch (e) {}
+                        try {
+                            if (activeMediaRecorder && activeMediaRecorder.state !== 'inactive') {
+                                activeMediaRecorder.stop();
+                            } else {
+                                cleanupClonedRecordingTracks();
+                            }
+                            activeMediaRecorder = null;
+                        } catch (e) {
+                            cleanupClonedRecordingTracks();
+                        }
+                    };
+
+                    window.__toggleClarityBoost($clarityBoost);
+                    window.__applyGpuAndRenderScaleCss();
+                    window.__applyVideoAspectAndColorCss();
+                    if ($lowEndDeviceMode && window.__pauseTranslator) {
+                        window.__pauseTranslator();
+                    }
+                })();
+
+                // ==========================================
+                // 8. Dedicated Xbox Cloud Vietnamese Translator
+                // ==========================================
+                $translatorScript
+            """.trimIndent().also { built ->
+                lastInjectionCacheKey = cacheKey
+                lastInjectionScript = built
+            }
+        }
+    }
+
+    private fun isCallerTrusted(): Boolean {
+        val url = currentNavigatedUrl
+        if (url.isNullOrBlank()) return false
+        return isXboxHost(url)
+    }
+
+    @JavascriptInterface
+    fun onScreenRecordChunk(base64Data: String?, isLastChunk: Boolean, mimeType: String?) {
+        if (!isCallerTrusted()) return
+        ZeroLagScreenRecorder.onWebStreamChunkReceived(base64Data ?: "", isLastChunk, mimeType)
+    }
+
+    @JavascriptInterface
+    fun onScreenRecordAudioPcm(base64Pcm: String?, sampleRate: Int, channels: Int) {
+        if (!isCallerTrusted()) return
+        ZeroLagScreenRecorder.onWebAudioPcmReceived(base64Pcm ?: "", sampleRate, channels)
+    }
+
+    @JavascriptInterface
+    fun onTranslationStatus(enabled: Boolean, count: Int) {
+        if (!isCallerTrusted()) return
+        val current = _translationInfo.value
+        if (current.isEnabled == enabled && current.translatedCount == count) return
+        _translationInfo.value = TranslationInfo(isEnabled = enabled, translatedCount = count)
+    }
+
+    @JavascriptInterface
+    fun onGameLaunchInitiated(gameTitle: String?) {
+        if (!isCallerTrusted()) return
+        Log.d(TAG, "Game launch detected: $gameTitle")
+        val cleanTitle = gameTitle?.takeIf { it.isNotBlank() } ?: "Xbox Game"
+        com.example.data.AppLogger.info("STREAM", "Phát hiện bắt đầu vào game: $cleanTitle")
+        controller.onGameLaunchInitiated(cleanTitle)
+    }
+
+    @JavascriptInterface
+    fun onWebGameDetected(jsonStr: String?) {
+        if (!isCallerTrusted() || jsonStr.isNullOrBlank()) return
+        try {
+            val obj = JSONObject(jsonStr)
+            val title = obj.optString("title", "").takeIf { it.isNotBlank() }
+            val url = obj.optString("url", "").trim()
+            val imageUrl = obj.optString("imageUrl", "").takeIf { it.isNotBlank() }
+            val supportsTouch = if (obj.has("supportsTouch")) obj.optBoolean("supportsTouch", true) else null
+            val isLaunch = obj.optBoolean("isLaunch", false)
+            controller.onWebGameMetadataDetected(
+                title = title,
+                url = url,
+                imageUrl = imageUrl,
+                supportsTouch = supportsTouch,
+                isLaunch = isLaunch
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not parse onWebGameDetected: ${e.message}")
+            com.example.data.AppLogger.error(
+                "BRIDGE",
+                "Lỗi đọc metadata game trên web (${com.example.data.AppLogger.shortThrowable(e)})"
+            )
+        }
+    }
+
+    @JavascriptInterface
+    fun onCatalogCardsDiscovered(jsonArrayStr: String?) {
+        if (!isCallerTrusted() || jsonArrayStr.isNullOrBlank()) return
+        com.example.data.GameLibraryRepository.ingestDiscoveredWebGames(jsonArrayStr)
+    }
+
+    @JavascriptInterface
+    fun onXboxProfileDetected(jsonStr: String?) {
+        if (!isCallerTrusted() || jsonStr.isNullOrBlank()) return
+        try {
+            val obj = JSONObject(jsonStr)
+            val gamertag = obj.optString("gamertag", "").takeIf { it.isNotBlank() }
+            val avatarUrl = obj.optString("avatarUrl", "").takeIf { it.isNotBlank() }
+            val tier = obj.optString("tier", "").takeIf { it.isNotBlank() }
+            com.example.data.GameLibraryRepository.onXboxProfileSynced(gamertag, avatarUrl, tier)
+        } catch (e: Exception) {
+            com.example.data.AppLogger.error(
+                "BRIDGE",
+                "Lỗi đồng bộ hồ sơ Xbox (${com.example.data.AppLogger.shortThrowable(e)})"
+            )
+        }
+    }
+
+    @JavascriptInterface
+    fun onXboxJumpBackInDetected(jsonArrayStr: String?) {
+        if (!isCallerTrusted() || jsonArrayStr.isNullOrBlank()) return
+        com.example.data.GameLibraryRepository.onXboxJumpBackInSynced(jsonArrayStr)
+    }
+
+    @JavascriptInterface
+    fun onStreamConnected(detail: String?) {
+        if (!isCallerTrusted()) return
+        Log.d(TAG, "Stream established: $detail — activating low-latency lock & pausing DOM translator")
+        com.example.data.AppLogger.success(
+            "STREAM",
+            "Kết nối luồng stream WebRTC thành công (${detail ?: "connected"})"
+        )
+        NetworkOptimizer.setStreamActive(true)
+        controller.onStreamConnected()
+        scope.launch(Dispatchers.Main) {
+            webViewRef?.get()?.evaluateJavascript(
+                "if (window.__pauseTranslator) window.__pauseTranslator();",
+                null
+            )
+        }
+    }
+
+    @JavascriptInterface
+    fun onStreamDisconnected(detail: String?) {
+        if (!isCallerTrusted()) return
+        Log.d(TAG, "Stream ended: $detail — releasing low-latency lock & resuming DOM translator if allowed")
+        com.example.data.AppLogger.info(
+            "STREAM",
+            "Ngắt luồng stream WebRTC (${detail ?: "disconnected"})"
+        )
+        NetworkOptimizer.setStreamActive(false)
+        controller.onStreamDisconnected()
+        scope.launch(Dispatchers.Main) {
+            val cfg = com.example.data.SettingsRepository.config.value
+            if (!cfg.lowEndDeviceMode && cfg.isEffectiveTranslateEnabled()) {
+                webViewRef?.get()?.evaluateJavascript(
+                    "if (window.__resumeTranslator) window.__resumeTranslator();",
+                    null
+                )
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun onUrlChanged(url: String?) {
+        if (!isCallerTrusted()) return
+        url?.let { targetUrl ->
+            if (isTrustedHost(targetUrl)) {
+                currentNavigatedUrl = targetUrl
+            }
+            controller.onUrlChanged(targetUrl)
+            if (!targetUrl.contains("/launch/") && isXboxHost(targetUrl)) {
+                scope.launch(Dispatchers.Main) {
+                    val cfg = com.example.data.SettingsRepository.config.value
+                    if (!cfg.lowEndDeviceMode && cfg.isEffectiveTranslateEnabled()) {
+                        webViewRef?.get()?.evaluateJavascript(
+                            "if (window.__resumeTranslator) window.__resumeTranslator();",
+                            null
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun onRegionBypassed(info: String?) {
+        if (!isCallerTrusted()) return
+        Log.d(TAG, "Region bypassed: $info")
+        VpnManager.onRegionBypassed(info ?: "")
+    }
+
+    @JavascriptInterface
+    fun onRegionUnlockSignal(signal: String?) {
+        if (!isCallerTrusted()) return
+        val rawTrimmed = signal?.trim() ?: return
+        val cleanSignal = rawTrimmed.substringBefore("|").trim().uppercase()
+        if (cleanSignal.startsWith("EXIT_PREVIEW_") || cleanSignal.startsWith("ENTER_PREVIEW_")) {
+            Log.d(TAG, "Preview UI switch signal: $rawTrimmed")
+            scope.launch(Dispatchers.Main) {
+                exitPreviewSignalListener?.invoke(rawTrimmed)
+            }
+            return
+        }
+        Log.d(TAG, "Region unlock signal: $cleanSignal")
+        VpnManager.onUnlockSignalReceived(cleanSignal)
+    }
+
+    @JavascriptInterface
+    fun confirmSwitchBestServer() {
+        if (!isCallerTrusted()) return
+        scope.launch(Dispatchers.Main) {
+            val wv = webViewRef?.get()
+            val nextServer = VpnManager.confirmSwitchToNextBestServer(wv?.context)
+            if (nextServer != null && wv != null) {
+                val locale = com.example.data.SettingsRepository.config.value.getEffectiveLocale()
+                val safeCountry = JSONObject.quote(nextServer.countryCode)
+                val safeIp = JSONObject.quote(nextServer.ip)
+                val safeLocale = JSONObject.quote(locale)
+                wv.evaluateJavascript(
+                    "window.__lastUnlockSignal = null; if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: $safeCountry, ip: $safeIp, locale: $safeLocale }); location.reload();",
+                    null
+                )
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun dismissUnlockFailPrompt() {
+        if (!isCallerTrusted()) return
+        VpnManager.dismissUnlockFailPrompt()
+    }
+
+    @JavascriptInterface
+    fun onWebViewIpDetected(jsonStr: String?) {
+        if (!isCallerTrusted()) return
+        if (jsonStr.isNullOrBlank()) return
+        try {
+            val json = JSONObject(jsonStr)
+            val ip = json.optString("ip", "")
+            val countryCode = json.optString("country", json.optString("country_code", "JP")).uppercase()
+            val countryName = json.optString("country_name", json.optString("country", "Japan"))
+            val city = json.optString("city", "")
+            if (ip.isNotBlank()) {
+                VpnManager.onWebViewIpDetected(ip, countryCode, countryName, city)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not parse onWebViewIpDetected JSON: ${e.message}")
+            com.example.data.AppLogger.error(
+                "BRIDGE",
+                "Lỗi phân tích IP từ WebView (${com.example.data.AppLogger.shortThrowable(e)})"
+            )
+        }
+    }
+
+    @JavascriptInterface
+    fun onStreamTelemetry(telemetryJson: String?) {
+        if (!isCallerTrusted()) return
+        NetworkOptimizer.onTelemetryReceived(telemetryJson)
+    }
+
+    @JavascriptInterface
+    fun onClarityAutoDisabled(decodeTimeStr: String?) {
+        if (!isCallerTrusted()) return
+        val currentCfg = com.example.data.SettingsRepository.config.value
+        val wasActive = currentCfg.clarityBoostEnabled && currentCfg.clarityPreset != com.example.data.ClarityPreset.OFF
+        if (wasActive) {
+            com.example.data.AppLogger.warn(
+                "STREAM",
+                "Tự tắt bộ lọc làm nét do tải giải mã cao (${decodeTimeStr ?: ">12"} ms)"
+            )
+        }
+        com.example.data.SettingsRepository.updateClarityPreset(com.example.data.ClarityPreset.OFF)
+        com.example.data.SettingsRepository.updateClarityBoost(false)
+        scope.launch(Dispatchers.Main) {
+            webViewRef?.get()?.evaluateJavascript(
+                "window.__clarityBoostActive = false; window.__highDecodeStreakForClarity = 0; if (window.__setClarityPreset) window.__setClarityPreset('OFF');",
+                null
+            )
+            if (!wasActive) return@launch
+            val ctx = webViewRef?.get()?.context
+            if (ctx != null) {
+                val isEn = com.example.data.SettingsRepository.config.value.isEnglishUI()
+                val msg = if (isEn) {
+                    "Auto-disabled Clarity filter due to high decode load (> 12ms)"
+                } else {
+                    "Đã tự tắt bộ lọc làm nét do tải giải mã cao (> 12ms)"
+                }
+                android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun requestSmartTranslate(rawText: String?, callbackId: String?, isBilingual: Boolean) {
+        if (!isCallerTrusted()) return
+        if (rawText.isNullOrBlank() || callbackId.isNullOrBlank()) return
+        val cfg = com.example.data.SettingsRepository.config.value
+        if (!cfg.isEffectiveTranslateEnabled()) return
+        val targetLang = cfg.getTargetTranslateLanguageCode()
+        scope.launch(Dispatchers.IO) {
+            val translated = GoogleGamingTranslator.translate(rawText, targetLang, isBilingual)
+            withContext(Dispatchers.Main) {
+                val escapedText = JSONObject.quote(translated)
+                webViewRef?.get()?.evaluateJavascript(
+                    "if (window.__onSmartTranslateResult) window.__onSmartTranslateResult('$callbackId', $escapedText);",
+                    null
+                )
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun requestBatchTranslate(jsonTexts: String?, batchId: String?, isBilingual: Boolean) {
+        if (!isCallerTrusted()) return
+        if (jsonTexts.isNullOrBlank() || batchId.isNullOrBlank()) return
+        val cfg = com.example.data.SettingsRepository.config.value
+        if (!cfg.isEffectiveTranslateEnabled()) return
+        val targetLang = cfg.getTargetTranslateLanguageCode()
+        scope.launch(Dispatchers.IO) {
+            try {
+                val array = org.json.JSONArray(jsonTexts)
+                val list = mutableListOf<String>()
+                for (i in 0 until array.length()) {
+                    list.add(array.getString(i))
+                }
+                // Use controlled parallel batch translation instead of sequential loop
+                val translatedMap = GoogleGamingTranslator.translateBatch(list, targetLang, isBilingual)
+                val resultMap = org.json.JSONObject()
+                for ((orig, translated) in translatedMap) {
+                    resultMap.put(orig, translated)
+                }
+                withContext(Dispatchers.Main) {
+                    webViewRef?.get()?.evaluateJavascript(
+                        "if (window.__onBatchTranslateResult) window.__onBatchTranslateResult('$batchId', ${resultMap.toString()});",
+                        null
+                    )
+                }
+            } catch (ce: kotlinx.coroutines.CancellationException) {
+                throw ce
+            } catch (e: Exception) {
+                Log.w(TAG, "Error in requestBatchTranslate", e)
+                com.example.data.AppLogger.error(
+                    "BRIDGE",
+                    "Lỗi dịch hàng loạt giao diện Xbox (${com.example.data.AppLogger.shortThrowable(e)})"
+                )
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun onGameRumble(durationMs: Int, strongMag: Float, weakMag: Float) {
+        if (!isCallerTrusted()) return
+        controller.onGameRumbleRequested(durationMs, strongMag, weakMag)
+    }
+
+    @JavascriptInterface
+    fun onControllerShortcut(actionId: String?) {
+        if (!isCallerTrusted() || actionId.isNullOrBlank()) return
+        controller.onControllerShortcutTriggered(actionId.trim())
+    }
+
+    @JavascriptInterface
+    fun log(msg: String?) {
+        if (!isCallerTrusted()) return
+        Log.d("XboxBridgeJS", msg ?: "")
+    }
+}
+
+

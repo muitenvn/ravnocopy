@@ -1,0 +1,604 @@
+package com.example.cloudplay
+
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.net.wifi.WifiInfo
+import android.net.wifi.WifiManager
+import android.os.Build
+import android.os.SystemClock
+import android.util.Log
+import com.example.data.AppConfig
+import com.example.data.CellularOptimizationMode
+import com.example.data.NetworkTuningMode
+import com.example.data.SettingsRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import kotlin.math.roundToLong
+
+enum class PhysicalNetworkType(val label: String, val icon: String) {
+    WIFI_6GHZ("Wifi 6GHz (Wi-Fi 6E/7)", "🛜"),
+    WIFI_5GHZ("Wifi 5GHz (Tốc độ cao)", "🛜"),
+    WIFI_2_4GHZ("Wifi 2.4GHz (Chống nhiễu)", "🛜"),
+    WIFI_STANDARD("Wifi (Chuẩn)", "🛜"),
+    CELLULAR_4G_5G("Mạng 4G/LTE Di Động", "📶"),
+    ETHERNET("Mạng Dây LAN", "🌐"),
+    UNKNOWN("Không rõ mạng", "📡")
+}
+
+data class NetworkOptimizerStatus(
+    val physicalType: PhysicalNetworkType = PhysicalNetworkType.UNKNOWN,
+    val isWifi: Boolean = false,
+    val isCellular: Boolean = false,
+    val isMetered: Boolean = false,
+    val activeProfileName: String = "Tự Động (Theo Điều Kiện Mạng & Máy)",
+    val effectiveBitrateMbps: Int = 9,
+    val speedFirstPriority: Boolean = true,
+    val wifiFrequencyMhz: Int = 0,
+    val wifiRssiDbm: Int = -55,
+    val wifiLinkSpeedMbps: Int = 0,
+    val downstreamBandwidthKbps: Int = 0,
+    val isWeakWifiSignal: Boolean = false,
+    val isWeakCellularSignal: Boolean = false,
+    val isLowLatencyStreamActive: Boolean = false,
+    val hasVpnTransport: Boolean = false,
+    val activeNetworkKey: String = "",
+    val summaryText: String = "Đang tối ưu hóa đồ họa và hiệu năng thiết bị...",
+    val profileBadge: String = "⚡ Tự Động"
+)
+
+data class StreamTelemetry(
+    val fps: Int = 0,
+    val bitrateMbps: Double = 0.0,
+    val decodeTimeMs: Double = 0.0,
+    val rttMs: Int = 0,
+    val jitterMs: Int = 0,
+    val packetsLostPercent: Double = 0.0,
+    val framesDropped: Int = 0,
+    val framesDecoded: Int = 0,
+    val freezeCount: Int = 0,
+    val totalFreezesDurationSec: Double = 0.0,
+    val jitterBufferDelayMs: Double = 0.0,
+    val speedPriorityActive: Boolean = true,
+    val appliedProfile: String = "Tự Động",
+    val estimatedDataSavedMb: Double = 0.0,
+    val hasStatsSample: Boolean = true
+)
+
+object NetworkOptimizer {
+    private const val TAG = "NetworkOptimizer"
+    private val scope = CoroutineScope(Dispatchers.Main)
+
+    private val _status = MutableStateFlow(NetworkOptimizerStatus())
+    val status: StateFlow<NetworkOptimizerStatus> = _status.asStateFlow()
+
+    private val _telemetry = MutableStateFlow(StreamTelemetry())
+    val telemetry: StateFlow<StreamTelemetry> = _telemetry.asStateFlow()
+
+    private var connectivityManager: ConnectivityManager? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var vpnNetworkCallback: ConnectivityManager.NetworkCallback? = null
+    private var wifiLowLatencyLock: WifiManager.WifiLock? = null
+    private var isInitialized = false
+
+    @Volatile
+    private var isStreamCurrentlyActive: Boolean = false
+
+    @Volatile
+    private var currentBoundNetwork: Network? = null
+
+    // Telemetry tracking for estimated data savings using actual elapsed time
+    private var streamSecondsTracked = 0.0
+    private var totalDataSavedMegabytes = 0.0
+    private var lastTelemetryTimestampMs = 0L
+    private var lastTelemetryErrorLoggedAtMs = 0L
+
+    fun init(context: Context) {
+        if (isInitialized) return
+        isInitialized = true
+
+        try {
+            val appCtx = context.applicationContext
+            connectivityManager = appCtx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            val wifiMgr = appCtx.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            if (wifiMgr != null) {
+                @Suppress("DEPRECATION")
+                val lockMode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    WifiManager.WIFI_MODE_FULL_LOW_LATENCY
+                } else {
+                    WifiManager.WIFI_MODE_FULL_HIGH_PERF
+                }
+                wifiLowLatencyLock = wifiMgr.createWifiLock(lockMode, "CloudPlay:UltraLowLatencyWifiLock")?.apply {
+                    setReferenceCounted(false)
+                }
+            }
+            val cm = connectivityManager ?: return
+
+            // Initial evaluation
+            evaluateCurrentNetwork(appCtx, cm.activeNetwork)
+
+            // Register default network callback so only the system's active default network (Wi-Fi vs 4G) triggers binding
+            networkCallback = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    val activeNet = cm.activeNetwork ?: network
+                    if (network == activeNet) {
+                        evaluateCurrentNetwork(appCtx, activeNet)
+                        updateProcessNetworkBinding(activeNet)
+                    }
+                }
+
+                override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                    val activeNet = cm.activeNetwork ?: network
+                    if (network == activeNet) {
+                        evaluateCurrentNetwork(appCtx, activeNet)
+                        updateProcessNetworkBinding(activeNet)
+                    }
+                }
+
+                override fun onLost(network: Network) {
+                    if (currentBoundNetwork == network) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            runCatching { connectivityManager?.bindProcessToNetwork(null) }
+                        }
+                        currentBoundNetwork = null
+                    }
+                    val nextActive = cm.activeNetwork
+                    evaluateCurrentNetwork(appCtx, nextActive)
+                    updateProcessNetworkBinding(nextActive)
+                }
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                cm.registerDefaultNetworkCallback(networkCallback!!)
+            } else {
+                val request = NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build()
+                cm.registerNetworkCallback(request, networkCallback!!)
+            }
+
+            // Theo dõi riêng cờ TRANSPORT_VPN để nhận diện ngay khi người dùng bật/tắt VPN ngoài
+            runCatching {
+                val vpnReq = NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
+                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                    .build()
+                vpnNetworkCallback = object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: Network) {
+                        evaluateCurrentNetwork(appCtx, cm.activeNetwork, forceHasVpn = true)
+                    }
+
+                    override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                        evaluateCurrentNetwork(appCtx, cm.activeNetwork)
+                    }
+
+                    override fun onLost(network: Network) {
+                        evaluateCurrentNetwork(appCtx, cm.activeNetwork, lostVpnNetwork = network)
+                    }
+                }
+                cm.registerNetworkCallback(vpnReq, vpnNetworkCallback!!)
+            }
+
+            // Observe user configuration changes to re-tune immediately
+            scope.launch {
+                SettingsRepository.config.collect { config ->
+                    recomputeEffectiveProfile(config)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize NetworkOptimizer", e)
+            com.example.data.AppLogger.error(
+                "NET",
+                "Lỗi khởi tạo NetworkOptimizer (${com.example.data.AppLogger.shortThrowable(e)})"
+            )
+        }
+    }
+
+    /**
+     * Đồng bộ hóa `ConnectivityManager.bindProcessToNetwork`:
+     * - Khi đang stream (`isStreamCurrentlyActive == true`) và ở chế độ mạng trực tiếp (`DIRECT_NETWORK`),
+     *   chỉ gắn tiến trình vào mạng mặc định đang hoạt động (`network == cm.activeNetwork`) và tự gắn lại khi chuyển mạng mặc định Wi-Fi ↔ 4G.
+     * - Khi kết thúc stream (`isStreamCurrentlyActive == false`), bật VPN hoặc mất mạng, gỡ gắn kết (`bindProcessToNetwork(null)`).
+     */
+    private fun updateProcessNetworkBinding(candidateNetwork: Network? = null) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        val cm = connectivityManager ?: return
+        try {
+            val isDirectMode = com.example.vpn.VpnManager.state.value.mode == com.example.vpn.NetworkMode.DIRECT_NETWORK
+            if (!isStreamCurrentlyActive || !isDirectMode) {
+                if (currentBoundNetwork != null) {
+                    cm.bindProcessToNetwork(null)
+                    currentBoundNetwork = null
+                } else {
+                    cm.bindProcessToNetwork(null)
+                }
+                return
+            }
+
+            val activeNet = cm.activeNetwork
+            if (candidateNetwork != null && activeNet != null && candidateNetwork != activeNet) {
+                // Ignore non-default network callbacks (e.g., background 4G while on Wi-Fi)
+                return
+            }
+            val net = activeNet ?: candidateNetwork
+            val caps = if (net != null) cm.getNetworkCapabilities(net) else null
+            val isVpn = caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+            val isValidPhysical = caps != null && !isVpn && (
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+                )
+
+            if (net != null && isValidPhysical) {
+                if (currentBoundNetwork != net) {
+                    cm.bindProcessToNetwork(net)
+                    currentBoundNetwork = net
+                }
+                cm.reportNetworkConnectivity(net, true)
+            } else {
+                cm.bindProcessToNetwork(null)
+                currentBoundNetwork = null
+            }
+        } catch (e: Exception) {
+            com.example.data.AppLogger.error(
+                "NET",
+                "Lỗi gắn kết mạng tiến trình (${com.example.data.AppLogger.shortThrowable(e)})"
+            )
+        }
+    }
+
+    /**
+     * Activates hardware WIFI_MODE_FULL_LOW_LATENCY lock when streaming on Wi-Fi (prevents DTIM radio sleep spikes),
+     * manages process network binding via updateProcessNetworkBinding(), and pauses background catalog requests.
+     */
+    fun setStreamActive(active: Boolean) {
+        isStreamCurrentlyActive = active
+        _status.value = _status.value.copy(isLowLatencyStreamActive = active)
+        com.example.data.GameLibraryRepository.setStreamActive(active)
+        if (!active) {
+            lastTelemetryTimestampMs = 0L
+            _telemetry.value = StreamTelemetry(
+                speedPriorityActive = _status.value.speedFirstPriority,
+                appliedProfile = _status.value.activeProfileName
+            )
+        }
+        try {
+            val lock = wifiLowLatencyLock
+            if (lock != null) {
+                if (active && _status.value.isWifi) {
+                    if (!lock.isHeld) lock.acquire()
+                } else {
+                    if (lock.isHeld) lock.release()
+                }
+            }
+            updateProcessNetworkBinding(null)
+        } catch (e: Exception) {
+            com.example.data.AppLogger.error(
+                "NET",
+                "Lỗi khóa Wi-Fi Low-Latency khi stream=$active (${com.example.data.AppLogger.shortThrowable(e)})"
+            )
+        }
+    }
+
+    private fun evaluateCurrentNetwork(
+        context: Context,
+        network: Network?,
+        forceHasVpn: Boolean = false,
+        lostVpnNetwork: Network? = null
+    ) {
+        val cm = connectivityManager ?: return
+        val currentNetwork = network ?: cm.activeNetwork
+        val caps = if (currentNetwork != null) cm.getNetworkCapabilities(currentNetwork) else null
+
+        var type = PhysicalNetworkType.UNKNOWN
+        var isWifi = false
+        var isCellular = false
+        var isMetered = false
+        var wifiFreq = 0
+        var wifiRssi = -55
+        var wifiLinkMbps = 0
+        var downstreamKbps = 0
+        var isWeakWifi = false
+        var isWeakCellular = false
+
+        val hasVpn = forceHasVpn ||
+            (currentNetwork != null && currentNetwork != lostVpnNetwork && caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) ||
+            runCatching {
+                @Suppress("DEPRECATION")
+                cm.allNetworks.any { net ->
+                    net != lostVpnNetwork &&
+                        cm.getNetworkCapabilities(net)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+                }
+            }.getOrDefault(false)
+        val activeNetworkKey = currentNetwork?.toString().orEmpty()
+
+        if (caps != null) {
+            isMetered = !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+            downstreamKbps = caps.linkDownstreamBandwidthKbps
+
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                isWifi = true
+                val (freq, rssi, linkMbps) = detectWifiTelemetry(context, caps)
+                wifiFreq = freq
+                wifiRssi = rssi
+                wifiLinkMbps = linkMbps
+                type = classifyWifiBand(wifiFreq)
+                // Standing far from router / through walls: RSSI <= -70 dBm or linkSpeed drops below 65 Mbps
+                isWeakWifi = (wifiRssi in -120..-70) || (wifiLinkMbps in 1..64)
+            } else if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                isCellular = true
+                type = PhysicalNetworkType.CELLULAR_4G_5G
+                val sigStrength = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    caps.signalStrength
+                } else {
+                    Int.MIN_VALUE
+                }
+                isWeakCellular = (downstreamKbps in 1..9000) || (sigStrength != Int.MIN_VALUE && sigStrength in -140..-104)
+            } else if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
+                type = PhysicalNetworkType.ETHERNET
+            }
+        }
+
+        val prev = _status.value
+        val stabilizedRssi = if (isStreamCurrentlyActive && isWeakWifi == prev.isWeakWifiSignal && kotlin.math.abs(wifiRssi - prev.wifiRssiDbm) < 3) {
+            prev.wifiRssiDbm
+        } else {
+            wifiRssi
+        }
+        val stabilizedDownstream = if (isStreamCurrentlyActive && isWeakCellular == prev.isWeakCellularSignal && kotlin.math.abs(downstreamKbps - prev.downstreamBandwidthKbps) < 500) {
+            prev.downstreamBandwidthKbps
+        } else {
+            downstreamKbps
+        }
+
+        val config = SettingsRepository.config.value
+        val candidateStatus = prev.copy(
+            physicalType = type,
+            isWifi = isWifi,
+            isCellular = isCellular,
+            isMetered = isMetered,
+            wifiFrequencyMhz = wifiFreq,
+            wifiRssiDbm = stabilizedRssi,
+            wifiLinkSpeedMbps = wifiLinkMbps,
+            downstreamBandwidthKbps = stabilizedDownstream,
+            isWeakWifiSignal = isWeakWifi,
+            isWeakCellularSignal = isWeakCellular,
+            hasVpnTransport = hasVpn,
+            activeNetworkKey = activeNetworkKey
+        )
+
+        recomputeEffectiveProfile(config, candidateStatus)
+        if (isStreamCurrentlyActive) {
+            try {
+                val lock = wifiLowLatencyLock
+                if (lock != null) {
+                    if (isWifi) {
+                        if (!lock.isHeld) lock.acquire()
+                    } else {
+                        if (lock.isHeld) lock.release()
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    /**
+     * Classifies Wi-Fi frequency band including 6GHz (5925–7125 MHz), 5GHz, and 2.4GHz.
+     */
+    fun classifyWifiBand(wifiFreqMhz: Int): PhysicalNetworkType {
+        return when {
+            wifiFreqMhz in 5925..7125 -> PhysicalNetworkType.WIFI_6GHZ
+            wifiFreqMhz >= 4900 -> PhysicalNetworkType.WIFI_5GHZ
+            wifiFreqMhz in 2400..2500 -> PhysicalNetworkType.WIFI_2_4GHZ
+            else -> PhysicalNetworkType.WIFI_STANDARD
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun detectWifiTelemetry(context: Context, caps: NetworkCapabilities): Triple<Int, Int, Int> {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val wifiInfo = caps.transportInfo as? WifiInfo
+                if (wifiInfo != null && wifiInfo.frequency > 0) {
+                    return Triple(wifiInfo.frequency, wifiInfo.rssi, wifiInfo.linkSpeed.coerceAtLeast(0))
+                }
+            }
+            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            val connectionInfo = wifiManager?.connectionInfo
+            if (connectionInfo != null && connectionInfo.frequency > 0) {
+                return Triple(connectionInfo.frequency, connectionInfo.rssi, connectionInfo.linkSpeed.coerceAtLeast(0))
+            }
+        } catch (ignored: Exception) {}
+        return Triple(0, -55, 0)
+    }
+
+    fun recomputeEffectiveProfile(config: AppConfig, baseStatus: NetworkOptimizerStatus = _status.value) {
+        val current = baseStatus
+        val isWifi = current.isWifi
+        val isCellular = current.isCellular || (!isWifi && current.physicalType == PhysicalNetworkType.CELLULAR_4G_5G)
+        val is3gOrHPlus = isCellular && current.downstreamBandwidthKbps in 1..4500
+
+        val cellularMode = config.cellularMode
+
+        val profileName: String
+        val bitrate: Int
+        val summary: String
+        val badge: String
+
+        if (config.lowEndDeviceMode) {
+            profileName = "Chế Độ Máy Yếu • 720p Nhẹ (5 Mbps)"
+            bitrate = 5
+            summary = "Đang bật Chế độ máy yếu: Khóa 720p (5 Mbps) để giảm tải giải mã và giữ ổn định trên 4G/Wi-Fi."
+            badge = "🛡️ 720p Máy Yếu (5M)"
+        } else when (cellularMode) {
+            CellularOptimizationMode.AUTO -> {
+                val autoMbps = when {
+                    isWifi && current.isWeakWifiSignal -> 7 // Đứng xa cục phát Wi-Fi 5GHz/2.4GHz: hạ xuống 7M chống rớt gói qua tường
+                    isWifi && current.physicalType == PhysicalNetworkType.WIFI_2_4GHZ -> 8 // Wi-Fi 2.4GHz: giữ gói tin gọn chống nhiễu Bluetooth
+                    isWifi && current.physicalType == PhysicalNetworkType.WIFI_6GHZ -> 14
+                    isWifi && current.physicalType == PhysicalNetworkType.WIFI_5GHZ -> 12
+                    isWifi -> 10
+                    is3gOrHPlus -> 4 // Mạng 3G / H+ băng thông hẹp
+                    isCellular && current.isWeakCellularSignal -> 5 // Sóng 4G yếu / đang chuyển trạm
+                    isCellular -> 6
+                    else -> 9
+                }
+                profileName = when {
+                    is3gOrHPlus -> "Mạng 3G/H+ Sóng Yếu • Hạn Chế Nghẽn (${autoMbps}M)"
+                    isCellular && current.isWeakCellularSignal -> "Tự Động 4G Sóng Yếu • Hạn Chế Nghẽn (${autoMbps}M)"
+                    isCellular -> "Ưu Tiên Độ Nhạy 4G (${autoMbps}M)"
+                    isWifi && current.isWeakWifiSignal -> "Tự Động Wi-Fi Xa Cục Phát (${autoMbps}M)"
+                    isWifi && current.physicalType == PhysicalNetworkType.WIFI_2_4GHZ -> "Tự Động Wi-Fi 2.4GHz Hạn Chế Nhiễu (${autoMbps}M)"
+                    else -> "Tự Động Thích Ứng Mạng (720p ⇄ 1080p • ${autoMbps}M)"
+                }
+                bitrate = autoMbps
+                summary = when {
+                    is3gOrHPlus -> "Sóng 3G/H+: điều chỉnh bộ đệm nhận trong phiên và đặt trần SDP ${autoMbps}M cho phiên kế tiếp."
+                    isCellular -> "Mạng 4G: điều chỉnh bộ đệm nhận (jitterBufferTarget) theo biến động sóng; trần SDP (${autoMbps}M) áp dụng khi khởi tạo phiên."
+                    current.isWeakWifiSignal -> "Sóng Wi-Fi yếu (${current.wifiRssiDbm} dBm): tự động nới bộ đệm nhận trong phiên; trần SDP (${autoMbps}M) áp dụng khi vào phiên."
+                    else -> "Tự động điều chỉnh bộ đệm nhận WebRTC trong phiên và giữ thời gian giải mã < 8ms."
+                }
+                badge = when {
+                    is3gOrHPlus -> "📶 3G/H+ (${autoMbps}M)"
+                    isCellular && current.isWeakCellularSignal -> "📶 4G Yếu (${autoMbps}M)"
+                    isCellular -> "📶 Ưu tiên 4G (${autoMbps}M)"
+                    else -> "⚡ Tự động (${autoMbps}M)"
+                }
+            }
+            CellularOptimizationMode.DATA_SAVER_HIGH_SPEED -> {
+                profileName = "720p • Thấp (Cố Định • 5M)"
+                bitrate = 5
+                summary = "Khóa 720p • 5 Mbps giúp giảm độ trễ trên mạng 4G/5G yếu hoặc Wi-Fi xa cục phát, nhẹ máy và mát pin."
+                badge = "❄️ 720p • Thấp (5M)"
+            }
+            CellularOptimizationMode.MEDIUM -> {
+                profileName = "900p • Vừa (Cố Định • 9M)"
+                bitrate = 9
+                summary = "Khóa cố định 900p • 9 Mbps (~3.8GB/giờ), cân bằng giữa độ nét và độ nhạy trên 4G/5G & Wi-Fi."
+                badge = "🌿 900p • Vừa (9M)"
+            }
+            CellularOptimizationMode.HIGH -> {
+                profileName = "1080p • Cao (Cố Định • 14M)"
+                bitrate = 14
+                summary = "Khóa cố định 1080p Full HD • 14 Mbps sắc nét cho mạng Wi-Fi gần cục phát hoặc 5G mạnh."
+                badge = "✨ 1080p • Cao (14M)"
+            }
+            CellularOptimizationMode.MAX_SPEED_UNCAPPED -> {
+                profileName = "1080p+ • Rất cao (Cố Định • 20M)"
+                bitrate = 20
+                summary = "Khóa cố định tối đa 1080p+ • 20 Mbps cho mạng Wi-Fi 5GHz/6GHz gần cục phát."
+                badge = "🔥 1080p+ • Rất cao (20M)"
+            }
+        }
+
+        val updatedStatus = current.copy(
+            activeProfileName = profileName,
+            effectiveBitrateMbps = bitrate,
+            speedFirstPriority = true,
+            summaryText = summary,
+            profileBadge = badge
+        )
+        val prevStatus = _status.value
+        if (prevStatus != updatedStatus) {
+            val typeChanged = prevStatus.physicalType != updatedStatus.physicalType
+            val vpnChanged = prevStatus.hasVpnTransport != updatedStatus.hasVpnTransport
+            val profileChanged = prevStatus.activeProfileName != updatedStatus.activeProfileName
+            _status.value = updatedStatus
+            if (typeChanged || vpnChanged || profileChanged) {
+                val vpnBadge = if (updatedStatus.hasVpnTransport) "VPN=Bật" else "VPN=Tắt"
+                com.example.data.AppLogger.info(
+                    "NET",
+                    "Mạng/Hồ sơ đổi: ${prevStatus.physicalType.label} -> ${updatedStatus.physicalType.label} ($vpnBadge, ${updatedStatus.activeProfileName})"
+                )
+            }
+            AdaptiveQualityManager.onNetworkStatusChanged(updatedStatus)
+        }
+    }
+
+    /**
+     * Parses real-time WebRTC telemetry sent from the injected stream monitor.
+     * Calculates actual elapsed time between telemetry packets (~1500ms) instead of fixed 2.0s.
+     */
+    fun onTelemetryReceived(telemetryJson: String?) {
+        if (telemetryJson.isNullOrBlank()) return
+        try {
+            val json = JSONObject(telemetryJson)
+            val hasStatsSample = json.optBoolean("hasStatsSample", true)
+            val fps = json.optInt("fps", 0).coerceAtLeast(0)
+            val bitrate = json.optDouble("bitrateMbps", 0.0).coerceAtLeast(0.0)
+            val decodeTime = json.optDouble("decodeTimeMs", 0.0).coerceAtLeast(0.0)
+            val rtt = json.optInt("rttMs", 0).coerceAtLeast(0)
+            val jitter = json.optInt("jitterMs", 0).coerceAtLeast(0)
+            val loss = json.optDouble("packetsLostPercent", 0.0).coerceAtLeast(0.0)
+            val framesDropped = json.optInt("framesDropped", 0).coerceAtLeast(0)
+            val framesDecoded = json.optInt("framesDecoded", 0).coerceAtLeast(0)
+            val freezeCount = json.optInt("freezeCount", 0).coerceAtLeast(0)
+            val totalFreezesDurationSec = json.optDouble("totalFreezesDurationSec", 0.0).coerceAtLeast(0.0)
+            val jitterBufferDelayMs = json.optDouble("jitterBufferDelayMs", 0.0).coerceAtLeast(0.0)
+
+            val nowMs = try {
+                val rt = SystemClock.elapsedRealtime()
+                if (rt > 0L) rt else System.currentTimeMillis()
+            } catch (_: Throwable) {
+                System.currentTimeMillis()
+            }
+            val elapsedSeconds = if (lastTelemetryTimestampMs > 0L && nowMs > lastTelemetryTimestampMs) {
+                ((nowMs - lastTelemetryTimestampMs) / 1000.0).coerceIn(0.2, 5.0)
+            } else {
+                1.5 // Matches XboxBridge 1500ms interval on first sample
+            }
+            lastTelemetryTimestampMs = nowMs
+
+            val currentStatus = _status.value
+            val isSavingData = currentStatus.effectiveBitrateMbps <= 10
+
+            // Calculate estimated saved MB using actual elapsedSeconds only when real WebRTC stats are present
+            if (hasStatsSample) {
+                streamSecondsTracked += elapsedSeconds
+                if (isSavingData && bitrate in 0.1..14.0) {
+                    totalDataSavedMegabytes += (15.0 - bitrate).coerceAtLeast(0.0) * (elapsedSeconds / 8.0)
+                }
+            }
+
+            val newTelemetry = StreamTelemetry(
+                fps = fps,
+                bitrateMbps = bitrate,
+                decodeTimeMs = decodeTime,
+                rttMs = rtt,
+                jitterMs = jitter,
+                packetsLostPercent = loss,
+                framesDropped = framesDropped,
+                framesDecoded = framesDecoded,
+                freezeCount = freezeCount,
+                totalFreezesDurationSec = totalFreezesDurationSec,
+                jitterBufferDelayMs = jitterBufferDelayMs,
+                speedPriorityActive = currentStatus.speedFirstPriority,
+                appliedProfile = currentStatus.activeProfileName,
+                estimatedDataSavedMb = totalDataSavedMegabytes,
+                hasStatsSample = hasStatsSample
+            )
+            _telemetry.value = newTelemetry
+            if (hasStatsSample) {
+                AdaptiveQualityManager.evaluateTelemetry(newTelemetry)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error parsing telemetry: $telemetryJson", e)
+            val now = System.currentTimeMillis()
+            if (now - lastTelemetryErrorLoggedAtMs >= 15_000L) {
+                lastTelemetryErrorLoggedAtMs = now
+                com.example.data.AppLogger.error(
+                    "NET",
+                    "Lỗi phân tích gói telemetry WebRTC (${com.example.data.AppLogger.shortThrowable(e)})"
+                )
+            }
+        }
+    }
+}
+

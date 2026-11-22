@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="vi" data-lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Điều khoản Sử dụng &amp; Chính sách Quyền riêng tư — Ravno</title>
+  <meta name="description" content="Điều khoản Sử dụng, Chính sách Quyền riêng tư và Minh bạch Kỹ thuật đầy đủ (15 mục) của ứng dụng Ravno dành cho Android." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://muitenvn.github.io/Ravno-App/terms.html" />
+  <link rel="icon" href="img/icon.png" type="image/png" />
+  <meta name="theme-color" content="#f5f8f7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0b1412" media="(prefers-color-scheme: dark)" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Điều khoản Sử dụng &amp; Chính sách Quyền riêng tư — Ravno" />
+  <meta property="og:description" content="Điều khoản Sử dụng, Chính sách Quyền riêng tư và Minh bạch Kỹ thuật đầy đủ (15 mục) của ứng dụng Ravno dành cho Android." />
+  <meta property="og:url" content="https://muitenvn.github.io/Ravno-App/terms.html" />
+  <meta property="og:image" content="https://muitenvn.github.io/Ravno-App/img/og.jpg" />
+
+  <style>
+    :root {
+      --bg: #f5f8f7;
+      --surface: #ffffff;
+      --surface-alt: #e6f0ec;
+      --border: #d9e4df;
+      --text: #0f1a17;
+      --text-muted: #4f605a;
+      --accent: #0e7a4d;
+      --on-accent: #ffffff;
+      --link: #0b6a42;
+      --summary-bg: #e6f0ec;
+      --summary-border: #b9d7ca;
+      --summary-strong: #0b6a42;
+      --warn-bg: #fff6e0;
+      --warn-border: #e9cf86;
+      --warn-ink: #5a4300;
+      --gutter: 16px;
+      --radius: 14px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0b1412;
+        --surface: #121e1b;
+        --surface-alt: #17261f;
+        --border: #24352f;
+        --text: #e8f1ee;
+        --text-muted: #9db2ab;
+        --accent: #3ccf91;
+        --on-accent: #05281a;
+        --link: #5fe0ac;
+        --summary-bg: #14261f;
+        --summary-border: #254b3c;
+        --summary-strong: #5fe0ac;
+        --warn-bg: #261f0b;
+        --warn-border: #54451a;
+        --warn-ink: #efd9a0;
+        color-scheme: dark;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0b1412;
+      --surface: #121e1b;
+      --surface-alt: #17261f;
+      --border: #24352f;
+      --text: #e8f1ee;
+      --text-muted: #9db2ab;
+      --accent: #3ccf91;
+      --on-accent: #05281a;
+      --link: #5fe0ac;
+      --summary-bg: #14261f;
+      --summary-border: #254b3c;
+      --summary-strong: #5fe0ac;
+      --warn-bg: #261f0b;
+      --warn-border: #54451a;
+      --warn-ink: #efd9a0;
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    html[data-lang="vi"] .lang-en {
+      display: none !important;
+    }
+
+    html[data-lang="en"] .lang-vi {
+      display: none !important;
+    }
+
+    html[data-inapp="true"] .web-only {
+      display: none !important;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 16px;
+      padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+      padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    a {
+      color: var(--link);
+      text-underline-offset: 3px;
+    }
+
+    a:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.875rem;
+      background-color: var(--surface-alt);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 6px;
+      color: var(--text);
+    }
+
+    /* Header */
+    .header {
+      border-bottom: 1px solid var(--border);
+      background-color: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding-block: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 750;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .brand img {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: block;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-btn,
+    .toc-btn,
+    .lang-btn {
+      font: inherit;
+      font-size: 14px;
+      font-weight: 650;
+      padding: 0 12px;
+      border-radius: 10px;
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .nav-btn {
+      color: var(--text-muted);
+      background: transparent;
+      border: 0;
+    }
+
+    .nav-btn:hover {
+      color: var(--text);
+    }
+
+    .toc-btn {
+      display: none;
+      background-color: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .toc-btn[aria-expanded="true"] {
+      background-color: var(--surface-alt);
+      border-color: var(--accent);
+      color: var(--link);
+    }
+
+    .lang-btn {
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .lang-btn:hover,
+    .toc-btn:hover {
+      background-color: var(--surface-alt);
+    }
+
+    /* Mobile TOC Drawer */
+    .mobile-toc-drawer {
+      display: none;
+      max-width: 960px;
+      margin: 0 auto 12px;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+
+    .mobile-toc-drawer.open {
+      display: block;
+    }
+
+    .mobile-toc-grid {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 4px;
+    }
+
+    .mobile-toc-grid a {
+      display: block;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      padding: 8px 10px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+
+    .mobile-toc-grid a:hover {
+      background-color: var(--surface-alt);
+      color: var(--text);
+    }
+
+    /* Layout */
+    .page-wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 0 40px;
+      display: grid;
+      grid-template-columns: 256px 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    /* Sidebar Table of Contents */
+    .toc-panel {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      position: sticky;
+      top: 80px;
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+    }
+
+    .toc-title {
+      font-size: 13px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .toc-list a {
+      display: block;
+      font-size: 13.5px;
+      line-height: 1.4;
+      color: var(--text-muted);
+      padding: 6px 8px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+
+    .toc-list a:hover {
+      color: var(--text);
+      background-color: var(--surface-alt);
+    }
+
+    /* Document Header */
+    .doc-header {
+      padding-bottom: 22px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .doc-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .meta-pill {
+      background-color: var(--surface-alt);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-weight: 650;
+      color: var(--text);
+    }
+
+    h1 {
+      font-size: clamp(1.65rem, 5vw, 2.3rem);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .doc-intro {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    /* Sections */
+    .legal-section {
+      padding-bottom: 26px;
+      margin-bottom: 26px;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 80px;
+    }
+
+    .legal-section:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .legal-section h2 {
+      font-size: 1.22rem;
+      line-height: 1.35;
+      letter-spacing: -0.01em;
+      font-weight: 750;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .summary-box {
+      background-color: var(--summary-bg);
+      border: 1px solid var(--summary-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 0.9375rem;
+      color: var(--text);
+    }
+
+    .summary-box strong {
+      color: var(--summary-strong);
+    }
+
+    .clause {
+      margin-bottom: 12px;
+    }
+
+    .clause:last-child {
+      margin-bottom: 0;
+    }
+
+    .clause-num {
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .legal-section ul,
+    .legal-section ol {
+      margin: 8px 0 12px 22px;
+    }
+
+    .legal-section li {
+      margin-bottom: 6px;
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 12px 0;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    th {
+      background-color: var(--surface-alt);
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    td {
+      color: var(--text-muted);
+    }
+
+    /* Legal disclaimer banner */
+    .not-legal-advice {
+      background-color: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      color: var(--warn-ink);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin-top: 24px;
+      font-size: 0.95rem;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding-block: 22px 28px;
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 18px;
+      margin-bottom: 10px;
+    }
+
+    .footer-links a {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    @media (min-width: 760px) {
+      :root { --gutter: 24px; }
+    }
+
+    @media (max-width: 820px) {
+      .toc-btn {
+        display: inline-flex;
+      }
+
+      .page-wrap {
+        grid-template-columns: 1fr;
+        gap: 18px;
+        padding-top: 18px;
+      }
+
+      .toc-panel {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <a href="./" class="brand" id="brandHomeLink">
+        <img src="img/icon.png" width="34" height="34" alt="" />
+        <span>Ravno</span>
+      </a>
+      <div class="header-actions">
+        <button type="button" class="toc-btn" id="tocToggleBtn" aria-expanded="false" aria-controls="mobileTocDrawer">
+          <span class="lang-vi">☰ Mục lục (15)</span>
+          <span class="lang-en">☰ Contents (15)</span>
+        </button>
+        <a href="./" class="nav-btn web-only" id="backHomeBtn">
+          <span class="lang-vi">Trang chủ</span>
+          <span class="lang-en">Home</span>
+        </a>
+        <a href="https://github.com/muitenvn/Ravno-App" target="_blank" rel="noopener noreferrer" class="nav-btn web-only">GitHub</a>
+        <button type="button" class="lang-btn" id="langBtn" aria-label="Đổi ngôn ngữ / Switch language">EN</button>
+      </div>
+    </div>
+
+    <nav class="mobile-toc-drawer" id="mobileTocDrawer" aria-label="Mục lục trên điện thoại">
+      <ol class="mobile-toc-grid">
+        <li><a href="#sec-1"><span class="lang-vi">1. Định nghĩa thuật ngữ</span><span class="lang-en">1. Definitions</span></a></li>
+        <li><a href="#sec-2"><span class="lang-vi">2. Bản chất app &amp; Không liên kết</span><span class="lang-en">2. App Nature &amp; Non-Affiliation</span></a></li>
+        <li><a href="#sec-3"><span class="lang-vi">3. Các tính năng thực tế của app</span><span class="lang-en">3. Actual App Features</span></a></li>
+        <li><a href="#sec-4"><span class="lang-vi">4. Dịch vụ bên thứ ba &amp; Rủi ro tài khoản</span><span class="lang-en">4. Third-Party Services &amp; Account Risks</span></a></li>
+        <li><a href="#sec-5"><span class="lang-vi">5. Máy chủ Proxy/VPN &amp; Định tuyến mạng</span><span class="lang-en">5. Proxy/VPN Servers &amp; Routing</span></a></li>
+        <li><a href="#sec-6"><span class="lang-vi">6. Quyền riêng tư &amp; Dữ liệu lưu trên máy</span><span class="lang-en">6. Privacy &amp; Local Device Data</span></a></li>
+        <li><a href="#sec-7"><span class="lang-vi">7. Kết nối ra ngoài, Quyền &amp; Xóa dữ liệu</span><span class="lang-en">7. Outbound Calls, Permissions &amp; Deletion</span></a></li>
+        <li><a href="#sec-8"><span class="lang-vi">8. Sử dụng hợp lệ &amp; Hành vi bị cấm</span><span class="lang-en">8. Acceptable Use &amp; Prohibited Conduct</span></a></li>
+        <li><a href="#sec-9"><span class="lang-vi">9. Sở hữu trí tuệ &amp; Ghi công mã nguồn mở</span><span class="lang-en">9. Intellectual Property &amp; Attribution</span></a></li>
+        <li><a href="#sec-10"><span class="lang-vi">10. Từ chối bảo đảm (Nguyên trạng)</span><span class="lang-en">10. Disclaimer of Warranties (AS IS)</span></a></li>
+        <li><a href="#sec-11"><span class="lang-vi">11. Giới hạn trách nhiệm &amp; Tự chịu rủi ro</span><span class="lang-en">11. Limitation of Liability &amp; Risk</span></a></li>
+        <li><a href="#sec-12"><span class="lang-vi">12. Báo cáo vi phạm &amp; Yêu cầu gỡ bỏ</span><span class="lang-en">12. Violation Reporting &amp; Takedown</span></a></li>
+        <li><a href="#sec-13"><span class="lang-vi">13. Bảo mật, Cập nhật &amp; Chấm dứt</span><span class="lang-en">13. Security, Updates &amp; Termination</span></a></li>
+        <li><a href="#sec-14"><span class="lang-vi">14. Sửa đổi điều khoản &amp; Lịch sử bản</span><span class="lang-en">14. Changes to Terms &amp; Changelog</span></a></li>
+        <li><a href="#sec-15"><span class="lang-vi">15. Luật điều chỉnh, Ngôn ngữ &amp; Liên hệ</span><span class="lang-en">15. Governing Law, Language &amp; Contact</span></a></li>
+      </ol>
+    </nav>
+  </header>
+
+  <div class="page-wrap">
+    <!-- SIDEBAR TABLE OF CONTENTS -->
+    <nav class="toc-panel" aria-label="Mục lục điều khoản">
+      <div class="toc-title">
+        <span class="lang-vi">Mục lục (15 mục)</span>
+        <span class="lang-en">Table of Contents (15 Sections)</span>
+      </div>
+      <ol class="toc-list">
+        <li><a href="#sec-1"><span class="lang-vi">1. Định nghĩa thuật ngữ</span><span class="lang-en">1. Definitions</span></a></li>
+        <li><a href="#sec-2"><span class="lang-vi">2. Bản chất app &amp; Không liên kết</span><span class="lang-en">2. App Nature &amp; Non-Affiliation</span></a></li>
+        <li><a href="#sec-3"><span class="lang-vi">3. Các tính năng thực tế của app</span><span class="lang-en">3. Actual App Features</span></a></li>
+        <li><a href="#sec-4"><span class="lang-vi">4. Dịch vụ bên thứ ba &amp; Rủi ro tài khoản</span><span class="lang-en">4. Third-Party Services &amp; Account Risks</span></a></li>
+        <li><a href="#sec-5"><span class="lang-vi">5. Máy chủ Proxy/VPN &amp; Định tuyến mạng</span><span class="lang-en">5. Proxy/VPN Servers &amp; Routing</span></a></li>
+        <li><a href="#sec-6"><span class="lang-vi">6. Quyền riêng tư &amp; Dữ liệu lưu trên máy</span><span class="lang-en">6. Privacy &amp; Local Device Data</span></a></li>
+        <li><a href="#sec-7"><span class="lang-vi">7. Kết nối ra ngoài, Quyền &amp; Xóa dữ liệu</span><span class="lang-en">7. Outbound Calls, Permissions &amp; Deletion</span></a></li>
+        <li><a href="#sec-8"><span class="lang-vi">8. Sử dụng hợp lệ &amp; Hành vi bị cấm</span><span class="lang-en">8. Acceptable Use &amp; Prohibited Conduct</span></a></li>
+        <li><a href="#sec-9"><span class="lang-vi">9. Sở hữu trí tuệ &amp; Ghi công mã nguồn mở</span><span class="lang-en">9. Intellectual Property &amp; Attribution</span></a></li>
+        <li><a href="#sec-10"><span class="lang-vi">10. Từ chối bảo đảm (Nguyên trạng)</span><span class="lang-en">10. Disclaimer of Warranties (AS IS)</span></a></li>
+        <li><a href="#sec-11"><span class="lang-vi">11. Giới hạn trách nhiệm &amp; Tự chịu rủi ro</span><span class="lang-en">11. Limitation of Liability &amp; Risk</span></a></li>
+        <li><a href="#sec-12"><span class="lang-vi">12. Báo cáo vi phạm &amp; Yêu cầu gỡ bỏ</span><span class="lang-en">12. Violation Reporting &amp; Takedown</span></a></li>
+        <li><a href="#sec-13"><span class="lang-vi">13. Bảo mật, Cập nhật &amp; Chấm dứt</span><span class="lang-en">13. Security, Updates &amp; Termination</span></a></li>
+        <li><a href="#sec-14"><span class="lang-vi">14. Sửa đổi điều khoản &amp; Lịch sử bản</span><span class="lang-en">14. Changes to Terms &amp; Changelog</span></a></li>
+        <li><a href="#sec-15"><span class="lang-vi">15. Luật điều chỉnh, Ngôn ngữ &amp; Liên hệ</span><span class="lang-en">15. Governing Law, Language &amp; Contact</span></a></li>
+      </ol>
+    </nav>
+
+    <!-- MAIN DOCUMENT -->
+    <main>
+      <header class="doc-header">
+        <div class="doc-meta">
+          <span class="meta-pill">
+            <span class="lang-vi">Phiên bản: 2.0</span>
+            <span class="lang-en">Version: 2.0</span>
+          </span>
+          <span class="meta-pill">
+            <span class="lang-vi">Ngày có hiệu lực: 20/04/2026</span>
+            <span class="lang-en">Effective Date: April 20, 2026</span>
+          </span>
+          <span>
+            <span class="lang-vi">Áp dụng cho: Ứng dụng Android Ravno &amp; Trang web dự án</span>
+            <span class="lang-en">Applies to: Ravno Android App &amp; Project Website</span>
+          </span>
+        </div>
+
+        <h1>
+          <span class="lang-vi">Điều Khoản Sử Dụng, Chính Sách Quyền Riêng Tư &amp; Minh Bạch Kỹ Thuật</span>
+          <span class="lang-en">Terms of Use, Privacy Policy &amp; Technical Transparency</span>
+        </h1>
+
+        <p class="doc-intro lang-vi">
+          Tài liệu này quy định các điều khoản khi bạn tải xuống, cài đặt hoặc sử dụng ứng dụng <strong>Ravno</strong>, đồng thời mô tả chính xác những gì mã nguồn ứng dụng thực hiện trên thiết bị của bạn. Bằng việc tích chọn đồng ý tại hộp thoại điều khoản trong ứng dụng hoặc tiếp tục sử dụng Ravno, bạn xác nhận đã đọc, hiểu và đồng ý tuân thủ toàn bộ 15 mục dưới đây.
+        </p>
+        <p class="doc-intro lang-en">
+          This document governs your download, installation, and use of the <strong>Ravno</strong> Android application, and accurately describes what the application's source code does on your device. By checking the agreement box in the in-app terms dialog or continuing to use Ravno, you confirm that you have read, understood, and agreed to all 15 sections below.
+        </p>
+      </header>
+
+      <!-- SECTION 1 -->
+      <section class="legal-section" id="sec-1">
+        <h2>
+          <span class="lang-vi">1. Định Nghĩa Thuật Ngữ</span>
+          <span class="lang-en">1. Definitions</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Giải thích ngắn gọn các từ ngữ được dùng lặp lại trong tài liệu này để không bị nhầm lẫn giữa ứng dụng Ravno và dịch vụ của Microsoft/Xbox.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> Clarifies key terms used throughout this document so there is no confusion between the Ravno app and Microsoft/Xbox services.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">1.1. "Ứng dụng" (hoặc "Ravno"):</span> Là phần mềm ứng dụng di động dành cho hệ điều hành Android (mã nguồn tại <code>https://github.com/muitenvn/Ravno-App</code>) cùng trang web giới thiệu dự án tại <code>https://muitenvn.github.io/Ravno-App/</code>.</p>
+          <p class="clause"><span class="clause-num">1.2. "Nhà phát triển":</span> Là cá nhân tác giả độc lập khởi tạo và duy trì mã nguồn dự án Ravno: <strong>Nguyễn Thế Ngọc</strong> (tài khoản GitHub: <code>muitenvn</code>).</p>
+          <p class="clause"><span class="clause-num">1.3. "Người dùng" (hoặc "Bạn"):</span> Là bất kỳ cá nhân hay tổ chức nào tải xuống, cài đặt, truy cập hoặc sử dụng Ứng dụng.</p>
+          <p class="clause"><span class="clause-num">1.4. "Dịch vụ Bên thứ ba":</span> Là các nền tảng, trang web, máy chủ hoặc giao diện lập trình (API) không thuộc quyền sở hữu hay kiểm soát của Nhà phát triển, bao gồm nhưng không giới hạn ở: dịch vụ đám mây Xbox Cloud Gaming (<code>xbox.com/play</code>, <code>play.xbox.com</code>), hệ thống tài khoản Microsoft (<code>login.live.com</code>, <code>login.microsoftonline.com</code>), Epic Games (trò chơi Fortnite), các máy chủ proxy/VPN công cộng (VPNGate, ProxyScrape), dịch vụ định vị IP (DB-IP, country.is, ipwho.is, ipapi.co), dịch vụ đo độ trễ (Globalping) và các cổng tải bản cập nhật (GitHub Releases, các CDN mirror).</p>
+          <p class="clause"><span class="clause-num">1.5. "Máy chủ Trung gian" (Proxy/VPN Tùy chọn):</span> Là các máy chủ chuyển tiếp lưu lượng mạng giao thức HTTP hoặc SOCKS5 do bên thứ ba vận hành hoặc do Người dùng tự nhập vào ứng dụng để định tuyến kết nối của riêng Ứng dụng thông qua dịch vụ <code>XboxCloudVpnService</code>.</p>
+          <p class="clause"><span class="clause-num">1.6. "Dữ liệu Cục bộ":</span> Là toàn bộ thông tin cài đặt, bộ nhớ đệm danh mục game, lịch sử phiên chơi, nhật ký kỹ thuật và cookie trình duyệt được lưu trực tiếp trong vùng bộ nhớ riêng của Ứng dụng trên thiết bị Android của Người dùng (<code>SharedPreferences</code>, <code>filesDir</code>, <code>cacheDir</code> và bộ nhớ <code>WebView</code>).</p>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">1.1. "Application" (or "Ravno"):</span> Refers to the Android mobile software application (source code hosted at <code>https://github.com/muitenvn/Ravno-App</code>) and its project website at <code>https://muitenvn.github.io/Ravno-App/</code>.</p>
+          <p class="clause"><span class="clause-num">1.2. "Developer":</span> Refers to the independent individual developer maintaining the Ravno project: <strong>Nguyễn Thế Ngọc</strong> (GitHub account: <code>muitenvn</code>).</p>
+          <p class="clause"><span class="clause-num">1.3. "User" (or "You"):</span> Refers to any individual or entity that downloads, installs, accesses, or uses the Application.</p>
+          <p class="clause"><span class="clause-num">1.4. "Third-Party Services":</span> Refers to platforms, websites, servers, or APIs not owned or controlled by the Developer, including but not limited to Xbox Cloud Gaming (<code>xbox.com/play</code>, <code>play.xbox.com</code>), Microsoft authentication (<code>login.live.com</code>, <code>login.microsoftonline.com</code>), Epic Games (Fortnite), public proxy/VPN providers (VPNGate, ProxyScrape), IP geolocation services (DB-IP, country.is, ipwho.is, ipapi.co), latency probes (Globalping), and release distribution hosts (GitHub Releases and CDN mirrors).</p>
+          <p class="clause"><span class="clause-num">1.5. "Relay Server" (Optional Proxy/VPN):</span> Refers to HTTP or SOCKS5 proxy servers operated by third parties or manually entered by the User to route the Application's traffic via <code>XboxCloudVpnService</code>.</p>
+          <p class="clause"><span class="clause-num">1.6. "Local Data":</span> Refers to all settings, cached game catalogs, session history, technical logs, and browser cookies stored locally inside the Application's private storage on the User's Android device (<code>SharedPreferences</code>, <code>filesDir</code>, <code>cacheDir</code>, and <code>WebView</code> storage).</p>
+        </div>
+      </section>
+
+      <!-- SECTION 2 -->
+      <section class="legal-section" id="sec-2">
+        <h2>
+          <span class="lang-vi">2. Bản Chất Ứng Dụng, Điều Kiện Chấp Thuận &amp; Tuyên Bố Không Liên Kết</span>
+          <span class="lang-en">2. Nature of the App, Acceptance &amp; Non-Affiliation Statement</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Ravno là trình duyệt chuyên biệt do cộng đồng phát triển độc lập, hoàn toàn không phải ứng dụng của Microsoft hay Xbox. Bạn phải đồng ý điều khoản trước khi dùng.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> Ravno is an independent, community-developed specialized browser—not an official Microsoft or Xbox app. You must accept these terms before using it.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">2.1. Bản chất kỹ thuật của Ứng dụng:</span> Ravno là một trình duyệt web chuyên biệt trên Android sử dụng thành phần hệ thống <code>android.webkit.WebView</code> để hiển thị giao diện web chính thức của dịch vụ Xbox Cloud Gaming, kết hợp với lớp phủ giao diện gốc (Jetpack Compose) để cung cấp tay cầm ảo cảm ứng, bảng thông số kỹ thuật thời gian thực, bộ dịch giao diện và công cụ định tuyến mạng tùy chọn. Ravno không tự lưu trữ, không xử lý và không phát bất kỳ trò chơi nào từ máy chủ của riêng mình.</p>
+          <p class="clause"><span class="clause-num">2.2. Chấp thuận bắt buộc trước khi sử dụng:</span> Khi khởi chạy lần đầu, Ứng dụng hiển thị hộp thoại Điều khoản Sử dụng &amp; Chính sách Quyền riêng tư (<code>UserTermsAgreementDialog</code>). Bạn phải chủ động đánh dấu vào ô xác nhận và bấm <em>"Tôi Đồng Ý"</em> để sử dụng Ứng dụng. Nếu bạn bấm <em>"Không đồng ý (Thoát)"</em>, Ứng dụng sẽ đóng ngay lập tức và không thực hiện bất kỳ kết nối mạng nào.</p>
+          <p class="clause"><span class="clause-num">2.3. Tuyên bố không liên kết (Non-Affiliation):</span> Ravno là dự án độc lập, <strong>HOÀN TOÀN KHÔNG</strong> liên kết, không thuộc sở hữu, không được ủy quyền, không được bảo trợ và không được phê duyệt chính thức bởi <strong>Microsoft Corporation</strong>, <strong>Xbox</strong>, <strong>Xbox Game Studios</strong>, <strong>Epic Games, Inc.</strong> hay bất kỳ công ty con hoặc đơn vị liên kết nào của họ.</p>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">2.1. Technical Nature of the App:</span> Ravno is a specialized Android web browser wrapper built around the system <code>android.webkit.WebView</code> to load the official Xbox Cloud Gaming web portal, combined with native Jetpack Compose overlays providing virtual touch controls, real-time telemetry, menu translation, and optional network routing tools. Ravno does not host, process, or stream any games from its own servers.</p>
+          <p class="clause"><span class="clause-num">2.2. Mandatory Acceptance Before Use:</span> On first launch, the Application displays a mandatory agreement dialog (<code>UserTermsAgreementDialog</code>). You must explicitly check the confirmation box and tap <em>"I Agree &amp; Enter"</em> to use the Application. If you tap <em>"Decline &amp; Exit"</em>, the Application closes immediately without making external network connections.</p>
+          <p class="clause"><span class="clause-num">2.3. Non-Affiliation Statement:</span> Ravno is an independent project and is <strong>NOT</strong> affiliated with, owned by, authorized, endorsed, or sponsored by <strong>Microsoft Corporation</strong>, <strong>Xbox</strong>, <strong>Xbox Game Studios</strong>, <strong>Epic Games, Inc.</strong>, or any of their subsidiaries or affiliates.</p>
+        </div>
+      </section>
+
+      <!-- SECTION 3 -->
+      <section class="legal-section" id="sec-3">
+        <h2>
+          <span class="lang-vi">3. Chi Tiết Các Tính Năng Thực Tế Của Ứng Dụng</span>
+          <span class="lang-en">3. Detailed Description of Actual Application Features</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Liệt kê đúng những gì code của ứng dụng thực hiện: mở trang Xbox, hiển thị tay cầm cảm ứng, chỉnh độ phân giải/hình ảnh, đọc thông số WebRTC thật, dịch chữ và quay màn hình khi bạn bấm nút.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> Lists what the app's code actually does: loads the Xbox web portal, renders touch controls, adjusts stream display settings, reads real WebRTC stats, translates menus, and records the screen when initiated by you.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">3.1. Tương thích trình duyệt &amp; Tùy chỉnh luồng phát (<code>CloudBrowserScreen</code>, <code>XboxBridge</code>):</span></p>
+          <ul>
+            <li>Tải cổng trò chơi chính thức <code>https://www.xbox.com/&lt;locale&gt;/play</code> (hoặc <code>https://play.xbox.com/</code> tùy cài đặt giao diện) và thiết lập cookie ngôn ngữ/vùng hiển thị (<code>MSPC-LOCALE</code>) trên miền <code>.xbox.com</code>.</li>
+            <li>Cho phép tùy chọn chuỗi định danh trình duyệt (<code>User-Agent</code> và tiêu đề <code>Sec-CH-UA</code>) ở chế độ Máy tính (Desktop Edge/Windows) hoặc Di động để mở khóa cấu hình luồng phát 1080p của nền tảng web Xbox.</li>
+            <li>Hỗ trợ tính năng tùy chọn tự động đóng hộp thoại khảo sát phản hồi khi thoát trò chơi để giữ phiên ở giao diện web ổn định.</li>
+            <li>Cho phép chỉnh độ phân giải mục tiêu (720p / 1080p), giới hạn băng thông tối đa (bitrate cap), cấu hình giải mã video H.264, tỷ lệ khung hình (16:9, toàn màn hình, v.v.), bộ lọc độ nét/màu sắc (CSS/WebGL canvas) và khuếch đại âm lượng qua <code>WebAudio GainNode</code>.</li>
+          </ul>
+          <p class="clause"><span class="clause-num">3.2. Tay cầm cảm ứng &amp; Tay cầm vật lý (<code>VirtualGamepad</code>):</span> Cung cấp các nút điều khiển tiêu chuẩn Xbox (ABXY, D-Pad, LB/RB, LT/RT, L3/R3, View, Menu, nút Xbox và hai cần analog L/R) chuyển đổi thao tác chạm thành tín hiệu W3C Gamepad API trong trang web; đồng thời hỗ trợ tay cầm rời kết nối qua Bluetooth hoặc cáp USB-C.</p>
+          <p class="clause"><span class="clause-num">3.3. Thông số kỹ thuật thực tế (<code>FloatingHud</code>):</span> Đọc trực tiếp báo cáo <code>RTCStatsReport</code> từ kết nối WebRTC của trình duyệt để hiển thị tốc độ khung hình (FPS), độ phân giải thực tế, băng thông (bitrate), độ trễ vòng lặp (RTT ping), độ biến thiên trễ (jitter) và số gói tin bị mất. Ứng dụng không bao giờ hiển thị số đo giả tạo.</p>
+          <p class="clause"><span class="clause-num">3.4. Quay màn hình nội bộ (<code>ZeroLagScreenRecorder</code>):</span> Chỉ hoạt động khi Người dùng chủ động bấm nút Quay trong menu nổi trong lúc chơi. Tệp video <code>.mp4</code> được lưu tạm thời tại thư mục riêng <code>cacheDir/recordings/</code> trên thiết bị để Người dùng tự xem, lưu hoặc chia sẻ.</p>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">3.1. Browser Compatibility &amp; Stream Adjustments (<code>CloudBrowserScreen</code>, <code>XboxBridge</code>):</span></p>
+          <ul>
+            <li>Loads the official portal <code>https://www.xbox.com/&lt;locale&gt;/play</code> (or <code>https://play.xbox.com/</code> depending on UI preference) and sets the locale cookie (<code>MSPC-LOCALE</code>) on <code>.xbox.com</code>.</li>
+            <li>Provides optional browser identification headers (<code>User-Agent</code> and <code>Sec-CH-UA</code>) emulating Desktop Edge/Windows or Mobile to support 1080p browser stream profiles.</li>
+            <li>Includes an optional feature to automatically dismiss the post-stream feedback modal when exiting a game to maintain interface stability.</li>
+            <li>Allows configuring target resolution (720p / 1080p), maximum bitrate limits, H.264 codec profile, aspect ratio scaling, CSS/WebGL clarity filters, and audio boost via <code>WebAudio GainNode</code>.</li>
+          </ul>
+          <p class="clause"><span class="clause-num">3.2. Touch &amp; Physical Controllers (<code>VirtualGamepad</code>):</span> Provides standard Xbox controller inputs (ABXY, D-Pad, LB/RB, LT/RT, L3/R3, View, Menu, Xbox Guide button, and dual analog sticks) translated into standard W3C Gamepad API events, alongside pass-through support for Bluetooth and USB-C controllers.</p>
+          <p class="clause"><span class="clause-num">3.3. Real-Time Telemetry (<code>FloatingHud</code>):</span> Reads live <code>RTCStatsReport</code> metrics directly from the active WebRTC peer connection to display actual FPS, resolution, bitrate, RTT ping, jitter, and packet loss. The Application never fabricates telemetry numbers.</p>
+          <p class="clause"><span class="clause-num">3.4. Built-In Screen Recording (<code>ZeroLagScreenRecorder</code>):</span> Activated only when the User manually taps the Record button in the floating menu. Video files (<code>.mp4</code>) are saved locally in <code>cacheDir/recordings/</code> for the User to save or share.</p>
+        </div>
+      </section>
+
+      <!-- SECTION 4 -->
+      <section class="legal-section" id="sec-4">
+        <h2>
+          <span class="lang-vi">4. Dịch Vụ Bên Thứ Ba &amp; Rủi Ro Tài Khoản</span>
+          <span class="lang-en">4. Third-Party Services &amp; Account Risks</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Để chơi game, bạn dùng tài khoản Microsoft/Xbox của chính bạn. Bạn phải tự tuân thủ quy định của Microsoft; nếu tài khoản bị hạn chế hay khóa do vi phạm điều khoản của họ, bạn tự chịu trách nhiệm.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> You use your own Microsoft/Xbox account to play. You are solely responsible for complying with Microsoft's terms; any account restrictions or bans imposed by third parties are your own responsibility.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">4.1. Yêu cầu tài khoản và gói dịch vụ của Microsoft:</span> Quyền truy cập trò chơi phụ thuộc hoàn toàn vào tài khoản Microsoft của bạn. Hiện tại, trò chơi <em>Fortnite</em> được Microsoft/Epic Games hỗ trợ chơi miễn phí trên đám mây bằng tài khoản Microsoft thông thường; các trò chơi khác trong danh mục yêu cầu gói thuê bao <strong>Xbox Game Pass</strong> hợp lệ theo quy định của Microsoft.</p>
+          <p class="clause"><span class="clause-num">4.2. Nghĩa vụ tuân thủ điều khoản bên thứ ba:</span> Khi đăng nhập và sử dụng dịch vụ thông qua Ravno, bạn chịu sự điều chỉnh trực tiếp của <em>Thỏa thuận Dịch vụ của Microsoft (Microsoft Services Agreement)</em>, <em>Tiêu chuẩn Cộng đồng dành cho Xbox (Xbox Community Standards)</em>, điều khoản của Epic Games và các nhà phát hành trò chơi liên quan. Bạn tự chịu trách nhiệm đọc và tuân thủ các quy định đó.</p>
+          <p class="clause"><span class="clause-num">4.3. Rủi ro đối với tài khoản người dùng:</span> Việc truy cập Xbox Cloud Gaming từ trình duyệt tùy biến, sử dụng tính năng giả lập tiêu đề trình duyệt (Desktop User-Agent), hoặc kết nối từ quốc gia/vùng lãnh thổ chưa được Microsoft hỗ trợ chính thức thông qua máy chủ Proxy/VPN có thể bị hệ thống của Microsoft hoặc nhà phát hành trò chơi coi là vi phạm điều khoản dịch vụ của họ. <strong>Người dùng tự nhận thức và hoàn toàn tự chịu mọi rủi ro liên quan đến tài khoản của mình</strong>, bao gồm nguy cơ bị từ chối kết nối, hạn chế tính năng, thu hồi quyền lợi hoặc bị tạm khóa/khóa vĩnh viễn tài khoản.</p>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">4.1. Microsoft Account &amp; Subscription Requirements:</span> Game access depends entirely on your Microsoft account. Currently, <em>Fortnite</em> is offered free-to-play on cloud with a standard Microsoft account, whereas other catalog titles require an active eligible <strong>Xbox Game Pass</strong> subscription as determined by Microsoft.</p>
+          <p class="clause"><span class="clause-num">4.2. Compliance with Third-Party Terms:</span> When signing in and playing via Ravno, your usage is governed directly by the <em>Microsoft Services Agreement</em>, <em>Xbox Community Standards</em>, Epic Games Terms of Service, and respective game publisher terms. You are solely responsible for complying with those agreements.</p>
+          <p class="clause"><span class="clause-num">4.3. User Account Risks:</span> Accessing Xbox Cloud Gaming through a custom WebView wrapper, overriding browser User-Agent headers, or connecting from unsupported regions via Proxy/VPN servers may be deemed by Microsoft or game publishers as a violation of their terms. <strong>You expressly acknowledge and assume all risks to your accounts</strong>, including connection blocks, feature restrictions, or temporary/permanent account suspension.</p>
+        </div>
+      </section>
+
+      <!-- SECTION 5 -->
+      <section class="legal-section" id="sec-5">
+        <h2>
+          <span class="lang-vi">5. Máy Chủ Proxy/VPN Công Cộng Tùy Chọn &amp; Định Tuyến Mạng</span>
+          <span class="lang-en">5. Optional Public Proxy/VPN Servers &amp; Network Routing</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Tính năng VPN/Proxy trong app chỉ áp dụng cho riêng Ravno, lấy danh sách máy chủ miễn phí từ bên thứ ba (VPNGate, ProxyScrape) hoặc do bạn tự nhập. App tự ngắt proxy khi bạn mở trang đăng nhập hoặc thanh toán.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> The built-in VPN/Proxy tool only routes Ravno traffic using third-party public servers (VPNGate, ProxyScrape) or servers you add yourself. It automatically bypasses proxies on login and billing pages.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">5.1. Cơ chế định tuyến cô lập theo ứng dụng (<code>XboxCloudVpnService</code> &amp; <code>VpnManager</code>):</span> Khi bạn chủ động bật kết nối máy chủ trong tab <em>Máy chủ</em>, ứng dụng khởi tạo giao diện mạng ảo cục bộ của Android (<code>VpnService</code>) với cấu hình <code>addAllowedApplication(packageName)</code> kết hợp <code>AndroidX WebKit ProxyController</code>. Điều này đảm bảo chỉ lưu lượng của riêng ứng dụng Ravno đi qua máy chủ trung gian, không can thiệp vào các ứng dụng khác trên điện thoại của bạn.</p>
+          <p class="clause"><span class="clause-num">5.2. Chế độ Bỏ qua VPN khi vào game (Split-Tunneling / Direct Game Traffic):</span> Sau khi bước xác thực vùng hoàn tất và luồng hình ảnh WebRTC bắt đầu truyền phát, ứng dụng hỗ trợ ngắt định tuyến qua proxy để luồng âm thanh/hình ảnh trò chơi kết nối trực tiếp qua mạng Internet gốc của bạn nhằm giảm độ trễ.</p>
+          <p class="clause"><span class="clause-num">5.3. Nguồn máy chủ công cộng do bên thứ ba vận hành:</span> Danh sách máy chủ miễn phí trong ứng dụng được tổng hợp tự động từ các nguồn công cộng trên Internet (bao gồm dự án học thuật <strong>VPNGate</strong> tại <code>vpngate.net</code> và danh mục <strong>ProxyScrape</strong> tại <code>api.proxyscrape.com</code>) hoặc do chính Người dùng tự nhập địa chỉ IP/cổng. <strong>Nhà phát triển không sở hữu, không quản lý, không kiểm duyệt và không thể bảo đảm tính an toàn, tốc độ hay độ tin cậy của bất kỳ máy chủ bên thứ ba nào.</strong> Việc sử dụng các máy chủ công cộng này là quyết định và rủi ro của riêng bạn.</p>
+          <p class="clause"><span class="clause-num">5.4. Cơ chế tự động bảo vệ khi đăng nhập và thanh toán:</span> Để bảo vệ thông tin nhạy cảm, mã nguồn ứng dụng tích hợp bộ lọc địa chỉ tự động: bất kỳ khi nào trình duyệt điều hướng tới các tên miền xác thực (<code>login.live.com</code>, <code>login.microsoftonline.com</code>, <code>account.live.com</code>) hoặc các trang thanh toán/mua hàng/nạp mã của Microsoft (<code>account.microsoft.com/billing</code>, <code>commerce.microsoft.com</code>, <code>cart.production.store-web.dynamics.com</code>, <code>redeem.microsoft.com</code>), ứng dụng sẽ tự động ngắt kết nối máy chủ trung gian hoặc chuyển sang mở bằng trình duyệt mặc định trên điện thoại của bạn.</p>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">5.1. Per-App Isolated Routing (<code>XboxCloudVpnService</code> &amp; <code>VpnManager</code>):</span> When you manually enable a server in the <em>Servers</em> tab, the Application establishes a local Android <code>VpnService</code> tunnel configured with <code>addAllowedApplication(packageName)</code> alongside <code>AndroidX WebKit ProxyController</code>. Only Ravno's own traffic is routed through the selected proxy; other apps on your device are unaffected.</p>
+          <p class="clause"><span class="clause-num">5.2. In-Game VPN Bypass (Split-Tunneling / Direct Game Traffic):</span> Once regional availability checks complete and the WebRTC media stream starts, the Application can automatically bypass the proxy so game video and audio travel directly over your native Internet connection for lower latency.</p>
+          <p class="clause"><span class="clause-num">5.3. Third-Party Public Server Sources:</span> Free server lists displayed in the app are fetched from public third-party aggregators (the academic <strong>VPNGate</strong> project at <code>vpngate.net</code> and <strong>ProxyScrape</strong> at <code>api.proxyscrape.com</code>) or entered manually by the User. <strong>The Developer does not own, operate, vet, or control any of these proxy servers and makes no guarantees regarding their security, privacy, or uptime.</strong> You use public relay servers entirely at your own risk.</p>
+          <p class="clause"><span class="clause-num">5.4. Automatic Login &amp; Payment Bypass Protection:</span> Whenever the WebView navigates to Microsoft authentication domains (<code>login.live.com</code>, <code>login.microsoftonline.com</code>, <code>account.live.com</code>) or billing/checkout pages (<code>account.microsoft.com/billing</code>, <code>commerce.microsoft.com</code>, <code>cart.production.store-web.dynamics.com</code>, <code>redeem.microsoft.com</code>), the Application automatically suspends proxy routing or opens the page in your device's default browser to protect your credentials and payment instruments.</p>
+        </div>
+      </section>
+
+      <!-- SECTION 6 -->
+      <section class="legal-section" id="sec-6">
+        <h2>
+          <span class="lang-vi">6. Chính Sách Quyền Riêng Tư &amp; Danh Mục Dữ Liệu Lưu Trên Thiết Bị</span>
+          <span class="lang-en">6. Privacy Policy &amp; Inventory of Data Stored on Your Device</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Nhà phát triển không có máy chủ thu thập dữ liệu của bạn, không gắn quảng cáo và không bao giờ biết mật khẩu của bạn. Mọi cài đặt, danh sách game, lịch sử chơi và nhật ký lỗi chỉ lưu ngay trên điện thoại của bạn.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> The Developer operates no data-collection servers, runs no ads, and never sees your passwords. All settings, game bookmarks, play history, and diagnostic logs stay locally on your phone.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">6.1. Không thu thập dữ liệu tập trung &amp; Không theo dõi:</span> Ravno không vận hành bất kỳ máy chủ hậu cần (backend server) nào để thu thập dữ liệu cá nhân của Người dùng. Ứng dụng không tích hợp bộ công cụ quảng cáo, không có SDK phân tích hành vi người dùng (như Google Analytics hay Firebase Analytics) và không bán hay chia sẻ dữ liệu của bạn cho bất kỳ ai.</p>
+          <p class="clause"><span class="clause-num">6.2. Thông tin nhạy cảm không bao giờ bị thu thập:</span> Quá trình đăng nhập tài khoản Microsoft diễn ra trực tiếp giữa thành phần <code>WebView</code> trên máy bạn và máy chủ chính thức của Microsoft qua giao thức mã hóa HTTPS. Mã nguồn Ravno không đọc, không ghi nhật ký và không lưu trữ mật khẩu, mã xác thực hai yếu tố (OTP/2FA), mã khôi phục hay số thẻ thanh toán của bạn.</p>
+          <p class="clause"><span class="clause-num">6.3. Bảng kê đầy đủ các dữ liệu lưu cục bộ trên điện thoại của bạn:</span></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tên nơi lưu trữ trong code</th>
+                  <th>Loại dữ liệu được lưu</th>
+                  <th>Mục đích sử dụng</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>cloudplay_settings_store</code> (SharedPreferences)</td>
+                  <td>Cài đặt độ phân giải, bitrate, âm lượng, ngôn ngữ, tọa độ/kích thước nút tay cầm ảo, trạng thái đã đồng ý điều khoản.</td>
+                  <td>Giữ nguyên cấu hình cá nhân hóa của bạn giữa các lần mở ứng dụng.</td>
+                </tr>
+                <tr>
+                  <td><code>cloudplay_servers</code> (SharedPreferences)</td>
+                  <td>Máy chủ proxy đang chọn, danh sách máy chủ do bạn tự thêm, kết quả đo độ trễ (ping) gần nhất.</td>
+                  <td>Hiển thị danh sách máy chủ và tự động nhớ máy chủ bạn đã chọn.</td>
+                </tr>
+                <tr>
+                  <td><code>cloudplay_custom_games_prefs</code>, <code>cloudplay_recent_game_prefs</code> &amp; <code>filesDir/synced_games_cache_v1.json</code></td>
+                  <td>Danh sách game yêu thích, game tự thêm, game vừa chơi gần đây và bộ nhớ đệm danh mục (~550 trò chơi Xbox Cloud).</td>
+                  <td>Mở nhanh trò chơi trên Trang chủ và duyệt Thư viện mượt mà không cần tải lại từ đầu.</td>
+                </tr>
+                <tr>
+                  <td><code>cloudplay_session_history_prefs</code> (SharedPreferences)</td>
+                  <td>Lịch sử tối đa 60 phiên chơi gần nhất (tên game, thời điểm bắt đầu, thời lượng chơi, ping và FPS trung bình).</td>
+                  <td>Giúp bạn xem lại lịch sử chơi và đánh giá độ ổn định mạng trong tab Lịch sử.</td>
+                </tr>
+                <tr>
+                  <td><code>cloudplay_update_checker_store</code> &amp; <code>cacheDir/updates/</code></td>
+                  <td>Thời điểm kiểm tra bản mới gần nhất, thông tin bản phát hành mới nhất và tệp <code>.apk</code> tải về tạm thời.</td>
+                  <td>Kiểm tra và xác thực mã băm SHA-256 trước khi cài đặt bản cập nhật ứng dụng.</td>
+                </tr>
+                <tr>
+                  <td><code>filesDir/cloudplay_persistent_system.log</code> (tối đa 256 KB) &amp; <code>cloudplay_last_crash.txt</code></td>
+                  <td>Nhật ký sự kiện kỹ thuật nội bộ và thông tin lỗi dừng đột ngột (crash stacktrace). Không chứa cookie, token hay mật khẩu.</td>
+                  <td>Giúp bạn xem hoặc tự sao chép gửi khi cần chẩn đoán lỗi kỹ thuật.</td>
+                </tr>
+                <tr>
+                  <td>Bộ nhớ <code>Android WebView</code> &amp; <code>filesDir/geoip/</code> &amp; <code>cacheDir/recordings/</code></td>
+                  <td>Cookie phiên đăng nhập Microsoft (<code>.xbox.com</code>, <code>.live.com</code>), tệp cơ sở dữ liệu vị trí IP ngoại tuyến DB-IP Lite và các video quay màn hình (<code>.mp4</code>).</td>
+                  <td>Duy trì trạng thái đăng nhập Xbox, tra cứu quốc gia của IP máy chủ nhanh trên máy và lưu video quay màn hình.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">6.1. Zero Centralized Data Collection &amp; No Tracking:</span> Ravno does not operate any backend servers to collect User personal data. The Application contains no advertising SDKs, no behavioral analytics or telemetry trackers, and never sells or shares your data.</p>
+          <p class="clause"><span class="clause-num">6.2. Sensitive Credentials Are Never Collected:</span> Microsoft authentication occurs directly between your device's system <code>WebView</code> and official Microsoft servers over HTTPS. Ravno never reads, logs, or stores your passwords, two-factor authentication codes (OTP/2FA), recovery keys, or payment card details.</p>
+          <p class="clause"><span class="clause-num">6.3. Complete Inventory of Data Stored Locally on Your Device:</span></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Storage Identifier in Code</th>
+                  <th>Data Stored</th>
+                  <th>Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>cloudplay_settings_store</code> (SharedPreferences)</td>
+                  <td>Resolution, bitrate, audio boost, UI language, virtual gamepad layout coordinates/scales, and terms acceptance flag.</td>
+                  <td>Preserves your personal preferences across app restarts.</td>
+                </tr>
+                <tr>
+                  <td><code>cloudplay_servers</code> (SharedPreferences)</td>
+                  <td>Selected proxy server, user-added custom servers, and recent ping measurement results.</td>
+                  <td>Displays server lists and remembers your chosen relay configuration.</td>
+                </tr>
+                <tr>
+                  <td><code>cloudplay_custom_games_prefs</code>, <code>cloudplay_recent_game_prefs</code> &amp; <code>filesDir/synced_games_cache_v1.json</code></td>
+                  <td>Favorite games, custom game links, recently played game, and cached metadata for ~550 Xbox Cloud titles.</td>
+                  <td>Enables quick game launch on the Home tab and fast browsing in the Library tab.</td>
+                </tr>
+                <tr>
+                  <td><code>cloudplay_session_history_prefs</code> (SharedPreferences)</td>
+                  <td>Up to 60 recent play sessions (game title, timestamp, duration, average ping, and average FPS).</td>
+                  <td>Lets you review past play sessions and network quality in the History tab.</td>
+                </tr>
+                <tr>
+                  <td><code>cloudplay_update_checker_store</code> &amp; <code>cacheDir/updates/</code></td>
+                  <td>Last update check timestamp, latest release metadata, and temporary downloaded <code>.apk</code> update files.</td>
+                  <td>Checks for app updates and verifies SHA-256 checksums before installation.</td>
+                </tr>
+                <tr>
+                  <td><code>filesDir/cloudplay_persistent_system.log</code> (max 256 KB) &amp; <code>cloudplay_last_crash.txt</code></td>
+                  <td>Internal technical diagnostic events and crash stacktraces. Never logs cookies, tokens, or passwords.</td>
+                  <td>Allows you to inspect or copy technical logs when troubleshooting issues.</td>
+                </tr>
+                <tr>
+                  <td><code>Android WebView</code> Storage, <code>filesDir/geoip/</code> &amp; <code>cacheDir/recordings/</code></td>
+                  <td>Microsoft session cookies (<code>.xbox.com</code>, <code>.live.com</code>), offline DB-IP Lite database, and recorded gameplay videos (<code>.mp4</code>).</td>
+                  <td>Keeps you signed in to Xbox, resolves proxy IP countries offline, and stores user-initiated screen recordings.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 7 -->
+      <section class="legal-section" id="sec-7">
+        <h2>
+          <span class="lang-vi">7. Danh Mục Kết Nối Mạng Ra Bên Ngoài, Quyền Hệ Thống &amp; Cách Xóa Dữ Liệu</span>
+          <span class="lang-en">7. Outbound Network Connections, Android Permissions &amp; How to Delete Data</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Minh bạch mọi địa chỉ mạng mà ứng dụng kết nối tới (khi tải game, kiểm tra IP, đo ping, dịch chữ, tải bản cập nhật), ý nghĩa từng quyền Android và cách bạn tự xóa sạch dữ liệu bất cứ lúc nào.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> Transparently lists every external endpoint the app connects to (for gaming, IP lookup, ping tests, translation, and updates), explains all Android permissions, and shows how to delete your data anytime.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">7.1. Danh mục đầy đủ các kết nối mạng từ Ứng dụng ra bên ngoài:</span> Khi thực hiện các chức năng tương ứng, thiết bị của bạn sẽ gửi yêu cầu HTTP/HTTPS (do đó địa chỉ IP hiện tại và tiêu đề trình duyệt chuẩn sẽ được máy chủ đích nhìn thấy) tới các dịch vụ bên thứ ba sau:</p>
+          <ol>
+            <li><strong>Hệ thống Microsoft &amp; Xbox Cloud Gaming</strong> (<code>www.xbox.com</code>, <code>play.xbox.com</code>, <code>login.live.com</code>, <code>login.microsoftonline.com</code>, <code>catalog.gamepass.com</code>, <code>displaycatalog.mp.microsoft.com</code>): Để đăng nhập tài khoản, đồng bộ danh mục và ảnh bìa trò chơi, tìm kiếm trò chơi và truyền phát luồng game WebRTC.</li>
+            <li><strong>Kiểm tra và tải bản cập nhật ứng dụng</strong> (<code>api.github.com/repos/muitenvn/Ravno-App/releases/latest</code>, <code>github.com/muitenvn/Ravno-App/releases</code>, và khi bạn chọn tải qua máy chủ phụ sẽ kết nối tới các cổng mirror CDN gồm: <code>gh-proxy.com</code>, <code>ghproxy.net</code>, <code>gh.llkk.cc</code>, <code>ghproxy.cc</code>, <code>gh.ddlc.top</code>, <code>ghfast.top</code>, <code>mirror.ghproxy.com</code>, <code>kkgithub.com</code>, <code>gh.con.sh</code>, <code>github.moeyy.xyz</code>): Để kiểm tra phiên bản mới, tải tệp <code>.apk</code> và đối chiếu mã kiểm tra <code>.sha256</code>.</li>
+            <li><strong>Tra cứu vị trí địa lý của địa chỉ IP (GeoIP)</strong> (<code>api.country.is</code>, <code>ipwho.is</code>, <code>ipapi.co/json/</code> và tải cơ sở dữ liệu ngoại tuyến định kỳ từ <code>download.db-ip.com/free/dbip-country-lite-*.csv.gz</code>): Để xác định mã quốc gia của kết nối hiện tại hoặc của các máy chủ proxy.</li>
+            <li><strong>Tổng hợp danh sách proxy công cộng &amp; Đo độ trễ mạng</strong> (<code>www.vpngate.net/api/iphone/</code>, <code>api.proxyscrape.com/v2/</code>, <code>api.globalping.io/v1/measurements</code>, cùng các kết nối đo độ trễ TCP/HTTP tới địa chỉ máy chủ bạn chọn): Để tải danh sách máy chủ công cộng và đo độ trễ thực tế.</li>
+            <li><strong>Từ điển bản địa hóa &amp; Dịch nhanh</strong> (<code>raw.githubusercontent.com/redphx/better-xcloud/main/src/locales/...</code> và <code>translate.googleapis.com/translate_a/single</code>): Để tải từ điển dịch giao diện Xbox và dịch các đoạn văn bản khi bạn sử dụng tính năng dịch.</li>
+          </ol>
+
+          <p class="clause"><span class="clause-num">7.2. Quyền hệ thống Android (<code>AndroidManifest.xml</code>):</span></p>
+          <ul>
+            <li><code>INTERNET</code>, <code>ACCESS_NETWORK_STATE</code>, <code>ACCESS_WIFI_STATE</code>: Kết nối mạng và kiểm tra loại mạng (Wi-Fi / dữ liệu di động).</li>
+            <li><code>FOREGROUND_SERVICE</code>, <code>FOREGROUND_SERVICE_SPECIAL_USE</code>, <code>WAKE_LOCK</code>: Duy trì kết nối <code>XboxCloudVpnService</code> và giữ luồng phát không bị ngắt khi đang chơi.</li>
+            <li><code>VIBRATE</code>: Tạo phản hồi rung khi bấm nút trên tay cầm ảo cảm ứng.</li>
+            <li><code>MODIFY_AUDIO_SETTINGS</code>, <code>RECORD_AUDIO</code> (tùy chọn): Điều chỉnh âm lượng luồng phát và chỉ cấp quyền micro khi bạn chủ động bật tính năng đàm thoại giọng nói (Voice Chat) trong game.</li>
+            <li><code>POST_NOTIFICATIONS</code>: Hiển thị trạng thái dịch vụ kết nối mạng trên thanh thông báo Android.</li>
+            <li><code>REQUEST_INSTALL_PACKAGES</code>: Mở trình cài đặt hệ thống Android khi bạn chủ động tải và bấm cài đặt bản cập nhật APK mới của ứng dụng.</li>
+          </ul>
+
+          <p class="clause"><span class="clause-num">7.3. Cách bạn tự kiểm soát và xóa sạch dữ liệu:</span></p>
+          <ul>
+            <li><strong>Xóa phiên đăng nhập &amp; Cookie trình duyệt:</strong> Vào tab <em>Cài đặt</em> → bấm nút <em>"Xóa phiên &amp; Đăng nhập lại"</em> để xóa sạch toàn bộ cookie và bộ nhớ <code>WebView</code>.</li>
+            <li><strong>Xóa nhật ký hệ thống:</strong> Mở hộp thoại <em>Nhật ký hệ thống (System Log)</em> → bấm nút <em>"Xóa log"</em> để xóa ngay tệp nhật ký trong <code>filesDir</code>.</li>
+            <li><strong>Xóa lịch sử chơi:</strong> Mở danh sách <em>Lịch sử phiên chơi</em> → bấm xóa lịch sử.</li>
+            <li><strong>Xóa toàn bộ dữ liệu ứng dụng:</strong> Vào <em>Cài đặt Android</em> → <em>Ứng dụng</em> → <em>Ravno</em> → <em>Lưu trữ</em> → bấm <em>"Xóa dữ liệu" (Clear Storage)</em> hoặc gỡ cài đặt ứng dụng.</li>
+          </ul>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">7.1. Complete List of Outbound Network Connections:</span> When performing corresponding actions, your device sends standard HTTP/HTTPS requests (exposing your connection IP address and standard HTTP headers to the destination host) to the following third-party endpoints:</p>
+          <ol>
+            <li><strong>Microsoft &amp; Xbox Cloud Gaming</strong> (<code>www.xbox.com</code>, <code>play.xbox.com</code>, <code>login.live.com</code>, <code>login.microsoftonline.com</code>, <code>catalog.gamepass.com</code>, <code>displaycatalog.mp.microsoft.com</code>): For authentication, game catalog/artwork syncing, search autosuggest, and WebRTC game streaming.</li>
+            <li><strong>Update Checks &amp; APK Downloads</strong> (<code>api.github.com/repos/muitenvn/Ravno-App/releases/latest</code>, <code>github.com/muitenvn/Ravno-App/releases</code>, and when using fast mirror downloads: <code>gh-proxy.com</code>, <code>ghproxy.net</code>, <code>gh.llkk.cc</code>, <code>ghproxy.cc</code>, <code>gh.ddlc.top</code>, <code>ghfast.top</code>, <code>mirror.ghproxy.com</code>, <code>kkgithub.com</code>, <code>gh.con.sh</code>, <code>github.moeyy.xyz</code>): To check for new versions, download the <code>.apk</code> package, and verify official <code>.sha256</code> digests.</li>
+            <li><strong>IP Geolocation Lookups</strong> (<code>api.country.is</code>, <code>ipwho.is</code>, <code>ipapi.co/json/</code>, and periodic offline database downloads from <code>download.db-ip.com/free/dbip-country-lite-*.csv.gz</code>): To identify the country code of your current IP or proxy servers.</li>
+            <li><strong>Public Proxy Lists &amp; Latency Probes</strong> (<code>www.vpngate.net/api/iphone/</code>, <code>api.proxyscrape.com/v2/</code>, <code>api.globalping.io/v1/measurements</code>, plus direct TCP/HTTP ping probes to selected servers): To fetch public server lists and measure real network latency.</li>
+            <li><strong>Localization Dictionary &amp; Translation</strong> (<code>raw.githubusercontent.com/redphx/better-xcloud/main/src/locales/...</code> and <code>translate.googleapis.com/translate_a/single</code>): To sync community Xbox menu localization strings and translate text when translation features are enabled.</li>
+          </ol>
+
+          <p class="clause"><span class="clause-num">7.2. Android System Permissions (<code>AndroidManifest.xml</code>):</span></p>
+          <ul>
+            <li><code>INTERNET</code>, <code>ACCESS_NETWORK_STATE</code>, <code>ACCESS_WIFI_STATE</code>: Required for network connectivity and detecting Wi-Fi vs. cellular state.</li>
+            <li><code>FOREGROUND_SERVICE</code>, <code>FOREGROUND_SERVICE_SPECIAL_USE</code>, <code>WAKE_LOCK</code>: Keeps <code>XboxCloudVpnService</code> and active streaming sessions alive while playing.</li>
+            <li><code>VIBRATE</code>: Provides haptic feedback when pressing virtual controller buttons.</li>
+            <li><code>MODIFY_AUDIO_SETTINGS</code>, <code>RECORD_AUDIO</code> (optional runtime permission): Manages stream audio routing and accesses the microphone only if you explicitly enable in-game voice chat.</li>
+            <li><code>POST_NOTIFICATIONS</code>: Displays the active VPN/routing service notification.</li>
+            <li><code>REQUEST_INSTALL_PACKAGES</code>: Invokes the Android package installer when you manually download and install an app update.</li>
+          </ul>
+
+          <p class="clause"><span class="clause-num">7.3. How to Delete Your Data:</span></p>
+          <ul>
+            <li><strong>Clear Sign-In Session &amp; Cookies:</strong> Go to <em>Settings</em> → tap <em>"Clear Session &amp; Re-login"</em> to wipe all WebView cookies and site storage.</li>
+            <li><strong>Clear System Logs:</strong> Open the <em>System Log</em> dialog → tap <em>"Clear Log"</em> to delete the persistent log file in <code>filesDir</code>.</li>
+            <li><strong>Clear Play History:</strong> Open <em>Session History</em> → clear saved records.</li>
+            <li><strong>Erase All App Data:</strong> Open <em>Android Settings</em> → <em>Apps</em> → <em>Ravno</em> → <em>Storage</em> → tap <em>"Clear Storage / Clear Data"</em> or uninstall the Application.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- SECTION 8 -->
+      <section class="legal-section" id="sec-8">
+        <h2>
+          <span class="lang-vi">8. Quy Tắc Sử Dụng Hợp Lệ, Chơi Công Bằng &amp; Các Hành Vi Bị Cấm</span>
+          <span class="lang-en">8. Acceptable Use, Fair Play &amp; Prohibited Conduct</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Ravno không có bất kỳ tính năng gian lận (cheat/macro/bắn tự động) nào. Nghiêm cấm dùng ứng dụng vào mục đích phạm pháp, phá hoại mạng hoặc gian lận thương mại.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> Ravno contains zero cheating features (no macros, turbo fire, or aimbots). Using the app for illegal activities, network abuse, or fraud is strictly prohibited.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">8.1. Nguyên tắc Chơi Công Bằng (Fair Play):</span> Ravno chỉ cung cấp bố cục nút bấm tương đương tay cầm Xbox tiêu chuẩn (1 lần chạm = 1 tín hiệu nút bấm). Ứng dụng tuyệt đối <strong>KHÔNG</strong> tích hợp và không hỗ trợ các tính năng lặp phím tự động (macro/turbo fire), tự động ngắm (aimbot), kịch bản tự động treo máy (AFK script) hay can thiệp vào dữ liệu trò chơi.</p>
+          <p class="clause"><span class="clause-num">8.2. Các hành vi bị nghiêm cấm:</span> Khi sử dụng Ravno, bạn đồng ý KHÔNG thực hiện các hành vi sau:</p>
+          <ul>
+            <li>Sử dụng Ứng dụng hoặc tính năng định tuyến proxy để thực hiện các cuộc tấn công mạng, quét cổng, phát tán mã độc hoặc gây quá tải hạ tầng của bên thứ ba.</li>
+            <li>Sử dụng kết nối trung gian để thực hiện hành vi gian lận thanh toán, rửa tiền, mua bán tài khoản trái phép hoặc trục lợi chênh lệch giá vùng trái quy định của Microsoft và pháp luật.</li>
+            <li>Sửa đổi mã nguồn hoặc đóng gói lại (repackage) tệp APK của Ravno kèm mã độc, quảng cáo ẩn hoặc công cụ đánh cắp tài khoản để phát tán cho người khác.</li>
+            <li>Sử dụng Ứng dụng theo bất kỳ cách thức nào vi phạm pháp luật hiện hành tại quốc gia hoặc vùng lãnh thổ nơi bạn cư trú.</li>
+          </ul>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">8.1. Fair Play Commitment:</span> Ravno provides standard 1:1 Xbox controller button mappings only. The Application strictly does <strong>NOT</strong> include or support rapid-fire macros, turbo buttons, auto-clickers, aim assist injectors, AFK bots, or game memory modifications.</p>
+          <p class="clause"><span class="clause-num">8.2. Prohibited Conduct:</span> When using Ravno, you agree NOT to:</p>
+          <ul>
+            <li>Use the Application or its proxy routing features to conduct network attacks, port scanning, malware distribution, or abuse of third-party infrastructure.</li>
+            <li>Use relay connections for payment fraud, unauthorized account trading, or unlawful regional price arbitrage.</li>
+            <li>Modify or repackage the Ravno APK with malware, hidden adware, or credential stealers for distribution to others.</li>
+            <li>Use the Application in any manner that violates applicable local, national, or international laws.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- SECTION 9 -->
+      <section class="legal-section" id="sec-9">
+        <h2>
+          <span class="lang-vi">9. Quyền Sở Hữu Trí Tuệ, Giấy Phép Mã Nguồn &amp; Ghi Công Bên Thứ Ba</span>
+          <span class="lang-en">9. Intellectual Property, Open-Source License &amp; Third-Party Attribution</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Tên và hình ảnh Xbox, Microsoft, Fortnite và các game thuộc về chủ sở hữu của chúng. Ghi rõ giấy phép mã nguồn của Ravno và ghi công DB-IP cùng dự án better-xcloud.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> Xbox, Microsoft, Fortnite, and game titles/artwork belong to their respective owners. Specifies Ravno's source license and credits DB-IP and better-xcloud.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">9.1. Nhãn hiệu và nội dung của bên thứ ba:</span></p>
+          <ul>
+            <li><strong>Microsoft, Xbox, Xbox Cloud Gaming, Xbox Game Pass, Windows</strong> và các biểu trưng liên quan là nhãn hiệu hoặc nhãn hiệu đã đăng ký của <strong>Microsoft Corporation</strong>.</li>
+            <li><strong>Fortnite</strong> là nhãn hiệu đã đăng ký của <strong>Epic Games, Inc.</strong></li>
+            <li><strong>Android, Google Play, WebView</strong> là nhãn hiệu của <strong>Google LLC</strong>.</li>
+            <li>Ảnh bìa (box art), tên gọi và thông tin mô tả các trò chơi hiển thị trong tab <em>Thư viện</em> được tải trực tiếp từ giao diện danh mục công khai của Microsoft (<code>catalog.gamepass.com</code> và <code>displaycatalog.mp.microsoft.com</code>) chỉ nhằm mục đích giúp người dùng nhận diện trò chơi khi truy cập dịch vụ Xbox Cloud Gaming; toàn bộ bản quyền thuộc về các nhà phát hành trò chơi tương ứng.</li>
+          </ul>
+          <p class="clause"><span class="clause-num">9.2. Bản quyền và giấy phép mã nguồn Ravno:</span> Mã nguồn gốc của ứng dụng Ravno do Nhà phát triển biên soạn được công bố công khai tại <code>https://github.com/muitenvn/Ravno-App</code> theo giấy phép mã nguồn mở công bố trong kho lưu trữ dự án (cho phép tham khảo, kiểm chứng minh bạch kỹ thuật và đóng góp cộng đồng; nghiêm cấm đóng gói lại kèm mã độc hoặc thương mại hóa trái phép).</p>
+          <p class="clause"><span class="clause-num">9.3. Ghi công nguồn dữ liệu và dự án mã nguồn mở bên thứ ba:</span></p>
+          <ul>
+            <li><strong>Dữ liệu định vị IP (DB-IP):</strong> Ứng dụng sử dụng cơ sở dữ liệu định vị IP miễn phí từ DB-IP. Theo điều khoản giấy phép <em>Creative Commons Attribution 4.0 International (CC BY 4.0)</em>, chúng tôi ghi công rõ ràng: <strong>"IP Geolocation by DB-IP (<a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">https://db-ip.com</a>)"</strong>.</li>
+            <li><strong>Từ điển ngôn ngữ &amp; cảm hứng kỹ thuật (better-xcloud):</strong> Tính năng bản địa hóa menu và một số giải pháp tương thích trình duyệt của Ravno lấy cảm hứng và đồng bộ dữ liệu ngôn ngữ từ dự án mã nguồn mở <a href="https://github.com/redphx/better-xcloud" target="_blank" rel="noopener noreferrer">better-xcloud</a> của tác giả <code>redphx</code> (phát hành theo giấy phép MIT License).</li>
+            <li><strong>Thư viện Android Jetpack &amp; OkHttp:</strong> Phát hành theo giấy phép <em>Apache License, Version 2.0</em>.</li>
+          </ul>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">9.1. Third-Party Trademarks &amp; Game Assets:</span></p>
+          <ul>
+            <li><strong>Microsoft, Xbox, Xbox Cloud Gaming, Xbox Game Pass, Windows</strong>, and related logos are trademarks or registered trademarks of <strong>Microsoft Corporation</strong>.</li>
+            <li><strong>Fortnite</strong> is a registered trademark of <strong>Epic Games, Inc.</strong></li>
+            <li><strong>Android, Google Play, WebView</strong> are trademarks of <strong>Google LLC</strong>.</li>
+            <li>Game box art, titles, and metadata displayed in the <em>Library</em> tab are fetched directly from Microsoft's public catalog endpoints (<code>catalog.gamepass.com</code> and <code>displaycatalog.mp.microsoft.com</code>) solely for nominative identification on Xbox Cloud Gaming; all rights belong to their respective publishers.</li>
+          </ul>
+          <p class="clause"><span class="clause-num">9.2. Ravno Source Code License:</span> The original source code of Ravno is published publicly at <code>https://github.com/muitenvn/Ravno-App</code> under the repository's open-source license terms (permitting technical inspection and community contribution; unauthorized commercial redistribution or malicious repackaging is prohibited).</p>
+          <p class="clause"><span class="clause-num">9.3. Open-Source &amp; Data Attributions:</span></p>
+          <ul>
+            <li><strong>DB-IP Geolocation Database:</strong> This application includes IP geolocation data provided by DB-IP under the <em>Creative Commons Attribution 4.0 International License (CC BY 4.0)</em>: <strong>"IP Geolocation by DB-IP (<a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">https://db-ip.com</a>)"</strong>.</li>
+            <li><strong>better-xcloud Localization &amp; Inspiration:</strong> Menu localization dictionaries and stream compatibility concepts are inspired by and synced from the open-source <a href="https://github.com/redphx/better-xcloud" target="_blank" rel="noopener noreferrer">better-xcloud</a> project by <code>redphx</code> (licensed under the MIT License).</li>
+            <li><strong>Android Jetpack &amp; OkHttp Libraries:</strong> Used under the <em>Apache License, Version 2.0</em>.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- SECTION 10 -->
+      <section class="legal-section" id="sec-10">
+        <h2>
+          <span class="lang-vi">10. Tuyên Bố Từ Chối Bảo Đảm — Cung Cấp "Nguyên Trạng" (AS IS)</span>
+          <span class="lang-en">10. Disclaimer of Warranties — Provided "AS IS" &amp; "AS AVAILABLE"</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Ứng dụng được chia sẻ miễn phí "nguyên trạng như hiện có". Nếu Microsoft thay đổi trang web hoặc máy chủ proxy miễn phí bị hỏng làm app không chạy được, Nhà phát triển không thể bảo đảm app luôn hoạt động 100%.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> The app is provided free of charge "as is". If Microsoft changes its website or free public proxies go offline, the Developer cannot guarantee uninterrupted operation.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">10.1. Cung cấp "Nguyên trạng" và "Theo khả năng sẵn có":</span> Ravno được cung cấp hoàn toàn miễn phí trên cơ sở <strong>"NGUYÊN TRẠNG" ("AS IS")</strong> và <strong>"THEO KHẢ NĂNG SẴN CÓ" ("AS AVAILABLE")</strong>. Trong phạm vi tối đa được pháp luật hiện hành cho phép, Nhà phát triển từ chối mọi bảo đảm dưới bất kỳ hình thức nào, dù rõ ràng hay ngầm định, bao gồm nhưng không giới hạn ở các bảo đảm ngầm định về khả năng thương mại, sự phù hợp cho một mục đích cụ thể và việc không vi phạm quyền của bên thứ ba.</p>
+          <p class="clause"><span class="clause-num">10.2. Phụ thuộc vào nền tảng bên thứ ba:</span> Hoạt động của Ravno phụ thuộc trực tiếp vào cấu trúc trang web <code>xbox.com/play</code>, giao thức WebRTC và các API bên thứ ba. Microsoft hoặc các nhà cung cấp dịch vụ bên thứ ba có thể thay đổi giao diện, cập nhật cơ chế bảo mật hoặc ngừng cung cấp API bất cứ lúc nào mà không báo trước, dẫn đến việc một phần hoặc toàn bộ tính năng của Ravno tạm thời hoặc vĩnh viễn không hoạt động.</p>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">10.1. "AS IS" and "AS AVAILABLE" Basis:</span> Ravno is provided free of charge on an <strong>"AS IS"</strong> and <strong>"AS AVAILABLE"</strong> basis. To the maximum extent permitted by applicable law, the Developer disclaims all warranties of any kind, whether express or implied, including but not limited to implied warranties of merchantability, fitness for a particular purpose, and non-infringement.</p>
+          <p class="clause"><span class="clause-num">10.2. Dependency on Third-Party Platforms:</span> Ravno relies directly on the structure of <code>xbox.com/play</code>, WebRTC protocols, and third-party APIs. Microsoft or third-party providers may modify their web interfaces, security policies, or APIs at any time without notice, which may cause features of Ravno to stop working temporarily or permanently.</p>
+        </div>
+      </section>
+
+      <!-- SECTION 11 -->
+      <section class="legal-section" id="sec-11">
+        <h2>
+          <span class="lang-vi">11. Giới Hạn Trách Nhiệm Pháp Lý &amp; Tự Chịu Rủi Ro</span>
+          <span class="lang-en">11. Limitation of Liability &amp; User Assumption of Risk</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Nhà phát triển không chịu trách nhiệm về thiệt hại gián đoạn mạng, khóa tài khoản, rủi ro khi dùng proxy công cộng hay tiền cước 4G/5G (chơi game đám mây rất tốn dung lượng mạng).</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> The Developer is not liable for network outages, account actions, public proxy risks, or mobile data charges (cloud gaming consumes substantial 4G/5G data).</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">11.1. Giới hạn trách nhiệm pháp lý:</span> Trong phạm vi tối đa được pháp luật hiện hành cho phép, Nhà phát triển và những người đóng góp mã nguồn sẽ không chịu trách nhiệm pháp lý đối với bất kỳ thiệt hại trực tiếp, gián tiếp, ngẫu nhiên, đặc biệt hay hệ quả nào phát sinh từ hoặc liên quan đến việc bạn sử dụng hoặc không thể sử dụng Ứng dụng.</p>
+          <p class="clause"><span class="clause-num">11.2. Các rủi ro do Người dùng tự gánh chịu:</span> Bạn hiểu rõ và tự chịu trách nhiệm đối với:</p>
+          <ul>
+            <li><strong>Rủi ro khi dùng máy chủ Proxy/VPN công cộng:</strong> Các máy chủ miễn phí của bên thứ ba có thể không ổn định, ngừng hoạt động đột ngột hoặc do các cá nhân/tổ chức không xác định vận hành. Bạn không nên dùng máy chủ proxy công cộng không rõ nguồn gốc cho các hoạt động nhạy cảm.</li>
+            <li><strong>Rủi ro gián đoạn trò chơi &amp; mất dữ liệu phiên chơi:</strong> Hiện tượng giật hình, trễ nút, văng khỏi phòng chờ (queue) hoặc mất tiến trình lưu trong trò chơi do sự cố mạng hoặc máy chủ đám mây.</li>
+            <li><strong>Chi phí cước dữ liệu di động (4G/5G) và nhiệt độ thiết bị:</strong> Truyền phát video trò chơi trực tuyến tiêu thụ lượng dữ liệu rất lớn (trung bình từ <strong>1.5 GB đến hơn 6 GB mỗi giờ</strong> tùy độ phân giải và bitrate). Bạn tự chịu mọi chi phí cước viễn thông phát sinh với nhà mạng cũng như hao mòn pin/nhiệt độ trên thiết bị của mình.</li>
+          </ul>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">11.1. Limitation of Liability:</span> To the maximum extent permitted by applicable law, the Developer and contributors shall not be liable for any direct, indirect, incidental, special, consequential, or exemplary damages arising out of or in connection with your use of or inability to use the Application.</p>
+          <p class="clause"><span class="clause-num">11.2. User Assumption of Risk:</span> You expressly assume all risks associated with:</p>
+          <ul>
+            <li><strong>Public Proxy/VPN Risks:</strong> Free third-party relay servers may be unstable, disconnect unexpectedly, or be operated by unknown entities.</li>
+            <li><strong>Stream Interruptions &amp; In-Game Progress:</strong> Frame drops, input lag, queue disconnections, or unsaved in-game progress caused by network conditions or cloud server issues.</li>
+            <li><strong>Mobile Data Charges (4G/5G) &amp; Device Resource Usage:</strong> Cloud game streaming consumes large amounts of data (typically <strong>1.5 GB to over 6 GB per hour</strong> depending on resolution and bitrate). You are solely responsible for all carrier data charges and device battery/thermal wear.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- SECTION 12 -->
+      <section class="legal-section" id="sec-12">
+        <h2>
+          <span class="lang-vi">12. Quy Trình Báo Cáo Vi Phạm Bản Quyền, Nhãn Hiệu &amp; Yêu Cầu Gỡ Bỏ</span>
+          <span class="lang-en">12. Copyright/Trademark Infringement Reporting &amp; Takedown Procedure</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Nếu chủ sở hữu bản quyền/nhãn hiệu hoặc cơ quan có thẩm quyền thấy bất kỳ nội dung nào trong dự án cần điều chỉnh hoặc gỡ bỏ, có thể gửi yêu cầu theo quy trình rõ ràng dưới đây.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> Rights holders or authorized representatives who believe any material in the project infringes their rights may submit a takedown or modification notice using the procedure below.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">12.1. Tôn trọng quyền sở hữu trí tuệ:</span> Nhà phát triển tôn trọng quyền sở hữu trí tuệ của Microsoft, Epic Games, các nhà phát hành trò chơi và các bên thứ ba khác. Nếu bạn là chủ sở hữu quyền (hoặc đại diện được ủy quyền hợp pháp) và cho rằng bất kỳ thành phần, văn bản, liên kết hay tài nguyên nào trong mã nguồn hoặc trang web của Ravno xâm phạm quyền sở hữu trí tuệ của bạn, vui lòng gửi thông báo yêu cầu xử lý.</p>
+          <p class="clause"><span class="clause-num">12.2. Nội dung cần có trong thông báo yêu cầu gỡ bỏ:</span></p>
+          <ul>
+            <li>Họ tên, chức danh, tên tổ chức và thông tin liên hệ (email, địa chỉ) của người gửi yêu cầu.</li>
+            <li>Mô tả rõ quyền sở hữu trí tuệ (nhãn hiệu, bản quyền tác phẩm, mã nguồn) được yêu cầu bảo vệ kèm tài liệu chứng minh tư cách chủ sở hữu hoặc đại diện ủy quyền.</li>
+            <li>Đường dẫn URL cụ thể, tên tệp (file path) hoặc vị trí trong ứng dụng/trang web chứa nội dung bị phản ánh và yêu cầu xử lý cụ thể (sửa đổi hoặc gỡ bỏ).</li>
+          </ul>
+          <p class="clause"><span class="clause-num">12.3. Kênh tiếp nhận và thời gian phản hồi:</span> Vui lòng gửi thông báo qua mục Issues trên GitHub tại <a href="https://github.com/muitenvn/Ravno-App/issues" target="_blank" rel="noopener noreferrer">https://github.com/muitenvn/Ravno-App/issues</a> hoặc qua địa chỉ email: <a href="mailto:cloudplayxbox@gmail.com"><strong>cloudplayxbox@gmail.com</strong></a>. Nhà phát triển cam kết tiếp nhận, phản hồi và xử lý yêu cầu hợp lệ trong vòng <strong>07 ngày làm việc</strong>.</p>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">12.1. Respect for Intellectual Property:</span> The Developer respects the intellectual property rights of Microsoft, Epic Games, game publishers, and third parties. If you are a rights holder (or an authorized agent) and believe any component, text, link, or asset in Ravno's repository or website infringes your rights, please submit a notice.</p>
+          <p class="clause"><span class="clause-num">12.2. Required Information in a Takedown Notice:</span></p>
+          <ul>
+            <li>Full name, title, organization, and contact details (email, address) of the complaining party.</li>
+            <li>Identification of the copyrighted work or trademark claimed to be infringed, along with proof of ownership or authorization to act.</li>
+            <li>Specific URL, file path, or location within the Application/website of the material in question and the requested action (modification or removal).</li>
+          </ul>
+          <p class="clause"><span class="clause-num">12.3. Submission Channel &amp; Response Timeframe:</span> Please submit notices via GitHub Issues at <a href="https://github.com/muitenvn/Ravno-App/issues" target="_blank" rel="noopener noreferrer">https://github.com/muitenvn/Ravno-App/issues</a> or via email at: <a href="mailto:cloudplayxbox@gmail.com"><strong>cloudplayxbox@gmail.com</strong></a>. Valid requests will be reviewed and addressed within <strong>7 business days</strong>.</p>
+        </div>
+      </section>
+
+      <!-- SECTION 13 -->
+      <section class="legal-section" id="sec-13">
+        <h2>
+          <span class="lang-vi">13. Bảo Mật, Xác Thực Bản Cập Nhật (SHA-256) &amp; Chấm Dứt Sử Dụng</span>
+          <span class="lang-en">13. Security, Update Verification (SHA-256) &amp; Termination</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Chỉ nên tải APK từ trang GitHub chính thức của dự án; bộ cập nhật trong app luôn kiểm tra mã SHA-256 để chống tệp giả mạo. Bạn có thể ngừng dùng và gỡ app bất cứ lúc nào.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> Only download APKs from the official GitHub repository; the built-in updater verifies SHA-256 hashes against tampering. You may stop using and uninstall the app at any time.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">13.1. Nguồn tải chính thức và xác thực mã băm SHA-256 (<code>UpdateChecker</code>):</span> Để tránh tệp APK bị kẻ xấu chỉnh sửa hoặc chèn mã độc, bạn chỉ nên tải Ravno từ trang GitHub Releases chính thức (<code>https://github.com/muitenvn/Ravno-App/releases</code>) hoặc bằng tính năng kiểm tra cập nhật bên trong ứng dụng. Ngay cả khi tải qua các máy chủ phụ (mirror CDN), mã nguồn <code>UpdateChecker</code> của ứng dụng luôn đối chiếu kích thước tệp, chữ ký cấu trúc tệp gói và mã băm <code>SHA-256</code> chính thức từ GitHub trước khi cho phép mở trình cài đặt Android.</p>
+          <p class="clause"><span class="clause-num">13.2. Báo cáo lỗ hổng bảo mật:</span> Nếu phát hiện lỗ hổng bảo mật có thể ảnh hưởng tới an toàn của người dùng, vui lòng gửi báo cáo riêng tư qua mục <em>Security → Report a vulnerability</em> trên kho lưu trữ GitHub của dự án theo hướng dẫn tại tệp <code>SECURITY.md</code>.</p>
+          <p class="clause"><span class="clause-num">13.3. Chấm dứt sử dụng:</span> Bạn có quyền chấm dứt sự đồng ý với Điều khoản này bất cứ lúc nào bằng cách xóa dữ liệu và gỡ cài đặt ứng dụng Ravno khỏi thiết bị của mình.</p>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">13.1. Official Download Source &amp; SHA-256 Verification (<code>UpdateChecker</code>):</span> To protect against tampered or repackaged APKs, download Ravno only from official GitHub Releases (<code>https://github.com/muitenvn/Ravno-App/releases</code>) or through the in-app updater. Even when downloading via CDN mirrors, <code>UpdateChecker</code> validates file size, package structure, and the official GitHub <code>SHA-256</code> checksum before launching the Android package installer.</p>
+          <p class="clause"><span class="clause-num">13.2. Reporting Security Vulnerabilities:</span> If you discover a security vulnerability, please report it privately via the <em>Security → Report a vulnerability</em> tab on the project's GitHub repository as detailed in <code>SECURITY.md</code>.</p>
+          <p class="clause"><span class="clause-num">13.3. Termination of Use:</span> You may terminate your agreement to these Terms at any time by clearing the Application's data and uninstalling Ravno from your device.</p>
+        </div>
+      </section>
+
+      <!-- SECTION 14 -->
+      <section class="legal-section" id="sec-14">
+        <h2>
+          <span class="lang-vi">14. Sửa Đổi Điều Khoản &amp; Lịch Sử Thay Đổi (Changelog)</span>
+          <span class="lang-en">14. Changes to Terms &amp; Version History (Changelog)</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Khi ứng dụng có thêm hoặc bớt tính năng, trang điều khoản này sẽ được cập nhật kèm ngày hiệu lực và bảng lịch sử rõ ràng.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> When app features change, these Terms are updated with a new effective date and recorded in the version history table below.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">14.1. Cập nhật điều khoản:</span> Nhà phát triển có thể cập nhật tài liệu này để phản ánh chính xác các thay đổi trong mã nguồn, tính năng mới hoặc yêu cầu pháp lý. Phiên bản cập nhật sẽ có hiệu lực kể từ ngày ghi ở đầu tài liệu. Việc bạn tiếp tục sử dụng phiên bản mới của Ứng dụng đồng nghĩa với việc bạn chấp nhận bản điều khoản đã cập nhật.</p>
+          <p class="clause"><span class="clause-num">14.2. Lịch sử thay đổi tài liệu (Document Changelog):</span></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Phiên bản</th>
+                  <th>Ngày hiệu lực</th>
+                  <th>Nội dung thay đổi chính</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>v2.0</strong></td>
+                  <td>20/04/2026</td>
+                  <td>Viết lại toàn diện 15 mục điều khoản theo chuẩn minh bạch kỹ thuật; bổ sung Mục Định nghĩa thuật ngữ, hộp tóm tắt dễ hiểu ở đầu mỗi mục, bảng kê chi tiết 7 nhóm dữ liệu lưu cục bộ (<code>SharedPreferences</code>, <code>filesDir</code>, <code>cacheDir</code>), 5 nhóm kết nối mạng ra ngoài, 11 quyền Android, quy trình báo cáo vi phạm/gỡ bỏ và tuyên bố không phải tư vấn pháp lý.</td>
+                </tr>
+                <tr>
+                  <td><strong>v1.3</strong></td>
+                  <td>18/04/2026</td>
+                  <td>Bổ sung thông tin xác thực mã băm SHA-256 khi tải bản cập nhật qua các cổng máy chủ phụ (mirror CDN) và cơ chế tự động ngắt trung gian trên trang thanh toán Microsoft.</td>
+                </tr>
+                <tr>
+                  <td><strong>v1.0</strong></td>
+                  <td>01/03/2026</td>
+                  <td>Ban hành lần đầu Điều khoản Sử dụng và Chính sách Quyền riêng tư cho ứng dụng Ravno.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">14.1. Updates to These Terms:</span> The Developer may update this document to accurately reflect code changes, new features, or legal requirements. Updated versions take effect on the Effective Date listed at the top of the page. Continued use of the Application constitutes acceptance of the revised Terms.</p>
+          <p class="clause"><span class="clause-num">14.2. Document Version History (Changelog):</span></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Effective Date</th>
+                  <th>Summary of Changes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>v2.0</strong></td>
+                  <td>2026-04-20</td>
+                  <td>Comprehensive rewrite of all 15 sections aligned 100% with the codebase; added Definitions section, plain-language summary boxes, complete inventory of 7 local storage groups, 5 external network endpoint groups, 11 Android permissions, takedown procedure, and non-legal-advice notice.</td>
+                </tr>
+                <tr>
+                  <td><strong>v1.3</strong></td>
+                  <td>2026-04-18</td>
+                  <td>Added SHA-256 update verification details for multi-mirror APK downloads and automatic proxy bypass on Microsoft billing pages.</td>
+                </tr>
+                <tr>
+                  <td><strong>v1.0</strong></td>
+                  <td>2026-03-01</td>
+                  <td>Initial publication of the Ravno Terms of Use and Privacy Policy.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 15 -->
+      <section class="legal-section" id="sec-15">
+        <h2>
+          <span class="lang-vi">15. Luật Điều Chỉnh, Ngôn Ngữ Ưu Tiên, Tuyên Bố Pháp Lý &amp; Liên Hệ</span>
+          <span class="lang-en">15. Governing Law, Language Priority, Legal Notice &amp; Contact</span>
+        </h2>
+        <div class="summary-box">
+          <span class="lang-vi"><strong>Tóm tắt dễ hiểu:</strong> Quy định luật áp dụng, bản ngôn ngữ được ưu tiên nếu có khác biệt câu chữ giữa tiếng Việt và tiếng Anh, thông tin liên hệ chủ dự án và lưu ý đây không phải là văn bản tư vấn pháp lý.</span>
+          <span class="lang-en"><strong>Plain-language summary:</strong> Specifies governing law, which language version prevails in case of discrepancy, project owner contact details, and a clear notice that this document does not constitute legal advice.</span>
+        </div>
+
+        <div class="lang-vi">
+          <p class="clause"><span class="clause-num">15.1. Luật điều chỉnh và giải quyết tranh chấp:</span> Điều khoản này được điều chỉnh và giải thích theo pháp luật của <strong>nước Cộng hòa Xã hội Chủ nghĩa Việt Nam</strong> (không áp dụng các quy phạm xung đột pháp luật). Mọi tranh chấp phát sinh liên quan đến Điều khoản này trước hết sẽ được giải quyết thông qua thương lượng thiện chí; nếu không đạt được thỏa thuận, tranh chấp sẽ được đưa ra giải quyết tại <strong>Tòa án có thẩm quyền tại Việt Nam</strong>.</p>
+          <p class="clause"><span class="clause-num">15.2. Ngôn ngữ ưu tiên khi có sự khác biệt:</span> Tài liệu này được biên soạn song ngữ bằng <strong>Tiếng Việt</strong> và <strong>Tiếng Anh</strong> để thuận tiện cho người dùng. Trong trường hợp có bất kỳ sự khác biệt, mâu thuẫn hoặc cách hiểu đa nghĩa nào giữa bản Tiếng Việt và bản Tiếng Anh, bản <strong>Tiếng Việt</strong> là văn bản gốc có giá trị ưu tiên áp dụng.</p>
+          <p class="clause"><span class="clause-num">15.3. Hiệu lực từng phần (Severability):</span> Nếu bất kỳ điều khoản nhỏ nào trong tài liệu này bị tòa án có thẩm quyền tuyên bố là vô hiệu hoặc không thể thi hành, các điều khoản còn lại vẫn giữ nguyên hiệu lực đầy đủ.</p>
+          <p class="clause"><span class="clause-num">15.4. Thông tin liên hệ chính thức của Chủ dự án / Nhà phát triển:</span></p>
+          <ul>
+            <li><strong>Nhà phát triển (Cá nhân độc lập):</strong> <strong>Nguyễn Thế Ngọc</strong> (GitHub: <code>muitenvn</code>)</li>
+            <li><strong>Email liên hệ hỗ trợ &amp; pháp lý:</strong> <a href="mailto:cloudplayxbox@gmail.com"><strong>cloudplayxbox@gmail.com</strong></a></li>
+            <li><strong>Hình thức liên hệ:</strong> Trực tuyến qua Email và trang GitHub của dự án tại Việt Nam</li>
+            <li><strong>Kho mã nguồn &amp; Kênh tiếp nhận phản hồi công khai:</strong> <a href="https://github.com/muitenvn/Ravno-App/issues" target="_blank" rel="noopener noreferrer">https://github.com/muitenvn/Ravno-App/issues</a></li>
+          </ul>
+        </div>
+
+        <div class="lang-en">
+          <p class="clause"><span class="clause-num">15.1. Governing Law &amp; Dispute Resolution:</span> These Terms shall be governed by and construed in accordance with the laws of the <strong>Socialist Republic of Vietnam</strong>, without regard to its conflict of law principles. Any dispute arising out of or relating to these Terms shall first be addressed through good-faith negotiation, and if unresolved, submitted to the <strong>competent courts of Vietnam</strong>.</p>
+          <p class="clause"><span class="clause-num">15.2. Prevailing Language:</span> This document is provided in both <strong>Vietnamese</strong> and <strong>English</strong>. In the event of any discrepancy, ambiguity, or conflict in interpretation between the Vietnamese and English versions, the <strong>Vietnamese</strong> version shall prevail.</p>
+          <p class="clause"><span class="clause-num">15.3. Severability:</span> If any provision of these Terms is held to be invalid or unenforceable, the remaining provisions shall continue in full force and effect.</p>
+          <p class="clause"><span class="clause-num">15.4. Official Contact Information:</span></p>
+          <ul>
+            <li><strong>Developer (Independent Individual):</strong> <strong>Nguyễn Thế Ngọc</strong> (GitHub: <code>muitenvn</code>)</li>
+            <li><strong>Official Contact &amp; Legal Email:</strong> <a href="mailto:cloudplayxbox@gmail.com"><strong>cloudplayxbox@gmail.com</strong></a></li>
+            <li><strong>Contact Method:</strong> Online via Email and the project's GitHub repository (Vietnam)</li>
+            <li><strong>Source Repository &amp; Issue Tracker:</strong> <a href="https://github.com/muitenvn/Ravno-App/issues" target="_blank" rel="noopener noreferrer">https://github.com/muitenvn/Ravno-App/issues</a></li>
+          </ul>
+        </div>
+
+        <div class="not-legal-advice">
+          <p class="lang-vi">
+            <strong>Tuyên bố quan trọng (Không phải tư vấn pháp lý / Not Legal Advice):</strong> Tài liệu này được biên soạn nhằm mục đích công khai minh bạch hoạt động kỹ thuật của mã nguồn, dữ liệu lưu trữ, các kết nối mạng và quy tắc sử dụng của dự án phần mềm độc lập Ravno. <strong>Nội dung trên trang này không phải là tư vấn pháp lý (not legal advice)</strong> và không tạo lập mối quan hệ luật sư – khách hàng. Nếu bạn cần tư vấn pháp lý chuyên sâu cho trường hợp cụ thể của mình, vui lòng tham khảo ý kiến của luật sư có chứng chỉ hành nghề.
+          </p>
+          <p class="lang-en">
+            <strong>Important Notice (Not Legal Advice):</strong> This document is prepared to transparently disclose the technical operation, local storage, network connections, and usage rules of the independent Ravno software project. <strong>Nothing on this page constitutes legal advice</strong> or creates an attorney-client relationship. If you require legal advice for your specific circumstances, please consult a qualified attorney.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer web-only">
+    <div class="footer-links">
+      <a href="./" id="footerHomeLink">
+        <span class="lang-vi">Trang chủ Ravno</span>
+        <span class="lang-en">Ravno Home</span>
+      </a>
+      <a href="https://github.com/muitenvn/Ravno-App" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+      <a href="https://github.com/muitenvn/Ravno-App/releases" target="_blank" rel="noopener noreferrer">GitHub Releases</a>
+      <a href="https://github.com/muitenvn/Ravno-App/issues" target="_blank" rel="noopener noreferrer">Issues &amp; Support</a>
+    </div>
+    <p class="lang-vi">Ravno • Dự án độc lập không liên kết với Microsoft Corporation, Xbox hay Epic Games. Định vị IP bởi DB-IP.com (CC BY 4.0).</p>
+    <p class="lang-en">Ravno • Independent project not affiliated with Microsoft Corporation, Xbox, or Epic Games. IP geolocation by DB-IP.com (CC BY 4.0).</p>
+  </footer>
+
+  <script>
+    (function () {
+      var currentLang = "vi";
+
+      function applyLang(lang) {
+        currentLang = lang === "en" ? "en" : "vi";
+        document.documentElement.lang = currentLang;
+        document.documentElement.setAttribute("data-lang", currentLang);
+        try { localStorage.setItem("cp_lang", currentLang); } catch (e) {}
+
+        document.title = currentLang === "en"
+          ? "Terms of Use & Privacy Policy — Ravno"
+          : "Điều khoản Sử dụng & Chính sách Quyền riêng tư — Ravno";
+
+        var langBtn = document.getElementById("langBtn");
+        if (langBtn) langBtn.textContent = currentLang === "vi" ? "EN" : "VI";
+
+        var homeHref = "./?lang=" + currentLang;
+        ["brandHomeLink", "backHomeBtn", "footerHomeLink"].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.setAttribute("href", homeHref);
+        });
+      }
+
+      window.setTermsLang = applyLang;
+
+      var langBtn = document.getElementById("langBtn");
+      if (langBtn) {
+        langBtn.addEventListener("click", function () {
+          applyLang(currentLang === "vi" ? "en" : "vi");
+        });
+      }
+
+      var tocBtn = document.getElementById("tocToggleBtn");
+      var tocDrawer = document.getElementById("mobileTocDrawer");
+      if (tocBtn && tocDrawer) {
+        tocBtn.addEventListener("click", function () {
+          var isOpen = tocDrawer.classList.toggle("open");
+          tocBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+        var links = tocDrawer.querySelectorAll("a");
+        for (var i = 0; i < links.length; i++) {
+          links[i].addEventListener("click", function () {
+            tocDrawer.classList.remove("open");
+            tocBtn.setAttribute("aria-expanded", "false");
+          });
+        }
+      }
+
+      var params = new URLSearchParams(window.location.search);
+      if (window.location.protocol === "file:" || params.get("inapp") === "1") {
+        document.documentElement.setAttribute("data-inapp", "true");
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+
+      var urlLang = params.get("lang");
+      var savedLang = null;
+      try { savedLang = localStorage.getItem("cp_lang"); } catch (e) {}
+      applyLang(urlLang || savedLang || "vi");
+    })();
+  </script>
+</body>
+</html>

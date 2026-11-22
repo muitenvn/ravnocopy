@@ -1,0 +1,736 @@
+package com.example.cloudplay
+
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import com.example.data.SettingsRepository
+import com.example.vpn.NetworkMode
+import com.example.vpn.VpnManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+data class StreamUiState(
+    val isGameActive: Boolean = false,
+    val gameTitle: String? = null,
+    val isStreamConnected: Boolean = false,
+    val countdownRemainingSeconds: Int? = null,
+    val autoBypassTriggered: Boolean = false,
+    val currentUrl: String = "https://www.xbox.com/en-US/play",
+    val showBanner: Boolean = false,
+    val bannerMessage: String = "",
+    val bannerType: BannerType = BannerType.INFO,
+    val shortcutToggleRecordingTick: Long = 0L,
+    val shortcutVirtualPadOverrideTick: Long = 0L
+)
+
+enum class BannerType {
+    INFO,
+    COUNTDOWN,
+    SUCCESS,
+    WARNING
+}
+
+class StreamController(private val context: Context) {
+
+    private var scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val _uiState = MutableStateFlow(StreamUiState())
+    val uiState: StateFlow<StreamUiState> = _uiState.asStateFlow()
+
+    private var countdownJob: Job? = null
+    private var bannerDismissJob: Job? = null
+    private var launchFallbackJob: Job? = null
+    private var sessionSampleJob: Job? = null
+
+    private var sessionStartTimeMillis: Long = 0L
+    private var sessionPingSum: Long = 0L
+    private var sessionPingCount: Int = 0
+    private var sessionFpsSum: Long = 0L
+    private var sessionFpsCount: Int = 0
+    private var sessionDecodeSum: Double = 0.0
+    private var sessionDecodeCount: Int = 0
+    private var sessionMaxFramesDropped: Int = 0
+    private var sessionMaxFramesDecoded: Int = 0
+    private var sessionMaxFreezeCount: Int = 0
+    private var sessionMaxFreezesDurationSec: Double = 0.0
+    private var sessionJitterSum: Long = 0L
+    private var sessionJitterCount: Int = 0
+    private var sessionJitterBufferDelaySum: Double = 0.0
+    private var sessionJitterBufferDelayCount: Int = 0
+    private var sessionThermalHot: Boolean = false
+    private val sessionPingSamples = mutableListOf<Int>()
+
+    init {
+        com.example.data.SessionHistoryRepository.init(context)
+        com.example.data.GameLibraryRepository.init(context)
+    }
+
+    /**
+     * Cancels active coroutines when WebView or Activity is destroyed to prevent memory leaks.
+     */
+    fun release() {
+        NetworkOptimizer.setStreamActive(false)
+        finalizeActiveSessionIfNeeded()
+        countdownJob?.cancel()
+        countdownJob = null
+        bannerDismissJob?.cancel()
+        bannerDismissJob = null
+        launchFallbackJob?.cancel()
+        launchFallbackJob = null
+        sessionSampleJob?.cancel()
+        sessionSampleJob = null
+        scope.cancel()
+        scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    }
+
+    fun cancel() {
+        release()
+    }
+
+    fun onWebGameMetadataDetected(
+        title: String?,
+        url: String,
+        imageUrl: String?,
+        supportsTouch: Boolean?,
+        isLaunch: Boolean = false
+    ) {
+        scope.launch {
+            val effectiveUrl = url.ifBlank { _uiState.value.currentUrl }
+            val shouldMarkPlayed = isLaunch ||
+                effectiveUrl.contains("/launch/", ignoreCase = true) ||
+                _uiState.value.isGameActive ||
+                _uiState.value.isStreamConnected
+            val bookmark = com.example.data.GameLibraryRepository.onWebGamePlayedOrDiscovered(
+                rawTitle = title,
+                rawUrl = effectiveUrl,
+                imageUrl = imageUrl,
+                supportsTouch = supportsTouch,
+                markAsLastPlayed = shouldMarkPlayed
+            )
+            if (bookmark != null && !bookmark.title.equals("Xbox Cloud Game", ignoreCase = true)) {
+                _uiState.value = _uiState.value.copy(gameTitle = bookmark.title)
+            }
+        }
+    }
+
+    fun onGameLaunchInitiated(title: String) {
+        val existingTitle = _uiState.value.gameTitle
+        val isIncomingGeneric = title.isBlank() ||
+            title.equals("Xbox Cloud Game", ignoreCase = true) ||
+            title.equals("Xbox Game", ignoreCase = true)
+        val resolvedTitle = if (isIncomingGeneric && !existingTitle.isNullOrBlank() &&
+            !existingTitle.equals("Xbox Cloud Game", ignoreCase = true) &&
+            !existingTitle.equals("Xbox Game", ignoreCase = true)
+        ) {
+            existingTitle
+        } else {
+            com.example.data.SessionHistoryRepository.resolveCleanGameTitle(title, _uiState.value.currentUrl)
+        }
+
+        _uiState.value = _uiState.value.copy(
+            isGameActive = true,
+            gameTitle = resolvedTitle,
+            isStreamConnected = false,
+            autoBypassTriggered = false
+        )
+
+        scope.launch {
+            launchFallbackJob?.cancel()
+            countdownJob?.cancel()
+
+            val syncedBookmark = com.example.data.GameLibraryRepository.onWebGamePlayedOrDiscovered(
+                rawTitle = resolvedTitle,
+                rawUrl = _uiState.value.currentUrl,
+                markAsLastPlayed = true
+            )
+            val finalTitle = syncedBookmark?.title ?: resolvedTitle
+
+            _uiState.value = _uiState.value.copy(
+                isGameActive = true,
+                gameTitle = finalTitle
+            )
+
+            val config = SettingsRepository.config.value
+            val isEn = config.isEnglishUI()
+            val vpnState = VpnManager.state.value
+
+            if (config.smartVpnEnabled) {
+                if (vpnState.mode != NetworkMode.VPN_JAPAN) {
+                    VpnManager.autoTurnOnForLaunch(context)
+                    showTemporaryBanner(
+                        if (isEn) "🌐 Auto-enabled region unlock VPN for game launch..." else "🌐 Đã tự động bật VPN mở khóa vùng để vào game...",
+                        BannerType.INFO,
+                        3500
+                    )
+                } else if (config.autoBypassEnabled) {
+                    showTemporaryBanner(
+                        if (isEn) "🚀 Launching game: VPN will auto-disconnect once stream connects..." else "🚀 Đang vào game: Sẽ tự động tắt VPN khi luồng game kết nối...",
+                        BannerType.INFO,
+                        3500
+                    )
+                }
+            }
+
+            // Fallback: only if WebRTC / video event inside WebView hasn't fired after 45s on /launch/,
+            // trigger onStreamConnected() so VPN never disconnects while the rocket ship is still warming up.
+            launchFallbackJob = scope.launch {
+                delay(45000)
+                if (_uiState.value.isGameActive && !_uiState.value.isStreamConnected) {
+                    onStreamConnected()
+                }
+            }
+        }
+    }
+
+    fun onStreamConnected() {
+        scope.launch {
+            launchFallbackJob?.cancel()
+            launchFallbackJob = null
+
+            if (sessionStartTimeMillis == 0L) {
+                startSessionTracking()
+            }
+
+            if (_uiState.value.isStreamConnected && _uiState.value.autoBypassTriggered) return@launch
+
+            val updatedTitle = com.example.data.SessionHistoryRepository.resolveCleanGameTitle(
+                _uiState.value.gameTitle,
+                _uiState.value.currentUrl
+            )
+            val syncedBookmark = com.example.data.GameLibraryRepository.onWebGamePlayedOrDiscovered(
+                rawTitle = updatedTitle,
+                rawUrl = _uiState.value.currentUrl,
+                markAsLastPlayed = true
+            )
+            _uiState.value = _uiState.value.copy(
+                isStreamConnected = true,
+                isGameActive = true,
+                gameTitle = syncedBookmark?.title ?: updatedTitle
+            )
+            NetworkOptimizer.setStreamActive(true)
+
+            val config = SettingsRepository.config.value
+            val isEn = config.isEnglishUI()
+            val isVpnActive = VpnManager.state.value.mode == NetworkMode.VPN_JAPAN
+
+            if (config.autoBypassEnabled && !_uiState.value.autoBypassTriggered && isVpnActive) {
+                val delaySec = config.autoBypassDelaySeconds.coerceIn(1, 15)
+                try {
+                    android.widget.Toast.makeText(
+                        context,
+                        if (isEn) "⚡ Game loaded! Auto-disconnecting VPN in ${delaySec}s to lower latency..." else "⚡ Game đã tải thành công! Tự động ngắt VPN sau ${delaySec}s để giảm độ trễ...",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                } catch (_: Exception) {}
+                scheduleAutoBypass(delaySec, if (isEn) "Game stream connected" else "Luồng game đã kết nối")
+            } else if (isVpnActive) {
+                showTemporaryBanner(
+                    if (isEn) "⚠️ Game loaded successfully! Disconnect VPN now to lower latency." else "⚠️ Game đã tải thành công! Hãy ngắt VPN ngay để giảm độ trễ.",
+                    BannerType.WARNING,
+                    9000
+                )
+            } else {
+                showTemporaryBanner(
+                    if (isEn) "✅ In-game! Direct stream connected." else "✅ Đã vào game! Đang kết nối trực tiếp ổn định.",
+                    BannerType.SUCCESS,
+                    5000
+                )
+            }
+        }
+    }
+
+    fun onStreamDisconnected() {
+        scope.launch {
+            launchFallbackJob?.cancel()
+            launchFallbackJob = null
+            NetworkOptimizer.setStreamActive(false)
+            finalizeActiveSessionIfNeeded()
+            _uiState.value = _uiState.value.copy(
+                isStreamConnected = false,
+                isGameActive = false
+            )
+        }
+    }
+
+    private fun startSessionTracking() {
+        sessionSampleJob?.cancel()
+        sessionStartTimeMillis = System.currentTimeMillis()
+        sessionPingSum = 0L
+        sessionPingCount = 0
+        sessionFpsSum = 0L
+        sessionFpsCount = 0
+        sessionDecodeSum = 0.0
+        sessionDecodeCount = 0
+        sessionMaxFramesDropped = 0
+        sessionMaxFramesDecoded = 0
+        sessionMaxFreezeCount = 0
+        sessionMaxFreezesDurationSec = 0.0
+        sessionJitterSum = 0L
+        sessionJitterCount = 0
+        sessionJitterBufferDelaySum = 0.0
+        sessionJitterBufferDelayCount = 0
+        sessionThermalHot = checkDeviceThermalModerateOrHigher()
+        sessionPingSamples.clear()
+
+        // Take initial sample and then sample every 5 seconds (up to 60 samples)
+        sessionSampleJob = scope.launch {
+            while (true) {
+                captureTelemetrySample()
+                delay(5000)
+            }
+        }
+    }
+
+    private fun captureTelemetrySample() {
+        val t = NetworkOptimizer.telemetry.value
+        if (!t.hasStatsSample) return
+        val ping = t.rttMs
+        if (ping > 0) {
+            sessionPingSum += ping
+            sessionPingCount += 1
+            if (sessionPingSamples.size >= 60) {
+                sessionPingSamples.removeAt(0)
+            }
+            sessionPingSamples.add(ping)
+        }
+        if (t.fps > 0) {
+            sessionFpsSum += t.fps
+            sessionFpsCount += 1
+        }
+        if (t.decodeTimeMs > 0.0) {
+            sessionDecodeSum += t.decodeTimeMs
+            sessionDecodeCount += 1
+        }
+        if (t.framesDropped > sessionMaxFramesDropped) {
+            sessionMaxFramesDropped = t.framesDropped
+        }
+        if (t.framesDecoded > sessionMaxFramesDecoded) {
+            sessionMaxFramesDecoded = t.framesDecoded
+        }
+        if (t.freezeCount > sessionMaxFreezeCount) {
+            sessionMaxFreezeCount = t.freezeCount
+        }
+        if (t.totalFreezesDurationSec > sessionMaxFreezesDurationSec) {
+            sessionMaxFreezesDurationSec = t.totalFreezesDurationSec
+        }
+        if (t.jitterMs >= 0 && (t.fps > 0 || t.rttMs > 0 || t.jitterMs > 0)) {
+            sessionJitterSum += t.jitterMs
+            sessionJitterCount += 1
+        }
+        if (t.jitterBufferDelayMs > 0.0) {
+            sessionJitterBufferDelaySum += t.jitterBufferDelayMs
+            sessionJitterBufferDelayCount += 1
+        }
+        if (!sessionThermalHot && checkDeviceThermalModerateOrHigher()) {
+            sessionThermalHot = true
+        }
+    }
+
+    private fun checkDeviceThermalModerateOrHigher(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
+        return try {
+            val pm = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+            (pm?.currentThermalStatus ?: 0) >= android.os.PowerManager.THERMAL_STATUS_MODERATE
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun finalizeActiveSessionIfNeeded() {
+        val startMs = sessionStartTimeMillis
+        if (startMs <= 0L) return
+        sessionStartTimeMillis = 0L
+        sessionSampleJob?.cancel()
+        sessionSampleJob = null
+
+        val nowMs = System.currentTimeMillis()
+        val durationSec = ((nowMs - startMs) / 1000L).coerceAtLeast(0L)
+        if (durationSec < 30L) {
+            sessionPingSamples.clear()
+            return
+        }
+
+        // Capture final telemetry snapshot so cumulative counters (framesDropped, freezeCount) are up to date
+        captureTelemetrySample()
+
+        val vpn = VpnManager.state.value
+        val fallbackPing = if (vpn.mode == NetworkMode.DIRECT_NETWORK) {
+            vpn.directLatencyMs ?: vpn.latencyMs ?: 0
+        } else {
+            vpn.latencyMs ?: 0
+        }
+        val avgPing = if (sessionPingCount > 0) {
+            (sessionPingSum / sessionPingCount).toInt()
+        } else {
+            fallbackPing.coerceAtLeast(0)
+        }
+        val avgFps = if (sessionFpsCount > 0) {
+            (sessionFpsSum / sessionFpsCount).toInt()
+        } else {
+            NetworkOptimizer.telemetry.value.fps.coerceAtLeast(0)
+        }
+        val rawAvgDecode = if (sessionDecodeCount > 0) {
+            sessionDecodeSum / sessionDecodeCount
+        } else if (NetworkOptimizer.telemetry.value.hasStatsSample) {
+            NetworkOptimizer.telemetry.value.decodeTimeMs
+        } else {
+            0.0
+        }
+        val avgDecode = ((rawAvgDecode * 10.0).toInt()) / 10.0
+        val avgJitter = if (sessionJitterCount > 0) {
+            (sessionJitterSum / sessionJitterCount).toInt()
+        } else if (NetworkOptimizer.telemetry.value.hasStatsSample) {
+            NetworkOptimizer.telemetry.value.jitterMs.coerceAtLeast(0)
+        } else {
+            0
+        }
+        val rawAvgJbDelay = if (sessionJitterBufferDelayCount > 0) {
+            sessionJitterBufferDelaySum / sessionJitterBufferDelayCount
+        } else if (NetworkOptimizer.telemetry.value.hasStatsSample) {
+            NetworkOptimizer.telemetry.value.jitterBufferDelayMs
+        } else {
+            0.0
+        }
+        val avgJbDelay = ((rawAvgJbDelay * 10.0).toInt()) / 10.0
+        val samplesSnapshot = if (sessionPingSamples.isNotEmpty()) {
+            sessionPingSamples.takeLast(60)
+        } else if (avgPing > 0) {
+            listOf(avgPing)
+        } else {
+            emptyList()
+        }
+        sessionPingSamples.clear()
+
+        val resolvedGameTitle = com.example.data.SessionHistoryRepository.resolveCleanGameTitle(
+            _uiState.value.gameTitle,
+            _uiState.value.currentUrl
+        )
+
+        val netState = NetworkOptimizer.status.value
+        val resolvedNetworkType = when {
+            netState.isWifi -> "WIFI"
+            netState.isCellular -> "CELLULAR_4G"
+            netState.physicalType == PhysicalNetworkType.ETHERNET -> "ETHERNET"
+            else -> ""
+        }
+
+        val record = com.example.data.PlaySessionRecord(
+            id = "sess_${startMs}",
+            gameTitle = resolvedGameTitle,
+            startTimeMillis = startMs,
+            durationSeconds = durationSec,
+            serverName = vpn.currentServer.name,
+            isDirectNetwork = vpn.mode == NetworkMode.DIRECT_NETWORK,
+            avgPingMs = avgPing,
+            avgFps = avgFps,
+            avgDecodeMs = avgDecode,
+            isSlowDecode = avgDecode > 18.0,
+            isThermalHot = sessionThermalHot,
+            pingSamples = samplesSnapshot,
+            framesDropped = sessionMaxFramesDropped,
+            freezeCount = sessionMaxFreezeCount,
+            totalFreezesDuration = sessionMaxFreezesDurationSec,
+            jitterMs = avgJitter,
+            jitterBufferDelayMs = avgJbDelay,
+            networkType = resolvedNetworkType,
+            framesDecoded = sessionMaxFramesDecoded
+        )
+        com.example.data.SessionHistoryRepository.recordSession(record)
+    }
+
+    fun onUrlChanged(url: String) {
+        scope.launch {
+            val prevUrl = _uiState.value.currentUrl
+            val wasInLaunch = prevUrl.contains("/launch/", ignoreCase = true)
+            val nowInLaunch = url.contains("/launch/", ignoreCase = true)
+            val isGamePage = url.contains("/play/games/", ignoreCase = true) ||
+                url.contains("/products/", ignoreCase = true) ||
+                nowInLaunch
+
+            val detectedBookmark = if (isGamePage) {
+                com.example.data.GameLibraryRepository.onWebGamePlayedOrDiscovered(
+                    rawTitle = null,
+                    rawUrl = url,
+                    markAsLastPlayed = nowInLaunch
+                )
+            } else null
+
+            _uiState.value = _uiState.value.copy(
+                currentUrl = url,
+                gameTitle = detectedBookmark?.title ?: _uiState.value.gameTitle
+            )
+
+            if (!wasInLaunch && nowInLaunch) {
+                val resolvedTitle = detectedBookmark?.title ?: com.example.data.SessionHistoryRepository.resolveCleanGameTitle(
+                    _uiState.value.gameTitle,
+                    url
+                )
+                onGameLaunchInitiated(resolvedTitle)
+            } else if (wasInLaunch && !nowInLaunch) {
+                // Player exited running game stream back to catalog/home
+                launchFallbackJob?.cancel()
+                countdownJob?.cancel()
+                NetworkOptimizer.setStreamActive(false)
+                finalizeActiveSessionIfNeeded()
+                _uiState.value = _uiState.value.copy(
+                    isGameActive = false,
+                    isStreamConnected = false,
+                    autoBypassTriggered = false,
+                    countdownRemainingSeconds = null
+                )
+
+                val config = SettingsRepository.config.value
+                val isEn = config.isEnglishUI()
+                if ((config.smartVpnEnabled || config.autoReconnectOnMenu) && VpnManager.needsVpnToPlay()) {
+                    showTemporaryBanner(
+                        if (isEn) "🎮 Exited game: Re-enabling region unlock VPN..." else "🎮 Đã thoát game: Tự động bật lại VPN mở khóa vùng...",
+                        BannerType.INFO,
+                        4000
+                    )
+                    VpnManager.autoTurnOnForLaunch(context)
+                    try {
+                        android.widget.Toast.makeText(
+                            context,
+                            if (isEn) "🌐 Exited game: Auto-reenabled region unlock VPN" else "🌐 Đã thoát game: Tự động bật lại VPN mở khóa vùng",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+    }
+
+    fun cancelAutoBypass() {
+        countdownJob?.cancel()
+        countdownJob = null
+        bannerDismissJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            countdownRemainingSeconds = null,
+            showBanner = false
+        )
+        val isEn = SettingsRepository.config.value.isEnglishUI()
+        showTemporaryBanner(
+            if (isEn) "🛡️ Kept VPN connection active as requested." else "🛡️ Đã giữ nguyên kết nối VPN theo yêu cầu.",
+            BannerType.INFO,
+            3000
+        )
+    }
+
+    fun forceSwitchToDirectNetwork() {
+        cancelAutoBypass()
+        val isEn = SettingsRepository.config.value.isEnglishUI()
+        executeBypass(if (isEn) "Manual network switch" else "Chuyển mạng thủ công")
+    }
+
+    private fun scheduleAutoBypass(delaySeconds: Int, triggerReason: String) {
+        countdownJob?.cancel()
+        bannerDismissJob?.cancel()
+        countdownJob = scope.launch {
+            for (sec in delaySeconds downTo 1) {
+                val isEn = SettingsRepository.config.value.isEnglishUI()
+                _uiState.value = _uiState.value.copy(
+                    countdownRemainingSeconds = sec,
+                    showBanner = true,
+                    bannerMessage = if (isEn) {
+                        "⚡ In-game: Auto-disconnecting VPN in ${sec}s... (Tap Cancel to keep)"
+                    } else {
+                        "⚡ Đã vào game: Tự động TẮT VPN sau ${sec}s... (Chạm Hủy nếu muốn giữ)"
+                    },
+                    bannerType = BannerType.COUNTDOWN
+                )
+                delay(1000)
+            }
+
+            executeBypass(triggerReason)
+        }
+    }
+
+    private fun executeBypass(reason: String) {
+        bannerDismissJob?.cancel()
+        val isEn = SettingsRepository.config.value.isEnglishUI()
+        _uiState.value = _uiState.value.copy(
+            countdownRemainingSeconds = null,
+            autoBypassTriggered = true,
+            showBanner = true,
+            bannerMessage = if (isEn) {
+                "✅ VPN auto-disconnected! Using direct network."
+            } else {
+                "✅ Đã TỰ ĐỘNG TẮT VPN khi vào game! Đang dùng mạng trực tiếp."
+            },
+            bannerType = BannerType.SUCCESS
+        )
+
+        vibrateFeedback()
+        VpnManager.switchToDirectNetwork(context, reason)
+        scope.launch {
+            try {
+                android.widget.Toast.makeText(
+                    context,
+                    if (isEn) "✅ VPN Disconnected — Switched to Direct ISP!" else "✅ Đã TỰ ĐỘNG TẮT VPN — Chuyển sang mạng trực tiếp!",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            } catch (_: Exception) {}
+        }
+
+        // Dismiss banner after 6.5 seconds
+        bannerDismissJob = scope.launch {
+            delay(6500)
+            _uiState.value = _uiState.value.copy(showBanner = false)
+        }
+    }
+
+    private fun showTemporaryBanner(message: String, type: BannerType, durationMs: Long = 3500) {
+        bannerDismissJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            showBanner = true,
+            bannerMessage = message,
+            bannerType = type
+        )
+        bannerDismissJob = scope.launch {
+            delay(durationMs)
+            if (_uiState.value.bannerType == type) {
+                _uiState.value = _uiState.value.copy(showBanner = false)
+            }
+        }
+    }
+
+    @Volatile
+    private var lastGameRumbleAtMs: Long = 0L
+
+    fun onGameRumbleRequested(durationMs: Int, strongMag: Float, weakMag: Float) {
+        val level = SettingsRepository.config.value.gameRumbleLevel
+        if (level == com.example.data.GamepadHapticLevel.OFF) return
+        try {
+            val remotePadConnected =
+                RemotePadTvServer.state.value.status == com.muitenvn.cloudplay.protocol.TvServiceStatus.HAS_CONTROLLER
+            if (durationMs <= 0) {
+                if (remotePadConnected) {
+                    RemotePadTvServer.sendRumbleToPhone(0, 0f, 0f)
+                }
+                val vib: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                }
+                if (vib != null && vib.hasVibrator()) {
+                    vib.cancel()
+                }
+                return
+            }
+            val nowMs = System.currentTimeMillis()
+            if (nowMs - lastGameRumbleAtMs < 60L) return
+            val combinedMag = maxOf(strongMag.coerceIn(0f, 1f), weakMag.coerceIn(0f, 1f) * 0.7f)
+            if (combinedMag < 0.04f) return
+            lastGameRumbleAtMs = nowMs
+
+            val levelMult = when (level) {
+                com.example.data.GamepadHapticLevel.OFF -> 0f
+                com.example.data.GamepadHapticLevel.LIGHT -> 0.45f
+                com.example.data.GamepadHapticLevel.MEDIUM -> 0.75f
+                com.example.data.GamepadHapticLevel.STRONG -> 1.0f
+            }
+            val dur = durationMs.toLong().coerceIn(15L, 500L)
+
+            // Gửi rung ngược về điện thoại làm tay cầm từ xa (ngay cả khi Android TV Box không có mô-tơ rung)
+            if (remotePadConnected) {
+                RemotePadTvServer.sendRumbleToPhone(
+                    durationMs = dur.toInt(),
+                    strongMagnitude = (strongMag.coerceIn(0f, 1f) * levelMult).coerceIn(0f, 1f),
+                    weakMagnitude = (weakMag.coerceIn(0f, 1f) * levelMult).coerceIn(0f, 1f)
+                )
+            }
+
+            if (checkDeviceThermalModerateOrHigher()) return
+            val vib: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+            if (vib == null || !vib.hasVibrator()) return
+            val amp = (combinedMag * levelMult * 255f).toInt().coerceIn(1, 255)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vib.vibrate(VibrationEffect.createOneShot(dur, amp))
+            } else {
+                @Suppress("DEPRECATION")
+                vib.vibrate(dur)
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    fun onControllerShortcutTriggered(actionId: String) {
+        val cfg = SettingsRepository.config.value
+        if (!cfg.controllerShortcutsEnabled) return
+        scope.launch {
+            val isEn = cfg.isEnglishUI()
+            vibrateFeedback()
+            when (actionId) {
+                "TOGGLE_STATS" -> {
+                    val nextHide = !cfg.hideStreamStatsOverlay
+                    SettingsRepository.updateHideStreamStatsOverlay(nextHide)
+                    showTemporaryBanner(
+                        if (nextHide) {
+                            if (isEn) "📊 Stream stats hidden (Combo Shortcut)" else "📊 Đã ẩn thanh thông số (Phím tắt tay cầm)"
+                        } else {
+                            if (isEn) "📊 Stream stats shown (Combo Shortcut)" else "📊 Đã hiện thanh thông số (Phím tắt tay cầm)"
+                        },
+                        BannerType.INFO,
+                        2200
+                    )
+                }
+                "TOGGLE_VPAD" -> {
+                    val nextShow = !cfg.showVirtualController
+                    SettingsRepository.updateShowVirtualController(nextShow)
+                    _uiState.value = _uiState.value.copy(
+                        shortcutVirtualPadOverrideTick = System.currentTimeMillis()
+                    )
+                    showTemporaryBanner(
+                        if (nextShow) {
+                            if (isEn) "🎮 Virtual Gamepad ON (Combo Shortcut)" else "🎮 Đã bật Tay cầm ảo (Phím tắt tay cầm)"
+                        } else {
+                            if (isEn) "🎮 Virtual Gamepad OFF (Combo Shortcut)" else "🎮 Đã tắt Tay cầm ảo (Phím tắt tay cầm)"
+                        },
+                        BannerType.INFO,
+                        2200
+                    )
+                }
+                "TOGGLE_REC" -> {
+                    _uiState.value = _uiState.value.copy(
+                        shortcutToggleRecordingTick = System.currentTimeMillis()
+                    )
+                }
+            }
+        }
+    }
+
+    private fun vibrateFeedback() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                vibratorManager?.defaultVibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
+            } else {
+                @Suppress("DEPRECATION")
+                val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator?.vibrate(50)
+                }
+            }
+        } catch (ignored: Exception) {
+        }
+    }
+}
+

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App & General -->
+    <string name="app_name">Ravno</string>
+    <string name="app_subtitle">Xbox Cloud Gaming</string>
+    <string name="xbox_cloud_url">https://www.xbox.com/en-US/play</string>
+
+    <!-- Navigation Tabs -->
+    <string name="tab_home">Trang chủ</string>
+    <string name="tab_library">Thư viện</string>
+    <string name="tab_servers">Máy chủ</string>
+    <string name="tab_settings">Cài đặt</string>
+
+    <!-- Language Settings -->
+    <string name="section_app_language">NGÔN NGỮ ỨNG DỤNG</string>
+    <string name="app_language_desc">Tự động chọn ngôn ngữ theo hệ điều hành hoặc thiết lập thủ công.</string>
+    <string name="lang_system_default">Theo hệ thống (Tự động)</string>
+    <string name="lang_vietnamese">Tiếng Việt (Vietnamese)</string>
+    <string name="lang_english">English (Tiếng Anh)</string>
+    <string name="current_language">Ngôn ngữ</string>
+
+    <!-- Xbox Web Language -->
+    <string name="section_xbox_web_language">NGÔN NGỮ TRANG XBOX</string>
+    <string name="xbox_web_language_desc">Chọn ngôn ngữ hiển thị cho trang Xbox, tránh bị chuyển sang tiếng Nhật.</string>
+    <string name="xbox_lang_system_match">Theo ngôn ngữ máy (Mặc định en-US)</string>
+    <string name="xbox_lang_custom">Ngôn ngữ Xbox tùy chỉnh</string>
+    <string name="anti_japanese_enforcer">Chặn tự đổi tiếng Nhật</string>
+    <string name="anti_japanese_enforcer_desc">Giữ trang Xbox ở tiếng Anh dễ đọc thay vì tiếng Nhật.</string>
+
+    <!-- Hero / Quick Play -->
+    <string name="hero_tag">CHƠI GAME ĐÁM MÂY</string>
+    <string name="hero_title">CHƠI XBOX CLOUD</string>
+    <string name="hero_subtitle">Mở khóa vùng • Tự tắt VPN khi vào game</string>
+    <string name="btn_launch_xcloud">Chơi ngay</string>
+    <string name="btn_play_fortnite">Fortnite</string>
+    <string name="btn_continue_game">Chơi tiếp</string>
+
+    <!-- Network & Hardware Cockpit -->
+    <string name="cockpit_title">Mạng &amp; Tay cầm</string>
+    <string name="cockpit_subtitle">Mở khóa vùng • Tự tắt VPN</string>
+    <string name="net_mode_direct">Mạng trực tiếp</string>
+    <string name="net_mode_vpn">Đang bật VPN</string>
+    <string name="net_desc_direct">Đang dùng mạng trực tiếp để chơi mượt.</string>
+    <string name="net_desc_vpn">Đang mở khóa vùng để vào game.</string>
+    <string name="btn_enable_vpn">Bật VPN</string>
+    <string name="btn_switch_direct">Tắt VPN</string>
+    <string name="vpn_status_connected">Đang bật VPN</string>
+    <string name="vpn_status_disconnected">Mạng trực tiếp</string>
+    <string name="auto_bypass_enabled">Tự tắt VPN khi vào game</string>
+    <string name="auto_bypass_triggered">Đã vào game! Tự chuyển sang mạng trực tiếp.</string>
+    <string name="hardware_controller">Tay cầm</string>
+    <string name="controller_connected">Đã nối</string>
+    <string name="controller_disconnected">Chưa nối</string>
+    <string name="controller_touch">Cảm ứng</string>
+    <string name="gamepad_none">Không có</string>
+    <string name="gamepad_default_name">Tay cầm Xbox</string>
+    <string name="guide_button">Hướng dẫn</string>
+
+    <!-- Featured Games -->
+    <string name="featured_games_title">Game nổi bật</string>
+    <string name="featured_games_subtitle">Chạm để vào game ngay</string>
+    <string name="btn_view_all">Tất cả</string>
+    <string name="btn_play_now">Chơi ngay</string>
+    <string name="badge_free">Miễn phí</string>
+    <string name="badge_touch">Cảm ứng</string>
+    <string name="badge_pass">Game Pass</string>
+
+    <!-- Game Library Screen -->
+    <string name="search_games_placeholder">Tìm kiếm game trong thư viện...</string>
+    <string name="filter_all">Tất cả</string>
+    <string name="filter_free">Miễn phí</string>
+    <string name="filter_touch">Hỗ trợ Cảm ứng</string>
+    <string name="filter_gamepass">Xbox Game Pass</string>
+    <string name="btn_add_game">Thêm Game</string>
+    <string name="dialog_add_game_title">Thêm Game Yêu Thích</string>
+    <string name="input_game_title">Tên game</string>
+    <string name="input_game_url">Đường dẫn game trên Xbox</string>
+    <string name="input_game_category">Thể loại</string>
+    <string name="input_game_cover">Ảnh bìa URL (Tùy chọn)</string>
+    <string name="btn_save">Lưu lại</string>
+    <string name="btn_cancel">Hủy</string>
+    <string name="btn_delete">Xóa</string>
+
+    <!-- Servers Screen -->
+    <string name="servers_title">Máy Chủ Mở Khóa Vùng</string>
+    <string name="servers_subtitle">máy chủ giúp mở khóa vùng để vào game</string>
+    <string name="cat_japan">Nhật Bản (Tokyo/Osaka)</string>
+    <string name="cat_korea">Hàn Quốc (Seoul)</string>
+    <string name="cat_sea">Đông Nam Á (Singapore)</string>
+    <string name="cat_usa">Hoa Kỳ (US)</string>
+    <string name="btn_ping_all">Đo Ping</string>
+    <string name="btn_fetch_live">Cập Nhật Máy Chủ</string>
+    <string name="btn_add_custom_server">Thêm Mới</string>
+    <string name="server_active">Đang dùng</string>
+    <string name="server_optimal">Tối ưu</string>
+    <string name="server_testing">Đang đo ping...</string>
+
+    <!-- Settings Screen -->
+    <string name="section_auto_bypass">TỰ BẬT/TẮT VPN &amp; MẠNG</string>
+    <string name="smart_vpn_title">Tự bật/tắt VPN</string>
+    <string name="smart_vpn_desc">Tự bật VPN để mở game, sau đó tắt VPN để dùng mạng trực tiếp.</string>
+    <string name="stealth_headers_title">Mở khóa vùng</string>
+    <string name="stealth_headers_desc">Hỗ trợ qua bước kiểm tra vùng khi mở game.</string>
+    <string name="section_cellular_wifi">ĐỒ HỌA &amp; HIỆU NĂNG MÁY</string>
+    <string name="section_graphics_quality">ĐỒ HỌA &amp; HIỆU NĂNG MÁY</string>
+    <string name="graphics_quality_auto">Tự động (Khuyên dùng)</string>
+    <string name="graphics_quality_auto_desc">Tự điều chỉnh theo mạng và giữ máy mát khi chơi.</string>
+    <string name="graphics_quality_saver">Tiết kiệm dữ liệu (Thấp)</string>
+    <string name="graphics_quality_saver_desc">Đỡ tốn dữ liệu di động, máy mát và ít hao pin.</string>
+    <string name="graphics_quality_medium">Trung bình</string>
+    <string name="graphics_quality_medium_desc">Cân bằng độ nét và nhiệt độ máy khi chơi lâu.</string>
+    <string name="graphics_quality_high">Cao</string>
+    <string name="graphics_quality_high_desc">Hình ảnh 1080p sắc nét và rõ chi tiết.</string>
+    <string name="graphics_quality_ultra">Rất cao (Tối đa)</string>
+    <string name="graphics_quality_ultra_desc">Hình ảnh đẹp nhất cho mạng khỏe và máy cấu hình tốt.</string>
+    <string name="cellular_mode_saver">Tiết kiệm dữ liệu (Thấp)</string>
+    <string name="cellular_mode_saver_desc">Đỡ tốn dữ liệu, máy mát và ít hao pin.</string>
+    <string name="cellular_mode_max">Rất cao (Tối đa)</string>
+    <string name="cellular_mode_max_desc">Chất lượng hình ảnh cao nhất khi mạng khỏe.</string>
+    <string name="wifi_speed_first">Ưu tiên phản hồi mượt</string>
+    <string name="wifi_speed_first_desc">Giảm trễ nút bấm khi mạng chập chờn.</string>
+    <string name="section_clarity">CHẤT LƯỢNG HÌNH ẢNH &amp; ĐIỀU KHIỂN</string>
+    <string name="clarity_boost_title">Làm nét hình ảnh</string>
+    <string name="clarity_boost_desc">Tăng độ nét và độ rõ cho hình ảnh trong game.</string>
+    <string name="preset_off">Tắt</string>
+    <string name="preset_balanced">Cân bằng (Khuyên dùng)</string>
+    <string name="preset_sharp">Rất nét</string>
+    <string name="preset_oled">Màu rực rỡ</string>
+    <string name="section_controls">ĐIỀU KHIỂN &amp; TIỆN ÍCH</string>
+    <string name="anti_afk_title">Chống tự thoát khi treo máy</string>
+    <string name="anti_afk_desc">Giữ phiên chơi không bị ngắt khi tạm nghỉ.</string>
+    <string name="polling_boost_title">Tăng độ nhạy nút bấm</string>
+    <string name="polling_boost_desc">Giúp tay cầm phản hồi thao tác nhanh hơn.</string>
+    <string name="floating_hud_title">Thanh điều khiển nổi (HUD)</string>
+    <string name="floating_hud_desc">Hiện ping, FPS và phím tắt nhanh trong lúc chơi.</string>
+    <string name="virtual_gamepad_title">Tay cầm cảm ứng</string>
+    <string name="virtual_gamepad_desc">Chơi bằng nút bấm cảm ứng trên màn hình khi không có tay cầm rời.</string>
+    <string name="section_storage">BỘ NHỚ ĐỆM &amp; TÀI KHOẢN</string>
+    <string name="clear_cookies_title">Xóa bộ nhớ đệm &amp; đăng nhập lại</string>
+    <string name="clear_cookies_desc">Xóa dữ liệu đăng nhập cũ khi trang game bị lỗi tải.</string>
+    <string name="btn_clear_cookies">Xóa dữ liệu ngay</string>
+    <string name="toast_cookies_cleared">Đã xóa bộ nhớ đệm và dữ liệu web!</string>
+
+    <!-- Cloud Browser & Floating HUD -->
+    <string name="hud_stream_latency">ĐỘ TRỄ</string>
+    <string name="hud_controller">TAY CẦM</string>
+    <string name="hud_clarity_boost">LÀM NÉT</string>
+    <string name="hud_vietnamese_translator">DỊCH TIẾNG VIỆT</string>
+    <string name="hud_return_home">Về trang chủ</string>
+    <string name="hud_reload">Tải lại trang</string>
+    <string name="hud_virtual_gamepad">Tay cầm ảo</string>
+    <string name="hud_network_switch">Đổi chế độ mạng</string>
+    <string name="dialog_exit_title">Thoát game?</string>
+    <string name="dialog_exit_message">Bạn có muốn thoát game và quay về trang chủ?</string>
+    <string name="btn_confirm_exit">Thoát game</string>
+    <string name="loading_stream">Đang kết nối vào Xbox Cloud...</string>
+    <string name="loading_tip">Mẹo: VPN sẽ tự tắt ngay khi vào game để chơi mượt hơn.</string>
+</resources>

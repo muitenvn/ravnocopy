@@ -1,0 +1,867 @@
+package com.example.vpn
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
+
+data class GeoIpResult(
+    val ip: String,
+    val countryCode: String,
+    val countryName: String,
+    val city: String,
+    val flagEmoji: String,
+    val isXboxSupported: Boolean,
+    val isFromWebView: Boolean = false,
+    val timestamp: Long = System.currentTimeMillis(),
+    val latitude: Double? = null,
+    val longitude: Double? = null
+)
+
+object GeoIpDetector {
+
+    private val _currentGeoIp = MutableStateFlow<GeoIpResult?>(null)
+    val currentGeoIp: StateFlow<GeoIpResult?> = _currentGeoIp.asStateFlow()
+
+    private val _isChecking = MutableStateFlow(false)
+    val isChecking: StateFlow<Boolean> = _isChecking.asStateFlow()
+
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .build()
+
+    // Xbox Cloud officially supported countries (Singapore 'SG' is NOT supported by Xbox Cloud Gaming)
+    val SUPPORTED_COUNTRIES = setOf(
+        "JP", "US", "KR", "DE", "GB", "FR", "ES", "IT", "PT", "NL", "BE", "AT", "CH", "IE",
+        "AU", "NZ", "CA", "SE", "NO", "DK", "FI", "PL", "CZ", "HU", "SK", "BR", "MX", "AR", "CL", "CO"
+    )
+
+    fun getFlagEmoji(countryCode: String): String {
+        val clean = countryCode.trim().uppercase(java.util.Locale.ROOT).let {
+            if (it == "UK") "GB" else it
+        }
+        if (clean.length != 2 || clean == "XX" || clean == "ZZ") return "🌐"
+        val c0 = clean[0]
+        val c1 = clean[1]
+        if (c0 !in 'A'..'Z' || c1 !in 'A'..'Z') return "🌐"
+        val firstCodePoint = 0x1F1E6 + (c0 - 'A')
+        val secondCodePoint = 0x1F1E6 + (c1 - 'A')
+        return String(Character.toChars(firstCodePoint)) + String(Character.toChars(secondCodePoint))
+    }
+
+    fun getCountryDisplayName(
+        countryCode: String,
+        isEn: Boolean = try {
+            com.example.data.SettingsRepository.config.value.isEnglishUI()
+        } catch (_: Exception) {
+            false
+        }
+    ): String {
+        val clean = countryCode.trim().uppercase(java.util.Locale.ROOT).let {
+            if (it == "UK") "GB" else it
+        }
+        if (clean.length != 2 || clean == "XX" || clean == "ZZ" || !clean.all { it in 'A'..'Z' }) {
+            return if (isEn) "Unknown country" else "Không rõ quốc gia"
+        }
+        return when (clean) {
+            "JP" -> if (isEn) "Japan" else "Nhật Bản"
+            "KR" -> if (isEn) "South Korea" else "Hàn Quốc"
+            "US" -> if (isEn) "United States" else "Hoa Kỳ"
+            "SG" -> "Singapore"
+            "VN" -> if (isEn) "Vietnam" else "Việt Nam"
+            "GB" -> if (isEn) "United Kingdom" else "Vương Quốc Anh"
+            "DE" -> if (isEn) "Germany" else "Đức"
+            "FR" -> if (isEn) "France" else "Pháp"
+            "ES" -> if (isEn) "Spain" else "Tây Ban Nha"
+            "IT" -> if (isEn) "Italy" else "Ý"
+            "PT" -> if (isEn) "Portugal" else "Bồ Đào Nha"
+            "NL" -> if (isEn) "Netherlands" else "Hà Lan"
+            "AU" -> if (isEn) "Australia" else "Úc"
+            "NZ" -> "New Zealand"
+            "CA" -> "Canada"
+            "BR" -> "Brazil"
+            "MX" -> "Mexico"
+            "AR" -> "Argentina"
+            "CL" -> "Chile"
+            "CO" -> "Colombia"
+            "PL" -> if (isEn) "Poland" else "Ba Lan"
+            "TR" -> if (isEn) "Turkey" else "Thổ Nhĩ Kỳ"
+            "RU" -> if (isEn) "Russia" else "Nga"
+            "IN" -> if (isEn) "India" else "Ấn Độ"
+            "ID" -> "Indonesia"
+            "TH" -> if (isEn) "Thailand" else "Thái Lan"
+            "MY" -> "Malaysia"
+            "PH" -> "Philippines"
+            "TW" -> if (isEn) "Taiwan" else "Đài Loan"
+            "HK" -> "Hong Kong"
+            "CN" -> if (isEn) "China" else "Trung Quốc"
+            else -> {
+                val targetLocale = if (isEn) java.util.Locale.ENGLISH else java.util.Locale("vi", "VN")
+                val localized = java.util.Locale("", clean).getDisplayCountry(targetLocale)
+                if (localized.isNotBlank() && !localized.equals(clean, ignoreCase = true)) {
+                    localized
+                } else {
+                    val enFallback = java.util.Locale("", clean).getDisplayCountry(java.util.Locale.ENGLISH)
+                    if (enFallback.isNotBlank() && !enFallback.equals(clean, ignoreCase = true)) {
+                        enFallback
+                    } else {
+                        if (isEn) "Unknown country" else "Không rõ quốc gia"
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Mục 9.4 & 10: Chỉ gán azureEndpoint khi đã có ánh xạ thật theo quốc gia (JP, KR).
+     * Các nước chưa có ánh xạ trong app (US, VN, DE, FR...) hoặc không rõ quốc gia thì trả về chuỗi rỗng "".
+     */
+    fun getAzureEndpointForCountry(countryCode: String): String {
+        return when (countryCode.trim().uppercase(java.util.Locale.ROOT)) {
+            "JP" -> "japaneast.cloudapp.azure.com"
+            "KR" -> "koreacentral.cloudapp.azure.com"
+            else -> ""
+        }
+    }
+
+    fun formatServerDisplayName(countryCode: String, ip: String, isEn: Boolean = try {
+        com.example.data.SettingsRepository.config.value.isEnglishUI()
+    } catch (_: Exception) { false }): String {
+        val cleanCc = countryCode.trim().uppercase(java.util.Locale.ROOT)
+        val flag = getFlagEmoji(cleanCc)
+        val countryName = getCountryDisplayName(cleanCc, isEn)
+        return "$flag $countryName • ${ip.trim()}"
+    }
+
+    fun ipv4ToLong(ip: String): Long? = ipv4ToLong(ip, 0, ip.length)
+
+    private fun ipv4ToLong(cs: CharSequence, startIdx: Int, endIdx: Int): Long? {
+        var s = startIdx
+        var e = endIdx
+        while (s < e && cs[s] <= ' ') s++
+        while (e > s && cs[e - 1] <= ' ') e--
+        if (e - s !in 7..15) return null
+        var result = 0L
+        var currentOctet = 0
+        var digitCount = 0
+        var dotCount = 0
+        for (i in s until e) {
+            val ch = cs[i]
+            if (ch == '.') {
+                if (digitCount == 0 || currentOctet > 255) return null
+                result = (result shl 8) or currentOctet.toLong()
+                currentOctet = 0
+                digitCount = 0
+                dotCount++
+                if (dotCount > 3) return null
+            } else if (ch in '0'..'9') {
+                currentOctet = currentOctet * 10 + (ch - '0')
+                digitCount++
+                if (digitCount > 3) return null
+            } else {
+                return null
+            }
+        }
+        if (dotCount != 3 || digitCount == 0 || currentOctet > 255) return null
+        return (result shl 8) or currentOctet.toLong()
+    }
+
+    private val fastHttpClient = OkHttpClient.Builder()
+        .connectTimeout(1200, TimeUnit.MILLISECONDS)
+        .readTimeout(1200, TimeUnit.MILLISECONDS)
+        .build()
+
+    fun isPrivateOrLoopbackIp(ip: String): Boolean {
+        val trimmed = ip.trim().lowercase(java.util.Locale.ROOT)
+        if (trimmed.isEmpty() || trimmed == "localhost") return true
+        if (trimmed.contains(':')) {
+            if (trimmed == "::1" || trimmed == "::" || trimmed == "0:0:0:0:0:0:0:1") return true
+            if (trimmed.startsWith("fe80:") || trimmed.startsWith("fc") || trimmed.startsWith("fd") || trimmed.startsWith("ff")) return true
+            return false
+        }
+        val ipNum = ipv4ToLong(trimmed) ?: return true
+        val b0 = ((ipNum ushr 24) and 0xFF).toInt()
+        val b1 = ((ipNum ushr 16) and 0xFF).toInt()
+        val b2 = ((ipNum ushr 8) and 0xFF).toInt()
+        // 0.0.0.0/8, 10.0.0.0/8, 127.0.0.0/8
+        if (b0 == 0 || b0 == 10 || b0 == 127) return true
+        // 100.64.0.0/10 (CGNAT)
+        if (b0 == 100 && (b1 in 64..127)) return true
+        // 169.254.0.0/16 (Link-local)
+        if (b0 == 169 && b1 == 254) return true
+        // 172.16.0.0/12 (Private)
+        if (b0 == 172 && (b1 in 16..31)) return true
+        // 192.0.0.0/24 (IETF Protocol) & 192.0.2.0/24 (TEST-NET-1) & 192.168.0.0/16 (Private)
+        if (b0 == 192 && (b1 == 168 || (b1 == 0 && (b2 == 0 || b2 == 2)))) return true
+        // 198.18.0.0/15 (Benchmark) & 198.51.100.0/24 (TEST-NET-2)
+        if (b0 == 198 && (b1 == 18 || b1 == 19 || (b1 == 51 && b2 == 100))) return true
+        // 203.0.113.0/24 (TEST-NET-3)
+        if (b0 == 203 && b1 == 0 && b2 == 113) return true
+        // 224.0.0.0/4 (Multicast) & 240.0.0.0/4 (Reserved/Broadcast)
+        if (b0 >= 224) return true
+        return false
+    }
+
+    /**
+     * Kiểm tra nhanh bảo mật IP & vùng quốc gia của máy chủ VPN/Proxy (O(1) bitwise + tra cứu nhị phân trong bộ nhớ < 0.1ms):
+     * - Chặn tức thì IP bogon/private/loopback/CGNAT/TEST-NET/multicast.
+     * - Giải mã mã quốc gia từ bộ nhớ đệm hoặc bảng nhị phân DB-IP / Seed Table mà không cần chờ mạng chậm.
+     */
+    fun fastCheckIpSecurityAndRegion(
+        ip: String,
+        declaredCountryCode: String = "",
+        allowFastNetworkFallback: Boolean = false
+    ): Pair<Boolean, String> {
+        val trimmed = ip.trim()
+        if (isPrivateOrLoopbackIp(trimmed)) return Pair(false, "")
+        val resolved = resolveIpCountryCode(
+            ip = trimmed,
+            allowNetworkFallback = allowFastNetworkFallback,
+            useFastTimeout = true
+        ).ifBlank {
+            declaredCountryCode.trim().uppercase(java.util.Locale.ROOT)
+        }
+        val isSupported = resolved.isEmpty() || SUPPORTED_COUNTRIES.contains(resolved)
+        return Pair(isSupported, resolved)
+    }
+
+    private data class IpRangeTable(
+        val startIps: LongArray,
+        val endIps: LongArray,
+        val countryCodes: Array<String>
+    )
+
+    // Dải IP hạt giống chuẩn từ DB-IP Lite Country (CC-BY 4.0 DB-IP.com) cho các dải máy chủ công cộng phổ biến
+    // và phục vụ tra cứu ngoại tuyến / kiểm thử tức thì trước khi tệp CSV đầy đủ tải xong.
+    private val defaultSeedTable: IpRangeTable by lazy {
+        val rawRanges = listOf(
+            Triple("1.0.16.0", "1.0.31.255", "JP"),
+            Triple("1.1.64.0", "1.1.127.255", "JP"),
+            Triple("1.21.0.0", "1.21.255.255", "JP"),
+            Triple("1.33.0.0", "1.33.255.255", "JP"),
+            Triple("1.52.0.0", "1.55.255.255", "VN"),
+            Triple("1.66.0.0", "1.79.255.255", "JP"),
+            Triple("1.112.0.0", "1.115.255.255", "JP"),
+            Triple("1.208.0.0", "1.255.255.255", "KR"),
+            Triple("8.8.8.0", "8.8.8.255", "US"),
+            Triple("14.0.0.0", "14.15.255.255", "JP"),
+            Triple("14.32.0.0", "14.95.255.255", "KR"),
+            Triple("14.128.0.0", "14.139.255.255", "JP"),
+            Triple("14.160.0.0", "14.191.255.255", "VN"),
+            Triple("20.18.0.0", "20.31.255.255", "US"),
+            Triple("20.40.0.0", "20.127.255.255", "US"),
+            Triple("20.189.0.0", "20.191.255.255", "JP"),
+            Triple("20.194.0.0", "20.194.255.255", "KR"),
+            Triple("27.0.0.0", "27.35.255.255", "KR"),
+            Triple("27.80.0.0", "27.95.255.255", "JP"),
+            Triple("27.112.0.0", "27.127.255.255", "KR"),
+            Triple("34.32.0.0", "34.63.255.255", "US"),
+            Triple("34.64.0.0", "34.64.255.255", "KR"),
+            Triple("34.84.0.0", "34.85.255.255", "JP"),
+            Triple("34.146.0.0", "34.146.255.255", "JP"),
+            Triple("35.184.0.0", "35.191.255.255", "US"),
+            Triple("35.200.0.0", "35.200.255.255", "JP"),
+            Triple("39.112.0.0", "39.127.255.255", "KR"),
+            Triple("43.200.0.0", "43.203.255.255", "KR"),
+            Triple("43.206.0.0", "43.207.255.255", "JP"),
+            Triple("45.32.0.0", "45.32.63.255", "JP"),
+            Triple("45.76.0.0", "45.77.255.255", "JP"),
+            Triple("49.160.0.0", "49.175.255.255", "KR"),
+            Triple("49.239.0.0", "49.239.255.255", "JP"),
+            Triple("51.15.0.0", "51.15.255.255", "FR"),
+            Triple("51.158.0.0", "51.159.255.255", "FR"),
+            Triple("52.68.0.0", "52.69.255.255", "JP"),
+            Triple("52.78.0.0", "52.79.255.255", "KR"),
+            Triple("52.192.0.0", "52.199.255.255", "JP"),
+            Triple("54.64.0.0", "54.65.255.255", "JP"),
+            Triple("54.180.0.0", "54.180.255.255", "KR"),
+            Triple("58.120.0.0", "58.151.255.255", "KR"),
+            Triple("59.0.0.0", "59.31.255.255", "KR"),
+            Triple("60.32.0.0", "60.159.255.255", "JP"),
+            Triple("61.72.0.0", "61.85.255.255", "KR"),
+            Triple("61.112.0.0", "61.127.255.255", "JP"),
+            Triple("61.192.0.0", "61.215.255.255", "JP"),
+            Triple("67.192.0.0", "69.63.255.255", "US"),
+            Triple("88.198.0.0", "88.198.255.255", "DE"),
+            Triple("103.1.208.0", "103.1.211.255", "VN"),
+            Triple("104.16.0.0", "104.31.255.255", "US"),
+            Triple("106.128.0.0", "106.191.255.255", "JP"),
+            Triple("110.0.0.0", "110.15.255.255", "KR"),
+            Triple("112.160.0.0", "112.191.255.255", "KR"),
+            Triple("113.144.0.0", "113.159.255.255", "JP"),
+            Triple("113.160.0.0", "113.191.255.255", "VN"),
+            Triple("114.144.0.0", "114.191.255.255", "JP"),
+            Triple("114.199.0.0", "114.207.255.255", "KR"),
+            Triple("115.88.0.0", "115.95.255.255", "KR"),
+            Triple("116.120.0.0", "116.127.255.255", "KR"),
+            Triple("118.0.0.0", "118.23.255.255", "JP"),
+            Triple("118.32.0.0", "118.47.255.255", "KR"),
+            Triple("118.238.0.0", "118.243.255.255", "JP"),
+            Triple("119.192.0.0", "119.207.255.255", "KR"),
+            Triple("119.240.0.0", "119.245.255.255", "JP"),
+            Triple("121.128.0.0", "121.191.255.255", "KR"),
+            Triple("122.16.0.0", "122.31.255.255", "JP"),
+            Triple("122.252.0.0", "122.255.255.255", "KR"),
+            Triple("123.140.0.0", "123.143.255.255", "KR"),
+            Triple("124.32.0.0", "124.47.255.255", "JP"),
+            Triple("125.128.0.0", "125.143.255.255", "KR"),
+            Triple("125.192.0.0", "125.207.255.255", "JP"),
+            Triple("126.0.0.0", "126.255.255.255", "JP"),
+            Triple("130.127.0.0", "130.127.255.255", "US"),
+            Triple("130.158.0.0", "130.158.255.255", "JP"),
+            Triple("133.0.0.0", "133.255.255.255", "JP"),
+            Triple("138.199.21.0", "138.199.21.255", "JP"),
+            Triple("139.162.64.0", "139.162.127.255", "JP"),
+            Triple("140.82.0.0", "140.82.63.255", "US"),
+            Triple("141.147.128.0", "141.147.191.255", "KR"),
+            Triple("141.223.0.0", "141.223.255.255", "KR"),
+            Triple("143.244.0.0", "143.247.255.255", "US"),
+            Triple("150.95.0.0", "150.95.255.255", "JP"),
+            Triple("153.120.0.0", "153.255.255.255", "JP"),
+            Triple("157.7.0.0", "157.7.255.255", "JP"),
+            Triple("158.247.192.0", "158.247.255.255", "KR"),
+            Triple("159.65.0.0", "159.65.255.255", "US"),
+            Triple("159.89.0.0", "159.89.255.255", "US"),
+            Triple("160.16.0.0", "160.16.255.255", "JP"),
+            Triple("163.44.0.0", "163.44.255.255", "JP"),
+            Triple("165.22.0.0", "165.22.255.255", "US"),
+            Triple("167.99.0.0", "167.99.255.255", "US"),
+            Triple("172.104.64.0", "172.104.127.255", "JP"),
+            Triple("172.105.192.0", "172.105.255.255", "JP"),
+            Triple("175.192.0.0", "175.215.255.255", "KR"),
+            Triple("180.0.0.0", "180.63.255.255", "JP"),
+            Triple("180.64.0.0", "180.83.255.255", "KR"),
+            Triple("182.208.0.0", "182.231.255.255", "KR"),
+            Triple("183.76.0.0", "183.79.255.255", "JP"),
+            Triple("183.96.0.0", "183.111.255.255", "KR"),
+            Triple("185.220.100.0", "185.220.103.255", "DE"),
+            Triple("202.208.0.0", "202.255.255.255", "JP"),
+            Triple("203.224.0.0", "203.255.255.255", "KR"),
+            Triple("210.128.0.0", "210.175.255.255", "JP"),
+            Triple("210.176.0.0", "210.223.255.255", "KR"),
+            Triple("211.0.0.0", "211.19.255.255", "JP"),
+            Triple("211.32.0.0", "211.63.255.255", "KR"),
+            Triple("211.120.0.0", "211.135.255.255", "JP"),
+            Triple("211.168.0.0", "211.255.255.255", "KR"),
+            Triple("218.144.0.0", "218.159.255.255", "KR"),
+            Triple("218.216.0.0", "218.231.255.255", "JP"),
+            Triple("219.96.0.0", "219.127.255.255", "JP"),
+            Triple("219.240.0.0", "219.255.255.255", "KR"),
+            Triple("220.64.0.0", "220.127.255.255", "KR"),
+            Triple("220.144.0.0", "220.159.255.255", "JP"),
+            Triple("220.208.0.0", "220.221.255.255", "JP"),
+            Triple("221.138.0.0", "221.168.255.255", "KR"),
+            Triple("221.240.0.0", "221.255.255.255", "JP"),
+            Triple("222.96.0.0", "222.127.255.255", "KR"),
+            Triple("222.144.0.0", "222.159.255.255", "JP")
+        ).mapNotNull { (s, e, cc) ->
+            val start = ipv4ToLong(s)
+            val end = ipv4ToLong(e)
+            if (start != null && end != null && start <= end) Triple(start, end, cc) else null
+        }.sortedBy { it.first }
+
+        IpRangeTable(
+            startIps = LongArray(rawRanges.size) { rawRanges[it].first },
+            endIps = LongArray(rawRanges.size) { rawRanges[it].second },
+            countryCodes = Array(rawRanges.size) { rawRanges[it].third }
+        )
+    }
+
+    @Volatile
+    private var activeRangeTable: IpRangeTable = defaultSeedTable
+
+    private val ipCountryCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    fun cacheResolvedIpCountry(ip: String, countryCode: String) {
+        val cleanIp = ip.trim()
+        val cleanCc = countryCode.trim().uppercase(java.util.Locale.ROOT)
+        if (cleanIp.isNotEmpty() && cleanCc.length == 2 && cleanCc.all { it in 'A'..'Z' } && cleanCc != "XX" && cleanCc != "ZZ") {
+            ipCountryCache[cleanIp] = cleanCc
+        }
+    }
+
+    private val countryCodeInternPool = java.util.concurrent.ConcurrentHashMap<Int, String>(256)
+
+    private fun internTwoCharCountry(c0: Char, c1: Char): String {
+        val key = (c0.code shl 16) or c1.code
+        return countryCodeInternPool.getOrPut(key) {
+            String(charArrayOf(c0, c1))
+        }
+    }
+
+    fun loadCsvRangesFromStream(inputStream: java.io.InputStream): Boolean {
+        return try {
+            var capacity = 65536
+            var starts = LongArray(capacity)
+            var ends = LongArray(capacity)
+            var codes = arrayOfNulls<String>(capacity)
+            var size = 0
+            var lastStart = -1L
+
+            java.io.BufferedReader(java.io.InputStreamReader(inputStream, Charsets.UTF_8), 32768).useLines { lines ->
+                for (rawLine in lines) {
+                    val len = rawLine.length
+                    if (len < 16 || rawLine[0] == '#') continue
+                    val comma1 = rawLine.indexOf(',')
+                    if (comma1 <= 0) continue
+                    // Bỏ qua ngay dòng IPv6 có dấu ':' mà không cấp phát mảng split()
+                    var hasColon = false
+                    for (i in 0 until comma1) {
+                        if (rawLine[i] == ':') {
+                            hasColon = true
+                            break
+                        }
+                    }
+                    if (hasColon) continue
+
+                    val comma2 = rawLine.indexOf(',', comma1 + 1)
+                    if (comma2 <= comma1 + 1) continue
+
+                    var s0 = 0
+                    var s1 = comma1
+                    while (s0 < s1 && (rawLine[s0] <= ' ' || rawLine[s0] == '"')) s0++
+                    while (s1 > s0 && (rawLine[s1 - 1] <= ' ' || rawLine[s1 - 1] == '"')) s1--
+
+                    var e0 = comma1 + 1
+                    var e1 = comma2
+                    while (e0 < e1 && (rawLine[e0] <= ' ' || rawLine[e0] == '"')) e0++
+                    while (e1 > e0 && (rawLine[e1 - 1] <= ' ' || rawLine[e1 - 1] == '"')) e1--
+
+                    val comma3 = rawLine.indexOf(',', comma2 + 1)
+                    var c0 = comma2 + 1
+                    var c1 = if (comma3 > comma2) comma3 else len
+                    while (c0 < c1 && (rawLine[c0] <= ' ' || rawLine[c0] == '"')) c0++
+                    while (c1 > c0 && (rawLine[c1 - 1] <= ' ' || rawLine[c1 - 1] == '"')) c1--
+                    if (c1 - c0 != 2) continue
+
+                    val ch0 = rawLine[c0].uppercaseChar()
+                    val ch1 = rawLine[c0 + 1].uppercaseChar()
+                    if (ch0 !in 'A'..'Z' || ch1 !in 'A'..'Z') continue
+                    if ((ch0 == 'Z' && ch1 == 'Z') || (ch0 == 'X' && ch1 == 'X')) continue
+
+                    val startIp = ipv4ToLong(rawLine, s0, s1) ?: continue
+                    val endIp = ipv4ToLong(rawLine, e0, e1) ?: continue
+                    if (startIp > endIp || startIp < lastStart) continue
+
+                    if (size == capacity) {
+                        val nextCap = capacity * 2
+                        starts = starts.copyOf(nextCap)
+                        ends = ends.copyOf(nextCap)
+                        codes = codes.copyOf(nextCap)
+                        capacity = nextCap
+                    }
+                    starts[size] = startIp
+                    ends[size] = endIp
+                    codes[size] = internTwoCharCountry(ch0, ch1)
+                    size++
+                    lastStart = startIp
+                }
+            }
+
+            if (size >= 5) {
+                @Suppress("UNCHECKED_CAST")
+                val finalCodes = (if (size == capacity) codes else codes.copyOf(size)) as Array<String>
+                activeRangeTable = IpRangeTable(
+                    startIps = if (size == capacity) starts else starts.copyOf(size),
+                    endIps = if (size == capacity) ends else ends.copyOf(size),
+                    countryCodes = finalCodes
+                )
+                ipCountryCache.clear()
+                true
+            } else {
+                false
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private const val BINARY_CACHE_MAGIC = 0x44424950 // "DBIP"
+
+    private fun loadBinaryRangeCache(binFile: java.io.File): Boolean {
+        if (!binFile.exists() || binFile.length() < 16L) return false
+        return try {
+            java.io.DataInputStream(java.io.BufferedInputStream(java.io.FileInputStream(binFile), 65536)).use { dis ->
+                if (dis.readInt() != BINARY_CACHE_MAGIC) return false
+                val count = dis.readInt()
+                if (count !in 5..1_500_000) return false
+                val starts = LongArray(count)
+                val ends = LongArray(count)
+                val codes = Array(count) { "" }
+                for (i in 0 until count) {
+                    starts[i] = dis.readLong()
+                    ends[i] = dis.readLong()
+                    val c0 = dis.readByte().toInt().toChar()
+                    val c1 = dis.readByte().toInt().toChar()
+                    codes[i] = internTwoCharCountry(c0, c1)
+                }
+                activeRangeTable = IpRangeTable(starts, ends, codes)
+                ipCountryCache.clear()
+                true
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun saveBinaryRangeCache(binFile: java.io.File, table: IpRangeTable) {
+        try {
+            val count = table.startIps.size
+            if (count < 5) return
+            val tmpBin = java.io.File(binFile.parentFile, "${binFile.name}.tmp")
+            java.io.DataOutputStream(java.io.BufferedOutputStream(java.io.FileOutputStream(tmpBin), 65536)).use { dos ->
+                dos.writeInt(BINARY_CACHE_MAGIC)
+                dos.writeInt(count)
+                for (i in 0 until count) {
+                    dos.writeLong(table.startIps[i])
+                    dos.writeLong(table.endIps[i])
+                    val cc = table.countryCodes[i]
+                    dos.writeByte(if (cc.isNotEmpty()) cc[0].code else 'U'.code)
+                    dos.writeByte(if (cc.length > 1) cc[1].code else 'S'.code)
+                }
+            }
+            if (binFile.exists()) binFile.delete()
+            tmpBin.renameTo(binFile)
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun lookupInTable(table: IpRangeTable, ipNum: Long): String {
+        val starts = table.startIps
+        val ends = table.endIps
+        val codes = table.countryCodes
+        var low = 0
+        var high = starts.size - 1
+        var candidateIdx = -1
+        while (low <= high) {
+            val mid = (low + high) ushr 1
+            if (starts[mid] <= ipNum) {
+                candidateIdx = mid
+                low = mid + 1
+            } else {
+                high = mid - 1
+            }
+        }
+        if (candidateIdx >= 0 && ipNum <= ends[candidateIdx]) {
+            return codes[candidateIdx]
+        }
+        return ""
+    }
+
+    /**
+     * Tra cứu mã quốc gia ISO 2 ký tự từ địa chỉ IPv4 bằng bảng nhị phân DB-IP Lite Country.
+     * - Từ chối ngay IP nội bộ/loopback (trả về "").
+     * - Nếu không tìm thấy trong bảng hiện tại và [allowNetworkFallback] = true kèm công tắc
+     *   `enableGeoIpHttpsFallback` đang bật, mới gọi dịch vụ dự phòng HTTPS `api.country.is`.
+     */
+    fun resolveIpCountryCode(
+        ip: String,
+        allowNetworkFallback: Boolean = false,
+        useFastTimeout: Boolean = true
+    ): String {
+        val trimmed = ip.trim()
+        if (isPrivateOrLoopbackIp(trimmed)) return ""
+        val ipNum = ipv4ToLong(trimmed) ?: return ""
+
+        ipCountryCache[trimmed]?.let { cached ->
+            if (cached.isNotEmpty()) return cached
+        }
+
+        val fromActive = lookupInTable(activeRangeTable, ipNum)
+        if (fromActive.isNotEmpty()) {
+            ipCountryCache[trimmed] = fromActive
+            return fromActive
+        }
+
+        if (activeRangeTable !== defaultSeedTable) {
+            val fromSeed = lookupInTable(defaultSeedTable, ipNum)
+            if (fromSeed.isNotEmpty()) {
+                ipCountryCache[trimmed] = fromSeed
+                return fromSeed
+            }
+        }
+
+        val fallbackEnabled = try {
+            com.example.data.SettingsRepository.config.value.enableGeoIpHttpsFallback
+        } catch (_: Exception) {
+            true
+        }
+
+        if (allowNetworkFallback && fallbackEnabled) {
+            try {
+                val req = Request.Builder()
+                    .url("https://api.country.is/$trimmed")
+                    .header("User-Agent", "Mozilla/5.0")
+                    .build()
+                val clientToUse = if (useFastTimeout) fastHttpClient else httpClient
+                clientToUse.newCall(req).execute().use { resp ->
+                    if (resp.isSuccessful) {
+                        val bodyStr = resp.body?.string() ?: ""
+                        val json = JSONObject(bodyStr)
+                        val cc = json.optString("country", "").trim().uppercase(java.util.Locale.ROOT)
+                        if (cc.length == 2 && cc.all { it in 'A'..'Z' } && cc != "XX" && cc != "ZZ") {
+                            ipCountryCache[trimmed] = cc
+                            return cc
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
+
+        return ""
+    }
+
+    /**
+     * Tải cơ sở dữ liệu DB-IP Lite Country theo tháng (`dbip-country-lite-YYYY-MM.csv.gz`).
+     * - Nếu đã có tệp lưu cục bộ hợp lệ trên đĩa thì nạp ngay.
+     * - Qua Wi-Fi: tự động tải ngầm về tệp `.tmp`, giải nén và kiểm tra tính hợp lệ trước khi thay thế bản cũ.
+     * - Qua mạng di động: chỉ tải khi người dùng đã đồng ý (`allowDbIpCellularDownload` hoặc `isCellularConfirmedByUser`).
+     */
+    suspend fun downloadDbIpLiteIfPermitted(
+        context: android.content.Context,
+        isCellularConfirmedByUser: Boolean = false
+    ): Boolean = withContext(Dispatchers.IO) {
+        val dbDir = java.io.File(context.filesDir, "geoip")
+        if (!dbDir.exists()) dbDir.mkdirs()
+        val binFile = java.io.File(dbDir, "dbip-country-lite.bin")
+        val csvFile = java.io.File(dbDir, "dbip-country-lite.csv")
+        val tmpFile = java.io.File(dbDir, "dbip-country-lite.csv.tmp")
+
+        if (activeRangeTable === defaultSeedTable) {
+            if (loadBinaryRangeCache(binFile)) {
+                return@withContext true
+            }
+            if (csvFile.exists() && csvFile.length() > 1024L) {
+                try {
+                    java.io.FileInputStream(csvFile).use { fis ->
+                        if (loadCsvRangesFromStream(fis)) {
+                            saveBinaryRangeCache(binFile, activeRangeTable)
+                            return@withContext true
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+
+        val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+        val activeNet = cm?.activeNetwork
+        val caps = if (activeNet != null) cm.getNetworkCapabilities(activeNet) else null
+        val isCellular = caps?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) == true &&
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) == false
+
+        val config = com.example.data.SettingsRepository.config.value
+        if (isCellular && !config.allowDbIpCellularDownload && !isCellularConfirmedByUser) {
+            return@withContext false
+        }
+
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"))
+        val year = cal.get(java.util.Calendar.YEAR)
+        val month = cal.get(java.util.Calendar.MONTH) + 1
+        val ym = String.format(java.util.Locale.US, "%04d-%02d", year, month)
+        val url = "https://download.db-ip.com/free/dbip-country-lite-$ym.csv.gz"
+
+        try {
+            val req = Request.Builder()
+                .url(url)
+                .header("User-Agent", "Mozilla/5.0")
+                .build()
+            httpClient.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) return@withContext false
+                val bodyStream = resp.body?.byteStream() ?: return@withContext false
+                java.util.zip.GZIPInputStream(bodyStream).use { gzipIn ->
+                    java.io.FileOutputStream(tmpFile).use { fos ->
+                        gzipIn.copyTo(fos)
+                    }
+                }
+            }
+            if (tmpFile.exists() && tmpFile.length() > 1024L) {
+                val loadedOk = java.io.FileInputStream(tmpFile).use { fis ->
+                    loadCsvRangesFromStream(fis)
+                }
+                if (loadedOk) {
+                    saveBinaryRangeCache(binFile, activeRangeTable)
+                    if (csvFile.exists()) csvFile.delete()
+                    tmpFile.renameTo(csvFile)
+                    return@withContext true
+                } else {
+                    tmpFile.delete()
+                }
+            }
+        } catch (ce: kotlinx.coroutines.CancellationException) {
+            if (tmpFile.exists()) tmpFile.delete()
+            throw ce
+        } catch (_: Exception) {
+            if (tmpFile.exists()) tmpFile.delete()
+        }
+        false
+    }
+
+    /**
+     * Called when the in-WebView JS probe detects the actual IP seen by the browser/Xbox
+     */
+    fun onWebViewReported(ip: String, countryCode: String, countryName: String? = null, city: String? = null) {
+        val code = countryCode.uppercase()
+        val isSupported = SUPPORTED_COUNTRIES.contains(code)
+        val result = GeoIpResult(
+            ip = ip,
+            countryCode = code,
+            countryName = countryName ?: getCountryDisplayName(code),
+            city = city ?: "",
+            flagEmoji = getFlagEmoji(code),
+            isXboxSupported = isSupported,
+            isFromWebView = true
+        )
+        _currentGeoIp.value = result
+    }
+
+    /**
+     * Checks current IP from device network (including city & coordinates for nearest regional probe selection)
+     */
+    suspend fun checkCurrentIp(): GeoIpResult? = withContext(Dispatchers.IO) {
+        _isChecking.value = true
+        try {
+            var result: GeoIpResult? = null
+            ensureActive()
+
+            // 1. Try ipwho.is over HTTPS first to obtain accurate city + coordinates globally (fast 1.2s timeout)
+            try {
+                val req = Request.Builder()
+                    .url("https://ipwho.is/")
+                    .header("User-Agent", "Mozilla/5.0")
+                    .build()
+                fastHttpClient.newCall(req).execute().use { resp ->
+                    if (resp.isSuccessful) {
+                        val bodyStr = resp.body?.string() ?: ""
+                        val json = JSONObject(bodyStr)
+                        if (json.optBoolean("success", true)) {
+                            val ip = json.optString("ip", "")
+                            val countryCode = json.optString("country_code", "").trim().uppercase()
+                            if (countryCode.length == 2) {
+                                cacheResolvedIpCountry(ip, countryCode)
+                                val countryName = json.optString("country", getCountryDisplayName(countryCode))
+                                val city = json.optString("city", "")
+                                val lat = json.optDouble("latitude", Double.NaN).takeIf { !it.isNaN() }
+                                val lon = json.optDouble("longitude", Double.NaN).takeIf { !it.isNaN() }
+                                val isSupported = SUPPORTED_COUNTRIES.contains(countryCode)
+
+                                result = GeoIpResult(
+                                    ip = ip,
+                                    countryCode = countryCode,
+                                    countryName = countryName,
+                                    city = city,
+                                    flagEmoji = getFlagEmoji(countryCode),
+                                    isXboxSupported = isSupported,
+                                    latitude = lat,
+                                    longitude = lon
+                                )
+                            }
+                        }
+                    }
+                }
+            } catch (ce: kotlinx.coroutines.CancellationException) {
+                throw ce
+            } catch (_: Exception) {
+            }
+
+            // 2. Fallback 1: api.country.is (ultra-fast, lightweight)
+            if (result == null) {
+                ensureActive()
+                try {
+                    val req = Request.Builder()
+                        .url("https://api.country.is/")
+                        .header("User-Agent", "Mozilla/5.0")
+                        .build()
+                    fastHttpClient.newCall(req).execute().use { resp ->
+                        if (resp.isSuccessful) {
+                            val bodyStr = resp.body?.string() ?: ""
+                            val json = JSONObject(bodyStr)
+                            val ip = json.optString("ip", "")
+                            val countryCode = json.optString("country", "").trim().uppercase()
+                            if (countryCode.length == 2) {
+                                cacheResolvedIpCountry(ip, countryCode)
+                                val isSupported = SUPPORTED_COUNTRIES.contains(countryCode)
+
+                                result = GeoIpResult(
+                                    ip = ip,
+                                    countryCode = countryCode,
+                                    countryName = getCountryDisplayName(countryCode),
+                                    city = "",
+                                    flagEmoji = getFlagEmoji(countryCode),
+                                    isXboxSupported = isSupported
+                                )
+                            }
+                        }
+                    }
+                } catch (ce: kotlinx.coroutines.CancellationException) {
+                    throw ce
+                } catch (_: Exception) {
+                }
+            }
+
+            // 3. Fallback 2: ipapi.co
+            if (result == null) {
+                ensureActive()
+                try {
+                    val req = Request.Builder()
+                        .url("https://ipapi.co/json/")
+                        .header("User-Agent", "Mozilla/5.0")
+                        .build()
+                    fastHttpClient.newCall(req).execute().use { resp ->
+                        if (resp.isSuccessful) {
+                            val bodyStr = resp.body?.string() ?: ""
+                            val json = JSONObject(bodyStr)
+                            val ip = json.optString("ip", "")
+                            val countryCode = json.optString("country_code", "").trim().uppercase()
+                            if (countryCode.length == 2) {
+                                cacheResolvedIpCountry(ip, countryCode)
+                                val countryName = json.optString("country_name", getCountryDisplayName(countryCode))
+                                val city = json.optString("city", "")
+                                val lat = json.optDouble("latitude", Double.NaN).takeIf { !it.isNaN() }
+                                val lon = json.optDouble("longitude", Double.NaN).takeIf { !it.isNaN() }
+                                val isSupported = SUPPORTED_COUNTRIES.contains(countryCode)
+
+                                result = GeoIpResult(
+                                    ip = ip,
+                                    countryCode = countryCode,
+                                    countryName = countryName,
+                                    city = city,
+                                    flagEmoji = getFlagEmoji(countryCode),
+                                    isXboxSupported = isSupported,
+                                    latitude = lat,
+                                    longitude = lon
+                                )
+                            }
+                        }
+                    }
+                } catch (ce: kotlinx.coroutines.CancellationException) {
+                    throw ce
+                } catch (_: Exception) {
+                }
+            }
+
+            ensureActive()
+            val finalResult = result
+            if (finalResult != null) {
+                com.example.data.AppLogger.info(
+                    "VPN",
+                    "Phát hiện vị trí mạng: ${finalResult.ip} • ${finalResult.countryCode} ${finalResult.city.ifBlank { "(Chưa rõ tỉnh/thành)" }}"
+                )
+            } else {
+                com.example.data.AppLogger.warn("VPN", "Không lấy được thông tin GeoIP từ mạng hiện tại")
+            }
+
+            _currentGeoIp.value = finalResult
+            finalResult
+        } finally {
+            _isChecking.value = false
+        }
+    }
+}

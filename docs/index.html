@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ravno — Xbox Cloud Gaming gọn nhẹ trên Android</title>
+  <meta name="description" content="Ravno là ứng dụng Android độc lập để chơi Xbox Cloud Gaming trên điện thoại: tay cầm cảm ứng tùy chỉnh, thông số thật, dịch giao diện." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://muitenvn.github.io/Ravno-App/" />
+  <link rel="icon" href="img/icon.png" type="image/png" />
+  <meta name="theme-color" content="#f5f8f7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0b1412" media="(prefers-color-scheme: dark)" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Ravno — Xbox Cloud Gaming gọn nhẹ trên Android" />
+  <meta property="og:description" content="Ứng dụng Android độc lập: tay cầm cảm ứng tùy chỉnh, thông số thật, dịch giao diện." />
+  <meta property="og:url" content="https://muitenvn.github.io/Ravno-App/" />
+  <meta property="og:image" content="https://muitenvn.github.io/Ravno-App/img/og.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <style>
+    /* Layout: một cột hẹp, bản phát hành là trung tâm. Tiêu đề lớn, thẻ tải xuống là thứ duy nhất có khung. */
+    :root {
+      --bg: #f5f8f7;
+      --surface: #ffffff;
+      --ink: #0f1a17;
+      --muted: #4f605a;
+      --line: #d9e4df;
+      --accent: #0e7a4d;
+      --on-accent: #ffffff;
+      --link: #0b6a42;
+      --soft: #e6f0ec;
+      --warn-bg: #fff6e0;
+      --warn-line: #e9cf86;
+      --warn-ink: #5a4300;
+      --gutter: 16px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0b1412;
+        --surface: #121e1b;
+        --ink: #e8f1ee;
+        --muted: #9db2ab;
+        --line: #24352f;
+        --accent: #3ccf91;
+        --on-accent: #05281a;
+        --link: #5fe0ac;
+        --soft: #17261f;
+        --warn-bg: #261f0b;
+        --warn-line: #54451a;
+        --warn-ink: #efd9a0;
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0b1412;
+      --surface: #121e1b;
+      --ink: #e8f1ee;
+      --muted: #9db2ab;
+      --line: #24352f;
+      --accent: #3ccf91;
+      --on-accent: #05281a;
+      --link: #5fe0ac;
+      --soft: #17261f;
+      --warn-bg: #261f0b;
+      --warn-line: #54451a;
+      --warn-ink: #efd9a0;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      background: var(--bg);
+      color: var(--ink);
+      padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+      padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    a { color: var(--link); text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+    img { max-width: 100%; display: block; }
+
+    .wrap { max-width: 960px; margin: 0 auto; }
+
+    /* Đầu trang */
+    .top {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding-block: 14px;
+    }
+    .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 750; font-size: 18px; letter-spacing: -0.01em; }
+    .brand img { width: 34px; height: 34px; border-radius: 9px; }
+    .top-nav { display: flex; align-items: center; gap: 6px; }
+    .top-nav a, .lang {
+      min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px;
+      font-size: 15px; font-weight: 600; color: var(--muted); text-decoration: none; border-radius: 10px;
+    }
+    .top-nav a:hover { color: var(--ink); }
+    .lang { font: inherit; font-size: 14px; font-weight: 700; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; letter-spacing: 0.04em; }
+    .lang:hover { background: var(--soft); }
+
+    /* Phần đầu */
+    .hero { display: grid; gap: 28px; padding-block: 28px 8px; }
+    h1 { font-size: clamp(2rem, 7.4vw, 3.4rem); line-height: 1.08; letter-spacing: -0.03em; font-weight: 800; text-wrap: balance; max-width: 16ch; }
+    .lead { margin-top: 14px; font-size: 1.0625rem; color: var(--muted); max-width: 46ch; }
+
+    /* Thẻ bản phát hành */
+    .release { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; display: grid; gap: 14px; max-width: 520px; }
+    .rel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .rel-ver { font-size: 1.375rem; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    .rel-sub { color: var(--muted); font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+    .btns { display: grid; gap: 10px; }
+    .btn {
+      min-height: 54px; display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 0 18px; border-radius: 14px; font-size: 1.0625rem; font-weight: 700; text-decoration: none;
+      border: 1px solid transparent;
+    }
+    .btn-main { background: var(--accent); color: var(--on-accent); }
+    .btn-main:hover { filter: brightness(1.06); text-decoration: none; }
+    .btn-alt { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 650; }
+    .btn-alt:hover { background: var(--soft); text-decoration: none; }
+    .btn small { font-weight: 600; opacity: 0.8; font-size: 0.9375rem; }
+    .fine { font-size: 0.9375rem; color: var(--muted); }
+
+    details.sha { border-top: 1px solid var(--line); padding-top: 12px; }
+    details.sha summary { min-height: 44px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 650; font-size: 0.9375rem; list-style: none; }
+    details.sha summary::-webkit-details-marker { display: none; }
+    details.sha summary::before { content: ""; width: 0; height: 0; border: 5px solid transparent; border-left: 7px solid currentColor; border-right: 0; transition: transform .15s; }
+    details.sha[open] summary::before { transform: rotate(90deg); }
+    .sha-row { display: grid; gap: 10px; }
+    .sha-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8125rem; line-height: 1.5; word-break: break-all; background: var(--soft); border-radius: 10px; padding: 10px 12px; }
+    .copy { justify-self: start; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; font-size: 0.9375rem; font-weight: 650; cursor: pointer; }
+    .copy:hover { background: var(--soft); }
+
+    /* Ảnh ứng dụng */
+    .shots { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 28px var(--gutter) 6px; margin-inline: calc(-1 * var(--gutter)); scrollbar-width: none; }
+    .shots::-webkit-scrollbar { display: none; }
+    .shots img { flex: 0 0 auto; width: min(62vw, 240px); height: auto; border-radius: 20px; border: 1px solid var(--line); scroll-snap-align: center; background: var(--soft); }
+
+    /* Tính năng: không khung, chỉ dùng khoảng cách */
+    .features { display: grid; gap: 26px; padding-block: 36px 8px; }
+    .feat { display: grid; grid-template-columns: 28px 1fr; column-gap: 14px; }
+    .feat svg { width: 28px; height: 28px; stroke: var(--accent); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; margin-top: 2px; }
+    @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .feat svg { stroke: var(--link); } }
+    .feat h2 { font-size: 1.0625rem; font-weight: 750; letter-spacing: -0.01em; line-height: 1.35; }
+    .feat p { color: var(--muted); font-size: 0.9688rem; margin-top: 4px; text-wrap: pretty; }
+
+    /* Lưu ý */
+    .notice { margin-top: 28px; background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink); border-radius: 14px; padding: 16px 18px; font-size: 0.9688rem; }
+    .notice a { color: inherit; font-weight: 650; }
+
+    /* Chân trang */
+    .foot { margin-top: 36px; padding-block: 22px 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9375rem; }
+    .foot nav { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-bottom: 10px; }
+    .foot nav a { min-height: 44px; display: inline-flex; align-items: center; }
+
+    @media (min-width: 760px) {
+      :root { --gutter: 24px; }
+      .hero { grid-template-columns: 1.05fr 1fr; align-items: center; gap: 48px; padding-block: 40px 16px; }
+      .release { justify-self: end; width: 100%; }
+      .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; overflow: visible; padding: 48px 0 8px; margin-inline: 0; }
+      .shots img { width: 100%; max-width: 270px; margin-inline: auto; }
+      .features { grid-template-columns: 1fr 1fr; gap: 34px 48px; padding-block: 56px 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) { details.sha summary::before { transition: none; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <a class="brand" href="./"><img src="img/icon.png" width="34" height="34" alt="" />Ravno</a>
+    <nav class="top-nav" aria-label="Menu">
+      <a href="terms.html" id="termsTop" data-i18n="navTerms">Điều khoản</a>
+      <button type="button" class="lang" id="langBtn" aria-label="Đổi ngôn ngữ / Switch language">EN</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="h1">
+      <div>
+        <h1 id="h1" data-i18n="heroTitle">Chơi Xbox Cloud Gaming gọn nhẹ trên Android</h1>
+        <p class="lead" data-i18n="heroDesc">Ứng dụng độc lập mở xbox.com/play trên điện thoại, với tay cầm cảm ứng tùy chỉnh, thông số thật và dịch giao diện.</p>
+      </div>
+
+      <div class="release">
+        <div class="rel-head">
+          <span class="rel-ver" id="relVer">Bản mới nhất</span>
+          <span class="rel-sub" id="relSub" data-i18n="relSubDefault">Android 8.0 trở lên</span>
+        </div>
+        <div class="btns">
+          <a id="dlMain" class="btn btn-main" href="https://github.com/muitenvn/Ravno-App/releases/latest" rel="noopener">
+            <span data-i18n="dlMain">Tải APK</span><small id="relSize"></small>
+          </a>
+          <a id="dlMirror" class="btn btn-alt" href="https://github.com/muitenvn/Ravno-App/releases/latest" rel="noopener noreferrer">
+            <span data-i18n="dlMirror">Tải nhanh (mirror)</span>
+          </a>
+          <a id="dlPad" class="btn btn-alt" href="https://github.com/muitenvn/Ravno-App/releases/latest" rel="noopener" hidden>
+            <span data-i18n="dlPad">Tải Ravno Pad (Tay cầm TV)</span>
+          </a>
+        </div>
+        <p class="fine" data-i18n="mirrorNote">Mirror do bên thứ ba vận hành. Hãy so mã SHA-256 bên dưới với tệp nhận được.</p>
+        <details class="sha">
+          <summary><span data-i18n="shaTitle">Mã kiểm tra SHA-256</span></summary>
+          <div class="sha-row">
+            <code class="sha-code" id="shaValue" data-i18n="shaDefault">Xem tệp .sha256 trên trang Releases</code>
+            <button type="button" class="copy" id="copyBtn" data-i18n="copy" hidden>Sao chép</button>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <div class="shots" aria-label="Ảnh ứng dụng" role="group">
+      <img src="img/screenshot-1.webp" width="540" height="1125" loading="lazy" alt="Màn hình Trang chủ của Ravno" />
+      <img src="img/screenshot-2.webp" width="540" height="1125" loading="lazy" alt="Màn hình Thư viện game" />
+      <img src="img/screenshot-3.webp" width="540" height="1125" loading="lazy" alt="Màn hình Cài đặt hình ảnh và FPS" />
+    </div>
+
+    <section class="features" aria-label="Tính năng">
+      <article class="feat">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="19" height="10.5" rx="5"/><path d="M8 10.5v3M6.5 12h3M15.5 11h.01M17.5 13h.01"/></svg>
+        <div><h2 data-i18n="f1Title">Tay cầm tùy chỉnh</h2><p data-i18n="f1Desc">Kéo thả nút, chỉnh cỡ và độ trong suốt, lưu bố cục riêng cho từng game. Dùng được tay cầm Bluetooth và USB‑C.</p></div>
+      </article>
+      <article class="feat">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        <div><h2 data-i18n="f2Title">Hình ảnh và thông số thật</h2><p data-i18n="f2Desc">Chọn 720p hoặc 1080p, giới hạn băng thông, quay màn hình, xem FPS, ping, jitter và bitrate thực tế.</p></div>
+      </article>
+      <article class="feat">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M8.5 4v2M6 6c.5 3 2.5 5.500 5.500 7M11 6c-.5 3-3 6-7 8M13 20l4-9 4 9M14.500 17h5"/></svg>
+        <div><h2 data-i18n="f3Title">12 ngôn ngữ</h2><p data-i18n="f3Desc">Giao diện ứng dụng và menu Xbox được dịch nhanh sang 12 ngôn ngữ.</p></div>
+      </article>
+      <article class="feat">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.500c0 4.500-3 7.500-7 9.500-4-2-7-5-7-9.500V6z"/><path d="M9 12l2.200 2.200L15.500 10"/></svg>
+        <div><h2 data-i18n="f4Title">Mạng và an toàn tài khoản</h2><p data-i18n="f4Desc">Đo độ trễ, hỗ trợ proxy tùy chọn, tự ngắt proxy khi bạn vào trang đăng nhập hoặc thanh toán Microsoft.</p></div>
+      </article>
+    </section>
+
+    <aside class="notice">
+      <p data-i18n="notice">Ravno là dự án độc lập, không liên kết và không được Microsoft, Xbox hay Epic Games bảo trợ hoặc cấp phép. Hãy đọc Điều khoản và Quyền riêng tư trước khi dùng.</p>
+      <p style="margin-top:8px"><a href="terms.html" id="termsNotice" data-i18n="noticeLink">Đọc Điều khoản và Quyền riêng tư</a></p>
+    </aside>
+  </main>
+
+  <footer class="foot">
+    <nav aria-label="Liên kết">
+      <a href="terms.html" id="termsFoot" data-i18n="navTerms">Điều khoản</a>
+      <a href="https://github.com/muitenvn/Ravno-App" rel="noopener noreferrer" data-i18n="fRepo">Mã nguồn</a>
+      <a href="https://github.com/muitenvn/Ravno-App/releases" rel="noopener noreferrer" data-i18n="fReleases">Các phiên bản</a>
+      <a href="https://github.com/muitenvn/Ravno-App/issues" rel="noopener noreferrer" data-i18n="fIssues">Báo lỗi và góp ý</a>
+    </nav>
+    <p data-i18n="fCopy">Ravno, dự án độc lập không liên kết với Microsoft hay Xbox. Định vị IP bởi DB-IP.com (CC BY 4.0).</p>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var I18N = {
+    vi: {
+      pageTitle: "Ravno — Xbox Cloud Gaming gọn nhẹ trên Android",
+      navTerms: "Điều khoản",
+      heroTitle: "Chơi Xbox Cloud Gaming gọn nhẹ trên Android",
+      heroDesc: "Ứng dụng độc lập mở xbox.com/play trên điện thoại, với tay cầm cảm ứng tùy chỉnh, thông số thật và dịch giao diện.",
+      relSubDefault: "Android 8.0 trở lên",
+      dlMain: "Tải APK (Chính thức)",
+      dlMirror: "Tải nhanh (mirror)",
+      dlPad: "Tải Ravno Pad (Tay cầm TV)",
+      mirrorNote: "Mirror do bên thứ ba vận hành. Hãy so mã SHA-256 bên dưới với tệp nhận được.",
+      shaTitle: "Mã kiểm tra SHA-256",
+      shaDefault: "Xem tệp .sha256 trên trang Releases",
+      copy: "Sao chép",
+      copied: "Đã sao chép",
+      latest: "Bản mới nhất",
+      f1Title: "Tay cầm tùy chỉnh",
+      f1Desc: "Kéo thả nút, chỉnh cỡ và độ trong suốt, lưu bố cục riêng cho từng game. Dùng được tay cầm Bluetooth và USB‑C.",
+      f2Title: "Hình ảnh và thông số thật",
+      f2Desc: "Chọn 720p hoặc 1080p, giới hạn băng thông, quay màn hình, xem FPS, ping, jitter và bitrate thực tế.",
+      f3Title: "12 ngôn ngữ",
+      f3Desc: "Giao diện ứng dụng và menu Xbox được dịch nhanh sang 12 ngôn ngữ.",
+      f4Title: "Mạng và an toàn tài khoản",
+      f4Desc: "Đo độ trễ, hỗ trợ proxy tùy chọn, tự ngắt proxy khi bạn vào trang đăng nhập hoặc thanh toán Microsoft.",
+      notice: "Ravno là dự án độc lập, không liên kết và không được Microsoft, Xbox hay Epic Games bảo trợ hoặc cấp phép. Hãy đọc Điều khoản và Quyền riêng tư trước khi dùng.",
+      noticeLink: "Đọc Điều khoản và Quyền riêng tư",
+      fRepo: "Mã nguồn",
+      fReleases: "Các phiên bản",
+      fIssues: "Báo lỗi và góp ý",
+      fCopy: "Ravno, dự án độc lập không liên kết với Microsoft hay Xbox. Định vị IP bởi DB-IP.com (CC BY 4.0).",
+      alts: ["Màn hình Trang chủ của Ravno", "Màn hình Thư viện game", "Màn hình Cài đặt hình ảnh và FPS"]
+    },
+    en: {
+      pageTitle: "Ravno — Lightweight Xbox Cloud Gaming for Android",
+      navTerms: "Terms",
+      heroTitle: "Xbox Cloud Gaming, light and quick on Android",
+      heroDesc: "An independent app that opens xbox.com/play on your phone, with custom touch controls, real stream stats and translated menus.",
+      relSubDefault: "Android 8.0 or newer",
+      dlMain: "Download APK (Official)",
+      dlMirror: "Fast download (mirror)",
+      dlPad: "Download Ravno Pad (TV Controller)",
+      mirrorNote: "Mirrors are run by third parties. Compare the SHA-256 below with the file you receive.",
+      shaTitle: "SHA-256 checksum",
+      shaDefault: "See the .sha256 file on the Releases page",
+      copy: "Copy",
+      copied: "Copied",
+      latest: "Latest release",
+      f1Title: "Custom controls",
+      f1Desc: "Drag and resize buttons, adjust opacity, save a layout per game. Bluetooth and USB‑C controllers work too.",
+      f2Title: "Picture and real stats",
+      f2Desc: "Pick 720p or 1080p, cap bandwidth, record the screen, and watch live FPS, ping, jitter and bitrate.",
+      f3Title: "12 languages",
+      f3Desc: "The app and the Xbox menus are translated on the fly into 12 languages.",
+      f4Title: "Network and account safety",
+      f4Desc: "Measures latency, supports optional proxies, and switches the proxy off on Microsoft sign-in and billing pages.",
+      notice: "Ravno is an independent project, not affiliated with or endorsed by Microsoft, Xbox or Epic Games. Please read the Terms and Privacy Policy before using it.",
+      noticeLink: "Read the Terms and Privacy Policy",
+      fRepo: "Source code",
+      fReleases: "All releases",
+      fIssues: "Report an issue",
+      fCopy: "Ravno, an independent project not affiliated with Microsoft or Xbox. IP geolocation by DB-IP.com (CC BY 4.0).",
+      alts: ["Ravno Home screen", "Game library screen", "Picture and FPS settings screen"]
+    }
+  };
+
+  var lang = "vi", info = null, cursor = 0;
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Các bản sao lưu công khai do bên thứ ba vận hành. Luôn có liên kết GitHub gốc ở cuối danh sách.
+  function mirrors(url) {
+    if (!url || url.indexOf("https://github.com/") !== 0) return [url];
+    return [
+      "https://gh-proxy.com/" + url,
+      "https://ghproxy.net/" + url,
+      "https://gh.llkk.cc/" + url,
+      "https://ghproxy.cc/" + url,
+      "https://gh.ddlc.top/" + url,
+      "https://ghfast.top/" + url,
+      "https://gh.con.sh/" + url,
+      "https://github.moeyy.xyz/" + url,
+      url
+    ];
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "";
+    var p = iso.split("-"); if (p.length !== 3) return iso;
+    var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+    try { return d.toLocaleDateString(lang === "en" ? "en-US" : "vi-VN", { day: "numeric", month: lang === "en" ? "short" : "numeric", year: "numeric", timeZone: "UTC" }); }
+    catch (e) { return iso; }
+  }
+
+  function render() {
+    var t = I18N[lang];
+    document.documentElement.lang = lang;
+    document.title = t.pageTitle;
+    $("langBtn").textContent = lang === "vi" ? "EN" : "VI";
+    var nodes = document.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < nodes.length; i++) {
+      var k = nodes[i].getAttribute("data-i18n");
+      if (t[k] !== undefined && !(k === "shaDefault" && info && info.sha)) nodes[i].textContent = t[k];
+    }
+    var imgs = document.querySelectorAll(".shots img");
+    for (var j = 0; j < imgs.length; j++) imgs[j].alt = t.alts[j] || "";
+    ["termsTop", "termsNotice", "termsFoot"].forEach(function (id) { $(id).href = "terms.html?lang=" + lang; });
+
+    $("relVer").textContent = info && info.tag ? info.tag : t.latest;
+    var sub = t.relSubDefault;
+    if (info && info.date) sub = fmtDate(info.date) + " · " + t.relSubDefault;
+    $("relSub").textContent = sub;
+    $("relSize").textContent = info && info.mb ? info.mb.replace(".", lang === "vi" ? "," : ".") + " MB" : "";
+    if (info && info.sha) { $("shaValue").textContent = info.sha; $("copyBtn").hidden = false; }
+  }
+
+  function setLang(l) {
+    lang = l === "en" ? "en" : "vi";
+    try { localStorage.setItem("cp_lang", lang); } catch (e) {}
+    render();
+  }
+  window.setPortalLang = setLang;
+  window.__updatePortalConfig = function (apkUrl) {
+    if (apkUrl) {
+      $("dlMain").href = apkUrl;
+      $("dlMirror").href = mirrors(apkUrl)[0];
+    }
+  };
+
+  $("langBtn").addEventListener("click", function () { setLang(lang === "vi" ? "en" : "vi"); });
+
+  $("copyBtn").addEventListener("click", function () {
+    var btn = this, text = $("shaValue").textContent;
+    function done() { btn.textContent = I18N[lang].copied; setTimeout(function () { btn.textContent = I18N[lang].copy; }, 1600); }
+    function fallback() {
+      var r = document.createRange(); r.selectNodeContents($("shaValue"));
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      try { document.execCommand("copy"); done(); } catch (e) {}
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  });
+
+  $("dlMirror").addEventListener("click", function () {
+    if (info && info.apk) { var list = mirrors(info.apk); this.href = list[cursor % list.length]; cursor++; }
+  });
+
+  var q = new URLSearchParams(window.location.search).get("lang"), saved = null;
+  try { saved = localStorage.getItem("cp_lang"); } catch (e) {}
+  setLang(q || saved || "vi");
+
+  fetch("https://api.github.com/repos/muitenvn/Ravno-App/releases/latest", { headers: { "Accept": "application/vnd.github+json" } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d) return;
+      var assets = Array.isArray(d.assets) ? d.assets : [], apk = null, padApk = null;
+      for (var i = 0; i < assets.length; i++) {
+        var a = assets[i];
+        if (!a || typeof a.name !== "string") continue;
+        var nm = a.name.toLowerCase();
+        if (!nm.endsWith(".apk")) continue;
+        var isPad = nm.indexOf("ravno-pad") !== -1 || nm.indexOf("cloudplay-pad") !== -1 || nm.indexOf("-pad-") !== -1 || nm.indexOf("pad-") === 0;
+        if (isPad) {
+          if (!padApk) padApk = a;
+        } else if (nm.indexOf("ravno-xbox") !== -1 || nm.indexOf("ravno-app") !== -1 || nm.indexOf("cloudplay-xbox") !== -1 || !apk) {
+          apk = a;
+        }
+      }
+      var m = (d.body || "").match(/\b([a-fA-F0-9]{64})\b/);
+      var url = apk ? apk.browser_download_url : (d.html_url || "https://github.com/muitenvn/Ravno-App/releases/latest");
+      info = {
+        tag: d.tag_name || "",
+        date: d.published_at ? d.published_at.slice(0, 10) : "",
+        apk: url,
+        mb: apk && apk.size ? (apk.size / 1048576).toFixed(1) : null,
+        sha: m ? m[1].toLowerCase() : null
+      };
+      $("dlMain").href = url;
+      $("dlMirror").href = mirrors(url)[0];
+      if (padApk && padApk.browser_download_url && $("dlPad")) {
+        $("dlPad").href = padApk.browser_download_url;
+        $("dlPad").hidden = false;
+      }
+      render();
+    })
+    .catch(function () {});
+})();
+</script>
+</body>
+</html>

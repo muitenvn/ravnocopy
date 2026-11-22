@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://muitenvn.github.io/Ravno-App/sitemap.xml
