@@ -369,18 +369,18 @@ object PadStrings {
 
     fun gyroDefaultOffHint(lang: PadLanguage) = tr(
         lang = lang,
-        vi = "Mặc định tắt — bật để dùng theo game hỗ trợ hoặc nghiêng lái xe thủ công.",
-        en = "Off by default — turn on for game-supported gyro or manual racing tilt.",
-        es = "Apagado por defecto — actívalo para giroscopio nativo del juego o giro manual de carreras.",
-        pt = "Desativado por padrão — ative para giroscópio nativo do jogo ou direção manual de corrida.",
-        fr = "Désactivé par défaut — activez pour le gyroscope natif du jeu ou la direction course manuelle.",
-        de = "Standardmäßig aus — aktivieren für Spiel-Gyroskop oder manuelle Renn-Neigung.",
-        ja = "初期設定はオフ — ゲーム対応ジャイロまたは手動レース傾き操作に使用。",
-        ko = "기본값 꺼짐 — 게임 지원 자이로 또는 수동 레이싱 기울기 조향에 사용.",
-        zh = "默认关闭 — 开启后可按游戏原生支持使用，或手动倾斜控制赛车转向。",
-        id = "Mati secara default — aktifkan untuk giroskop bawaan game atau miring setir manual.",
-        th = "ปิดเป็นค่าเริ่มต้น — เปิดเพื่อใช้ตามเกมที่รองรับ หรือเอียงบังคับรถด้วยตนเอง",
-        ru = "По умолчанию выкл. — для нативного гироскопа игры или ручного руля в гонках."
+        vi = "Mặc định tắt — bật để ngắm Cần Phải, nghiêng lái xe hoặc theo game.",
+        en = "Off by default — turn on for Right Stick aim, racing tilt, or game native.",
+        es = "Apagado por defecto — actívalo para apuntar (R), carreras o nativo.",
+        pt = "Desativado por padrão — ative para mirar (R), corrida ou nativo.",
+        fr = "Désactivé par défaut — activez pour viser (R), course ou natif.",
+        de = "Standardmäßig aus — aktivieren für Zielen (R), Rennen oder Nativ.",
+        ja = "初期設定はオフ — 右スティック照準・レース・ゲーム対応に使用。",
+        ko = "기본값 꺼짐 — 오른쪽 스틱 조준, 레이싱, 게임 지원에 사용.",
+        zh = "默认关闭 — 开启后可用于右摇杆瞄准、赛车转向或游戏原生。",
+        id = "Mati secara default — aktifkan untuk bidik (R), balapan, atau bawaan.",
+        th = "ปิดเป็นค่าเริ่มต้น — เปิดเพื่อเล็งก้านขวา แข่งรถ หรือตามเกม",
+        ru = "По умолчанию выкл. — прицел (R), гонки или нативный режим."
     )
 
     fun gyroStatusOn(lang: PadLanguage) = tr(
@@ -415,84 +415,214 @@ object PadStrings {
         ru = "○ Выкл. (по умолч.)"
     )
 
-    fun gyroModeGameNativeTitle(lang: PadLanguage) = tr(
+    fun gyroModeAimRightTitle(lang: PadLanguage) = tr(
         lang = lang,
-        vi = "Theo game hỗ trợ (Mặc định)",
-        en = "Game Native Support (Default)",
-        es = "Solo si el juego lo soporta (Predet.)",
-        pt = "Apenas jogos compatíveis (Padrão)",
-        fr = "Selon support du jeu (Défaut)",
-        de = "Nur bei Spiel-Unterstützung (Standard)",
-        ja = "ゲーム標準対応のみ (既定)",
-        ko = "게임 기본 지원 전용 (기본값)",
-        zh = "仅当游戏原生支持 (默认)",
-        id = "Khusus Game yang Mendukung (Default)",
-        th = "เฉพาะเกมที่รองรับ (ค่าเริ่มต้น)",
-        ru = "Только если игра поддерживает (По умолч.)"
+        vi = "Ngắm bắn — Cần Phải (R)",
+        en = "Aiming — Right Stick (R)",
+        es = "Apuntar — Stick Derecho (R)",
+        pt = "Mira — Analógico Direito (R)",
+        fr = "Visée — Stick Droit (R)",
+        de = "Zielen — Rechter Stick (R)",
+        ja = "照準 — 右スティック (R)",
+        ko = "조준 — 오른쪽 스틱 (R)",
+        zh = "瞄准 — 右摇杆 (R)",
+        id = "Bidik — Stik Kanan (R)",
+        th = "เล็งยิง — ก้านขวา (R)",
+        ru = "Прицел — Правый стик (R)"
     )
 
-    fun gyroModeGameNativeShort(lang: PadLanguage) = tr(
+    fun gyroModeAimRightShort(lang: PadLanguage) = tr(
         lang = lang,
-        vi = "Game hỗ trợ",
-        en = "Game Native",
-        es = "Nativo del juego",
-        pt = "Nativo do jogo",
-        fr = "Jeu natif",
-        de = "Spiel-nativ",
-        ja = "ゲーム対応",
-        ko = "게임 지원",
-        zh = "游戏原生",
-        id = "Bawaan Game",
+        vi = "Ngắm (R)",
+        en = "Aim (R)",
+        es = "Apuntar (R)",
+        pt = "Mira (R)",
+        fr = "Visée (R)",
+        de = "Zielen (R)",
+        ja = "照準 (R)",
+        ko = "조준 (R)",
+        zh = "瞄准 (R)",
+        id = "Bidik (R)",
+        th = "เล็ง (R)",
+        ru = "Прицел (R)"
+    )
+
+    fun gyroModeGameNativeTitle(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Theo game hỗ trợ gốc",
+        en = "Game Native Support",
+        es = "Soporte nativo del juego",
+        pt = "Suporte nativo do jogo",
+        fr = "Support natif du jeu",
+        de = "Native Spiel-Unterstützung",
+        ja = "ゲーム標準対応",
+        ko = "게임 기본 지원",
+        zh = "游戏原生支持",
+        id = "Dukungan Bawaan Game",
         th = "ตามเกมรองรับ",
         ru = "Поддержка игры"
     )
 
+    fun gyroModeGameNativeShort(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Game gốc",
+        en = "Native",
+        es = "Nativo",
+        pt = "Nativo",
+        fr = "Natif",
+        de = "Nativ",
+        ja = "ゲーム",
+        ko = "기본",
+        zh = "原生",
+        id = "Bawaan",
+        th = "เกม",
+        ru = "Игра"
+    )
+
     fun gyroModeRacingTitle(lang: PadLanguage) = tr(
         lang = lang,
-        vi = "Đua xe — Nghiêng trái/phải (Thủ công)",
-        en = "Racing — Left/Right Tilt (Manual)",
-        es = "Carreras — Inclinar Izq./Der. (Manual)",
-        pt = "Corrida — Inclinar Esq./Dir. (Manual)",
-        fr = "Course — Inclinaison G/D (Manuel)",
-        de = "Rennen — Links/Rechts neigen (Manuell)",
-        ja = "レース — 左右傾き操作 (手動)",
-        ko = "레이싱 — 좌/우 기울기 조향 (수동)",
-        zh = "赛车 — 左右倾斜转向 (手动)",
-        id = "Balapan — Miring Kiri/Kanan (Manual)",
-        th = "แข่งรถ — เอียงซ้าย/ขวา (เปิดเอง)",
-        ru = "Гонки — Наклон влево/вправо (Вручную)"
+        vi = "Đua xe — Nghiêng trái/phải (L)",
+        en = "Racing — Left/Right Tilt (L)",
+        es = "Carreras — Inclinar Izq./Der. (L)",
+        pt = "Corrida — Inclinar Esq./Dir. (L)",
+        fr = "Course — Inclinaison G/D (L)",
+        de = "Rennen — Links/Rechts neigen (L)",
+        ja = "レース — 左右傾き操作 (L)",
+        ko = "레이싱 — 좌/우 기울기 조향 (L)",
+        zh = "赛车 — 左右倾斜转向 (L)",
+        id = "Balapan — Miring Kiri/Kanan (L)",
+        th = "แข่งรถ — เอียงซ้าย/ขวา (L)",
+        ru = "Гонки — Наклон влево/вправо (L)"
     )
 
     fun gyroModeRacingShort(lang: PadLanguage) = tr(
         lang = lang,
-        vi = "Đua xe (Trái/Phải)",
-        en = "Racing (Tilt)",
-        es = "Carreras (Giro)",
-        pt = "Corrida (Volante)",
-        fr = "Course (Volant)",
-        de = "Rennen (Lenken)",
-        ja = "レース (左右)",
-        ko = "레이싱 (좌/우)",
-        zh = "赛车 (左右倾)",
-        id = "Balapan (Setir)",
-        th = "แข่งรถ (ซ้าย/ขวา)",
-        ru = "Гонки (Руль)"
+        vi = "Đua xe (L)",
+        en = "Race (L)",
+        es = "Carreras (L)",
+        pt = "Corrida (L)",
+        fr = "Course (L)",
+        de = "Rennen (L)",
+        ja = "レース (L)",
+        ko = "레이싱 (L)",
+        zh = "赛车 (L)",
+        id = "Balapan (L)",
+        th = "แข่งรถ (L)",
+        ru = "Гонки (L)"
+    )
+
+    fun gyroHoldLtTitle(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Chỉ bật khi giữ ngắm (LT)",
+        en = "Only active while holding Aim (LT)",
+        es = "Solo activo al mantener apuntar (LT)",
+        pt = "Ativo apenas ao segurar mira (LT)",
+        fr = "Actif uniquement en visant (LT)",
+        de = "Nur beim Halten von Zielen (LT)",
+        ja = "照準(LT)長押し中のみ有効",
+        ko = "조준(LT) 누르는 동안만 활성",
+        zh = "仅按住瞄准 (LT) 时启用",
+        id = "Aktif hanya saat tahan Bidik (LT)",
+        th = "เปิดเฉพาะตอนกดเล็ง (LT)",
+        ru = "Только при удержании прицела (LT)"
+    )
+
+    fun gyroHoldLtSub(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Nhả LT là khóa tâm ngay, tránh chóng mặt khi di chuyển.",
+        en = "Release LT to lock aim immediately and avoid motion sickness.",
+        es = "Suelta LT para bloquear la mira al instante.",
+        pt = "Solte LT para travar a mira imediatamente.",
+        fr = "Relâchez LT pour verrouiller la visée immédiatement.",
+        de = "LT loslassen, um das Zielen sofort zu sperren.",
+        ja = "LTを離すと即座に照準を固定し酔いを防ぎます。",
+        ko = "LT를 떼면 조준이 즉시 고정되어 어지럼증을 줄입니다.",
+        zh = "松开 LT 立即锁定准星，移动时不头晕。",
+        id = "Lepas LT untuk kunci bidikan seketika.",
+        th = "ปล่อย LT เพื่อล็อกเป้าทันที ลดอาการเวียนหัว",
+        ru = "Отпустите LT для мгновенной фиксации прицела."
+    )
+
+    fun gyroHoldLtChip(lang: PadLanguage, enabled: Boolean) = if (enabled) {
+        tr(
+            lang = lang,
+            vi = "🎯 Giữ LT ngắm: Bật",
+            en = "🎯 Hold LT: On",
+            es = "🎯 Mantener LT: Sí",
+            pt = "🎯 Segurar LT: Sim",
+            fr = "🎯 Maintenir LT : Oui",
+            de = "🎯 LT halten: Ein",
+            ja = "🎯 LT長押し: オン",
+            ko = "🎯 LT 유지: 켜짐",
+            zh = "🎯 按住 LT: 开",
+            id = "🎯 Tahan LT: Aktif",
+            th = "🎯 กดค้าง LT: เปิด",
+            ru = "🎯 Удерж. LT: Вкл."
+        )
+    } else {
+        tr(
+            lang = lang,
+            vi = "🎯 Giữ LT ngắm: Tắt",
+            en = "🎯 Hold LT: Off",
+            es = "🎯 Mantener LT: No",
+            pt = "🎯 Segurar LT: Não",
+            fr = "🎯 Maintenir LT : Non",
+            de = "🎯 LT halten: Aus",
+            ja = "🎯 LT長押し: オフ",
+            ko = "🎯 LT 유지: 꺼짐",
+            zh = "🎯 按住 LT: 关",
+            id = "🎯 Tahan LT: Mati",
+            th = "🎯 กดค้าง LT: ปิด",
+            ru = "🎯 Удерж. LT: Выкл."
+        )
+    }
+
+    fun gyroSensXShort(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Độ nhạy ngang (X)",
+        en = "Horizontal sens (X)",
+        es = "Sens. horizontal (X)",
+        pt = "Sens. horizontal (X)",
+        fr = "Sens. horizontale (X)",
+        de = "Empfindl. X",
+        ja = "横感度 (X)",
+        ko = "가로 감도 (X)",
+        zh = "水平灵敏度 (X)",
+        id = "Sens. Horizontal (X)",
+        th = "ความไวแนวนอน (X)",
+        ru = "Чувств. гориз. (X)"
+    )
+
+    fun gyroSensYShort(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Độ nhạy dọc (Y)",
+        en = "Vertical sens (Y)",
+        es = "Sens. vertical (Y)",
+        pt = "Sens. vertical (Y)",
+        fr = "Sens. verticale (Y)",
+        de = "Empfindl. Y",
+        ja = "縦感度 (Y)",
+        ko = "세로 감도 (Y)",
+        zh = "垂直灵敏度 (Y)",
+        id = "Sens. Vertikal (Y)",
+        th = "ความไวแนวตั้ง (Y)",
+        ru = "Чувств. верт. (Y)"
     )
 
     fun gyroGameNativePadNotice(lang: PadLanguage) = tr(
         lang = lang,
-        vi = "Không giả lập cần tay cầm ở chế độ này. Giao thức tay cầm Xbox qua LAN không có kênh gyro gốc — chọn thủ công Đua xe (Trái/Phải) để nghiêng lái xe.",
-        en = "No stick emulation is sent in this mode. Standard Xbox LAN gamepad protocol has no native gyro channel — switch manually to Racing (Tilt) to steer left/right.",
-        es = "No se envía emulación de stick en este modo. El protocolo Xbox LAN no tiene canal de giroscopio nativo: cambia manualmente a Carreras (Giro) para girar.",
-        pt = "Nenhuma emulação de analógico é enviada neste modo. O protocolo Xbox LAN não tem canal de giroscópio nativo — mude manualmente para Corrida para virar.",
-        fr = "Aucune émulation de stick n'est envoyée dans ce mode. Le protocole manette Xbox LAN n'a pas de canal gyroscopique natif — passez manuellement en Course pour tourner.",
-        de = "In diesem Modus wird keine Stick-Emulation gesendet. Das Xbox-LAN-Protokoll bietet keinen nativen Gyro-Kanal — für Lenkung manuell zu Rennen wechseln.",
-        ja = "このモードではスティック擬似入力を送信しません。標準Xbox LANプロトコルにネイティブジャイロ通信はないため、傾き運転はレースモードへ手動切替してください。",
-        ko = "이 모드에서는 스틱 가상 입력을 전송하지 않습니다. 표준 Xbox LAN 게임패드 프로토콜에는 기본 자이로 채널이 없으므로 레이싱 모드로 수동 전환하세요.",
-        zh = "此模式不发送摇杆模拟信号。标准 Xbox 局域网手柄协议不含原生陀螺仪通道 — 如需左右倾斜驾驶请手动切换到赛车模式。",
-        id = "Tidak ada emulasi stik yang dikirim di mode ini. Protokol stik Xbox LAN tidak memiliki kanal giroskop bawaan — beralih manual ke Balapan untuk setir.",
-        th = "โหมดนี้จะไม่ส่งค่าจำลองก้านอนาล็อก โปรโตคอลจอย Xbox LAN ไม่มีช่องไจโรสโคปดั้งเดิม — เปลี่ยนเป็นโหมดแข่งรถด้วยตนเองเพื่อเอียงเลี้ยว",
-        ru = "В этом режиме эмуляция стика не отправляется. Стандартный протокол геймпада Xbox LAN не имеет нативного канала гироскопа — выберите Гонки вручную для руления."
+        vi = "Không giả lập cần tay cầm ở chế độ này. Chọn Ngắm (R) hoặc Đua xe (L) để dùng cảm biến nghiêng.",
+        en = "No stick emulation in this mode. Switch to Aim (R) or Race (L) to use motion sensors.",
+        es = "Sin emulación de stick en este modo. Cambia a Apuntar (R) o Carreras (L).",
+        pt = "Sem emulação de analógico neste modo. Mude para Mira (R) ou Corrida (L).",
+        fr = "Aucune émulation de stick ici. Passez en Visée (R) ou Course (L).",
+        de = "Keine Stick-Emulation in diesem Modus. Wechsle zu Zielen (R) oder Rennen (L).",
+        ja = "このモードではスティック擬似入力を行いません。照準(R)またはレース(L)へ切替えてください。",
+        ko = "이 모드에서는 스틱 가상 입력이 없습니다. 조준(R) 또는 레이싱(L)으로 전환하세요.",
+        zh = "此模式不模拟摇杆。请切换到瞄准 (R) 或赛车 (L) 使用体感。",
+        id = "Tidak ada emulasi stik di mode ini. Beralih ke Bidik (R) atau Balapan (L).",
+        th = "โหมดนี้ไม่จำลองก้านอนาล็อก สลับไปที่ เล็ง (R) หรือ แข่งรถ (L) เพื่อใช้เซ็นเซอร์",
+        ru = "В этом режиме эмуляция стика отключена. Выберите Прицел (R) или Гонки (L)."
     )
 
     fun gyroSteerSensShort(lang: PadLanguage) = tr(
@@ -558,6 +688,40 @@ object PadStrings {
             id = "⇄ Balik X: Mati",
             th = "⇄ กลับซ้ายขวา: ปิด",
             ru = "⇄ Инверсия X: Выкл."
+        )
+    }
+
+    fun gyroInvertYLabel(lang: PadLanguage, enabled: Boolean) = if (enabled) {
+        tr(
+            lang = lang,
+            vi = "⇅ Đảo dọc: Bật",
+            en = "⇅ Invert Y: On",
+            es = "⇅ Invertir Y: Sí",
+            pt = "⇅ Inverter Y: Sim",
+            fr = "⇅ Inverser Y : Oui",
+            de = "⇅ Y umkehren: Ein",
+            ja = "⇅ 上下反転: オン",
+            ko = "⇅ 상하 반전: 켜짐",
+            zh = "⇅ 反转上下: 开",
+            id = "⇅ Balik Y: Aktif",
+            th = "⇅ กลับบนล่าง: เปิด",
+            ru = "⇅ Инверсия Y: Вкл."
+        )
+    } else {
+        tr(
+            lang = lang,
+            vi = "⇅ Đảo dọc: Tắt",
+            en = "⇅ Invert Y: Off",
+            es = "⇅ Invertir Y: No",
+            pt = "⇅ Inverter Y: Não",
+            fr = "⇅ Inverser Y : Non",
+            de = "⇅ Y umkehren: Aus",
+            ja = "⇅ 上下反転: オフ",
+            ko = "⇅ 상하 반전: 꺼짐",
+            zh = "⇅ 反转上下: 关",
+            id = "⇅ Balik Y: Mati",
+            th = "⇅ กลับบนล่าง: ปิด",
+            ru = "⇅ Инверсия Y: Выкл."
         )
     }
 

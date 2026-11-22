@@ -155,21 +155,24 @@ data class PadNodeTuning(
 }
 
 enum class PadGyroMode(val id: String) {
-    GAME_NATIVE("game_native"),
-    RACING_STEER("racing");
+    AIM_RIGHT_STICK("aim_right_stick"),
+    RACING_STEER("racing"),
+    GAME_NATIVE("game_native");
 
     fun localizedTitle(lang: PadLanguage): String = when (this) {
-        GAME_NATIVE -> PadStrings.gyroModeGameNativeTitle(lang)
+        AIM_RIGHT_STICK -> PadStrings.gyroModeAimRightTitle(lang)
         RACING_STEER -> PadStrings.gyroModeRacingTitle(lang)
+        GAME_NATIVE -> PadStrings.gyroModeGameNativeTitle(lang)
     }
 
     fun shortTitle(lang: PadLanguage): String = when (this) {
-        GAME_NATIVE -> PadStrings.gyroModeGameNativeShort(lang)
+        AIM_RIGHT_STICK -> PadStrings.gyroModeAimRightShort(lang)
         RACING_STEER -> PadStrings.gyroModeRacingShort(lang)
+        GAME_NATIVE -> PadStrings.gyroModeGameNativeShort(lang)
     }
 
     companion object {
-        fun fromId(id: String): PadGyroMode = entries.firstOrNull { it.id == id } ?: GAME_NATIVE
+        fun fromId(id: String): PadGyroMode = entries.firstOrNull { it.id == id } ?: AIM_RIGHT_STICK
     }
 }
 
@@ -193,7 +196,7 @@ data class PadGlobalControllerSettings(
     val isPositionLocked: Boolean = false,
     val showEditGrid: Boolean = true,
     val gyroEnabled: Boolean = false, // Mặc định TẮT hoàn toàn
-    val gyroMode: PadGyroMode = PadGyroMode.GAME_NATIVE,
+    val gyroMode: PadGyroMode = PadGyroMode.AIM_RIGHT_STICK,
     val gyroSensX: Int = 100,
     val gyroSensY: Int = 100,
     val gyroDeadzone: Int = 2,
@@ -232,7 +235,7 @@ internal object PadControllerStorage {
             isPositionLocked = prefs.getBoolean("pad_position_locked", false),
             showEditGrid = prefs.getBoolean("pad_show_edit_grid", true),
             gyroEnabled = prefs.getBoolean("pad_gyro_enabled", false),
-            gyroMode = PadGyroMode.fromId(prefs.getString("pad_gyro_mode", PadGyroMode.GAME_NATIVE.id).orEmpty()),
+            gyroMode = PadGyroMode.fromId(prefs.getString("pad_gyro_mode", PadGyroMode.AIM_RIGHT_STICK.id).orEmpty()),
             gyroSensX = prefs.getInt("pad_gyro_sens_x", 100).coerceIn(10, 300),
             gyroSensY = prefs.getInt("pad_gyro_sens_y", 100).coerceIn(10, 300),
             gyroDeadzone = prefs.getInt("pad_gyro_deadzone", 2).coerceIn(0, 20),

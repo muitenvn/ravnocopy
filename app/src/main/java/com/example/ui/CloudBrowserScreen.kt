@@ -756,6 +756,40 @@ fun CloudBrowserScreen(
     }
 
     val isTvMode = remember(config.appUiMode, context) { config.isEffectiveTvMode(context) }
+    val isRealTvHardware = remember(context) { com.example.data.isSystemTvDevice(context) }
+    var autoRotatedForCurrentStream by remember { mutableStateOf(false) }
+    var userManuallyToggledOrientation by remember { mutableStateOf(false) }
+
+    // Tự động xoay màn hình ngang ngay khi phát hiện đã vào luồng game / tự tắt VPN;
+    // khi thoát game quay lại danh sách Xbox thì mở khóa lại hướng màn hình tự nhiên (không chặn nút xoay thủ công trên HUD).
+    LaunchedEffect(
+        streamUiState.isStreamConnected,
+        streamUiState.isGameActive,
+        streamUiState.autoBypassTriggered,
+        isTvMode,
+        isRealTvHardware
+    ) {
+        val enteredGame = streamUiState.isStreamConnected ||
+            (streamUiState.isGameActive && streamUiState.autoBypassTriggered)
+        if (enteredGame) {
+            if (!autoRotatedForCurrentStream && !userManuallyToggledOrientation && !isRealTvHardware) {
+                autoRotatedForCurrentStream = true
+                (activity as? com.example.MainActivity)?.lockLandscapeOrientation()
+                com.example.data.AppLogger.info(
+                    "UI",
+                    "Phát hiện vào game (stream=${streamUiState.isStreamConnected}, autoBypass=${streamUiState.autoBypassTriggered}) -> tự xoay màn hình ngang"
+                )
+            }
+        } else {
+            if (autoRotatedForCurrentStream && !isTvMode && !isRealTvHardware) {
+                (activity as? com.example.MainActivity)?.resetOrientation()
+                com.example.data.AppLogger.info("UI", "Đã thoát luồng game -> mở khóa hướng màn hình mặc định")
+            }
+            autoRotatedForCurrentStream = false
+            userManuallyToggledOrientation = false
+        }
+    }
+
     val remotePadServerState by com.example.cloudplay.RemotePadTvServer.state.collectAsState()
     val isRemotePadConnected = remotePadServerState.status == com.muitenvn.cloudplay.protocol.TvServiceStatus.HAS_CONTROLLER
     val effectiveShowVirtualController = !isTvMode && config.showVirtualController &&
@@ -943,24 +977,30 @@ fun CloudBrowserScreen(
     }
 
     // Bộ điều khiển Con quay hồi chuyển (Gyroscope) - Mặc định TẮT hoàn toàn:
+    // + AIM_RIGHT_STICK: xoay cổ tay điều khiển Cần Phải (R) độ trễ thấp, hỗ trợ giữ ngắm LT.
+    // + RACING_STEER: nghiêng trái/phải lái xe trên Cần Trái (L - trục X).
     // + GAME_NATIVE: mở cảm biến gốc trình duyệt cho game hỗ trợ, không giả lập cần tay cầm.
-    // + RACING_STEER: người chơi tự bật để nghiêng trái/phải lái xe trên Cần Trái (L - trục X).
     val currentWebViewForGyro by androidx.compose.runtime.rememberUpdatedState(webViewInstance)
     val currentLifecycleResumedForGyro by androidx.compose.runtime.rememberUpdatedState(isLifecycleResumed)
     val gyroController = remember(context) {
-        com.example.cloudplay.GyroscopeController(context) { _, outX, _ ->
+        com.example.cloudplay.GyroscopeController(context) { targetRightStick, outX, outY ->
             val wv = currentWebViewForGyro ?: return@GyroscopeController
-            val rx = if (outX.isFinite()) (outX.coerceIn(-1f, 1f) * 100f).let { kotlin.math.round(it) / 100f } else 0f
+            val rx = if (outX.isFinite()) (outX.coerceIn(-1f, 1f) * 1000f).let { kotlin.math.round(it) / 1000f } else 0f
+            val ry = if (outY.isFinite()) (outY.coerceIn(-1f, 1f) * 1000f).let { kotlin.math.round(it) / 1000f } else 0f
             wv.post {
                 val curCfg = SettingsRepository.config.value
-                val allowRacing = curCfg.gyroEnabled &&
-                    curCfg.gyroMode == com.example.data.GyroControlMode.RACING_STEER &&
+                val allowStick = curCfg.gyroEnabled &&
+                    (curCfg.gyroMode == com.example.data.GyroControlMode.AIM_RIGHT_STICK ||
+                        curCfg.gyroMode == com.example.data.GyroControlMode.RACING_STEER) &&
                     currentLifecycleResumedForGyro
-                if (!allowRacing) {
+                if (!allowStick) {
                     wv.evaluateJavascript("if(window.__cpGyroClear)window.__cpGyroClear();", null)
                 } else {
+                    val isRight = targetRightStick && curCfg.gyroMode == com.example.data.GyroControlMode.AIM_RIGHT_STICK
+                    val sendY = if (isRight) ry else 0f
+                    val holdLt = isRight && curCfg.gyroHoldLtOnly
                     wv.evaluateJavascript(
-                        "if(window.__cpGyro)window.__cpGyro(false,$rx,0,false);",
+                        "if(window.__cpGyro)window.__cpGyro($isRight,$rx,$sendY,$holdLt);",
                         null
                     )
                 }
@@ -972,8 +1012,11 @@ fun CloudBrowserScreen(
         config.gyroEnabled,
         config.gyroMode,
         config.gyroSensitivityX,
+        config.gyroSensitivityY,
         config.gyroDeadzone,
         config.gyroInvertX,
+        config.gyroInvertY,
+        config.gyroHoldLtOnly,
         isLifecycleResumed,
         isPageLoading,
         webViewInstance
@@ -981,8 +1024,9 @@ fun CloudBrowserScreen(
         val nativeAllowed = config.gyroEnabled &&
             config.gyroMode == com.example.data.GyroControlMode.GAME_NATIVE &&
             isLifecycleResumed
-        val racingActive = config.gyroEnabled &&
-            config.gyroMode == com.example.data.GyroControlMode.RACING_STEER &&
+        val stickActive = config.gyroEnabled &&
+            (config.gyroMode == com.example.data.GyroControlMode.AIM_RIGHT_STICK ||
+                config.gyroMode == com.example.data.GyroControlMode.RACING_STEER) &&
             isLifecycleResumed
 
         gyroController.setPaused(!isLifecycleResumed)
@@ -990,16 +1034,16 @@ fun CloudBrowserScreen(
             enabled = config.gyroEnabled,
             mode = config.gyroMode,
             sensitivityXPercent = kotlin.math.round(config.gyroSensitivityX * 100f).toInt(),
-            sensitivityYPercent = 100,
+            sensitivityYPercent = kotlin.math.round(config.gyroSensitivityY * 100f).toInt(),
             deadzonePercent = kotlin.math.round(config.gyroDeadzone * 100f).toInt(),
             invertX = config.gyroInvertX,
-            invertY = false
+            invertY = config.gyroInvertY
         )
         webViewInstance?.evaluateJavascript(
             "if(window.__setNativeGyroAllowed)window.__setNativeGyroAllowed($nativeAllowed);",
             null
         )
-        if (!racingActive) {
+        if (!stickActive) {
             webViewInstance?.evaluateJavascript("if(window.__cpGyroClear)window.__cpGyroClear();", null)
         } else if (!isPageLoading && webViewInstance != null) {
             gyroController.syncCurrentOutput()
@@ -2043,6 +2087,7 @@ fun CloudBrowserScreen(
                 showTranslatorDialog = true
             },
             onToggleOrientation = {
+                userManuallyToggledOrientation = true
                 com.example.data.AppLogger.info("UI", "Bấm Xoay ngang/dọc màn hình từ HUD")
                 (activity as? com.example.MainActivity)?.toggleOrientation()
             },

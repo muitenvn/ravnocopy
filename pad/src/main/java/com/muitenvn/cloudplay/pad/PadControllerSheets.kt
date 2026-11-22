@@ -591,7 +591,7 @@ private fun PadGlobalPopoverBody(
         checked = settings.gyroEnabled,
         onCheckedChange = { enabled ->
             onUpdateSettings(settings.copy(gyroEnabled = enabled))
-            if (enabled && settings.gyroMode == PadGyroMode.RACING_STEER) onRecenterGyro()
+            if (enabled && settings.gyroMode != PadGyroMode.GAME_NATIVE) onRecenterGyro()
         }
     )
 
@@ -602,42 +602,75 @@ private fun PadGlobalPopoverBody(
             onSelect = { idx ->
                 PadGyroMode.entries.getOrNull(idx)?.let { mode ->
                     onUpdateSettings(settings.copy(gyroMode = mode))
-                    if (mode == PadGyroMode.RACING_STEER) onRecenterGyro()
+                    if (mode != PadGyroMode.GAME_NATIVE) onRecenterGyro()
                 }
             }
         )
 
-        if (settings.gyroMode == PadGyroMode.GAME_NATIVE) {
-            Text(
-                text = PadStrings.gyroGameNativePadNotice(lang),
-                color = SheetMuted,
-                fontSize = 11.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(SheetBg, RoundedCornerShape(8.dp))
-                    .border(1.dp, SheetBorder, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 10.dp, vertical = 8.dp)
-            )
-        } else {
-            PadPopoverSliderRow(
-                label = PadStrings.gyroSteerSensShort(lang),
-                valueText = "${settings.gyroSensX}%",
-                value = settings.gyroSensX / 100f,
-                valueRange = 0.10f..3.00f,
-                onValueChange = {
-                    onUpdateSettings(settings.copy(gyroSensX = (it * 100).roundToInt().coerceIn(10, 300)))
-                }
-            )
+        when (settings.gyroMode) {
+            PadGyroMode.AIM_RIGHT_STICK -> {
+                PadPopoverSwitchRow(
+                    title = PadStrings.gyroHoldLtTitle(lang),
+                    subtitle = PadStrings.gyroHoldLtSub(lang),
+                    checked = settings.gyroHoldLtOnly,
+                    onCheckedChange = { enabled ->
+                        onUpdateSettings(settings.copy(gyroHoldLtOnly = enabled))
+                    }
+                )
+                PadPopoverSliderRow(
+                    label = PadStrings.gyroSensXShort(lang),
+                    valueText = "${settings.gyroSensX}%",
+                    value = settings.gyroSensX / 100f,
+                    valueRange = 0.10f..3.00f,
+                    onValueChange = {
+                        onUpdateSettings(settings.copy(gyroSensX = (it * 100).roundToInt().coerceIn(10, 300)))
+                    }
+                )
+                PadPopoverSliderRow(
+                    label = PadStrings.gyroSensYShort(lang),
+                    valueText = "${settings.gyroSensY}%",
+                    value = settings.gyroSensY / 100f,
+                    valueRange = 0.10f..3.00f,
+                    onValueChange = {
+                        onUpdateSettings(settings.copy(gyroSensY = (it * 100).roundToInt().coerceIn(10, 300)))
+                    }
+                )
+            }
 
-            PadPopoverActionBtn(
-                text = PadStrings.gyroRecenterLabel(lang),
-                onClick = onRecenterGyro,
-                minHeight = 32.dp,
-                bgColor = SheetBg,
-                textColor = SheetCyan,
-                modifier = Modifier.fillMaxWidth(),
-                testTag = "pad_gyro_recenter_btn"
-            )
+            PadGyroMode.RACING_STEER -> {
+                PadPopoverSliderRow(
+                    label = PadStrings.gyroSteerSensShort(lang),
+                    valueText = "${settings.gyroSensX}%",
+                    value = settings.gyroSensX / 100f,
+                    valueRange = 0.10f..3.00f,
+                    onValueChange = {
+                        onUpdateSettings(settings.copy(gyroSensX = (it * 100).roundToInt().coerceIn(10, 300)))
+                    }
+                )
+
+                PadPopoverActionBtn(
+                    text = PadStrings.gyroRecenterLabel(lang),
+                    onClick = onRecenterGyro,
+                    minHeight = 32.dp,
+                    bgColor = SheetBg,
+                    textColor = SheetCyan,
+                    modifier = Modifier.fillMaxWidth(),
+                    testTag = "pad_gyro_recenter_btn"
+                )
+            }
+
+            PadGyroMode.GAME_NATIVE -> {
+                Text(
+                    text = PadStrings.gyroGameNativePadNotice(lang),
+                    color = SheetMuted,
+                    fontSize = 11.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(SheetBg, RoundedCornerShape(8.dp))
+                        .border(1.dp, SheetBorder, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                )
+            }
         }
     }
 
@@ -2066,7 +2099,7 @@ internal fun PadGlobalSettingsSheet(
                             onClick = {
                                 val next = !settings.gyroEnabled
                                 onUpdateSettings(settings.copy(gyroEnabled = next))
-                                if (next && settings.gyroMode == PadGyroMode.RACING_STEER) onRecenterGyro()
+                                if (next && settings.gyroMode != PadGyroMode.GAME_NATIVE) onRecenterGyro()
                             },
                             testTag = "pad_sheet_toggle_gyro_btn"
                         )
@@ -2083,76 +2116,180 @@ internal fun PadGlobalSettingsSheet(
                                     selected = settings.gyroMode == gMode,
                                     onClick = {
                                         onUpdateSettings(settings.copy(gyroMode = gMode))
-                                        if (gMode == PadGyroMode.RACING_STEER) onRecenterGyro()
+                                        if (gMode != PadGyroMode.GAME_NATIVE) onRecenterGyro()
                                     },
                                     testTag = "pad_gyro_mode_${gMode.id}"
                                 )
                             }
                         }
 
-                        if (settings.gyroMode == PadGyroMode.GAME_NATIVE) {
-                            Text(
-                                text = PadStrings.gyroGameNativePadNotice(lang),
-                                color = SheetMuted,
-                                fontSize = 11.5.sp,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(SheetBg, RoundedCornerShape(10.dp))
-                                    .border(1.dp, SheetBorder, RoundedCornerShape(10.dp))
-                                    .padding(horizontal = 12.dp, vertical = 10.dp)
-                            )
-                        } else {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = PadStrings.gyroSteerSensTitle(lang),
-                                        color = SheetText,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Text(
-                                        text = "${settings.gyroSensX}%",
-                                        color = SheetAccent,
-                                        fontFamily = FontFamily.Monospace,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
+                        when (settings.gyroMode) {
+                            PadGyroMode.AIM_RIGHT_STICK -> {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = PadStrings.gyroSensXShort(lang),
+                                            color = SheetText,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            text = "${settings.gyroSensX}%",
+                                            color = SheetAccent,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Slider(
+                                        value = settings.gyroSensX / 100f,
+                                        onValueChange = {
+                                            onUpdateSettings(settings.copy(gyroSensX = (it * 100).roundToInt().coerceIn(10, 300)))
+                                        },
+                                        valueRange = 0.10f..3.00f,
+                                        colors = SliderDefaults.colors(
+                                            thumbColor = SheetAccent,
+                                            activeTrackColor = SheetAccent,
+                                            inactiveTrackColor = SheetBorder
+                                        )
                                     )
                                 }
-                                Slider(
-                                    value = settings.gyroSensX / 100f,
-                                    onValueChange = {
-                                        onUpdateSettings(settings.copy(gyroSensX = (it * 100).roundToInt().coerceIn(10, 300)))
-                                    },
-                                    valueRange = 0.10f..3.00f,
-                                    colors = SliderDefaults.colors(
-                                        thumbColor = SheetAccent,
-                                        activeTrackColor = SheetAccent,
-                                        inactiveTrackColor = SheetBorder
+
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = PadStrings.gyroSensYShort(lang),
+                                            color = SheetText,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            text = "${settings.gyroSensY}%",
+                                            color = SheetAccent,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Slider(
+                                        value = settings.gyroSensY / 100f,
+                                        onValueChange = {
+                                            onUpdateSettings(settings.copy(gyroSensY = (it * 100).roundToInt().coerceIn(10, 300)))
+                                        },
+                                        valueRange = 0.10f..3.00f,
+                                        colors = SliderDefaults.colors(
+                                            thumbColor = SheetAccent,
+                                            activeTrackColor = SheetAccent,
+                                            inactiveTrackColor = SheetBorder
+                                        )
                                     )
-                                )
+                                }
+
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    SheetChoiceChip(
+                                        label = PadStrings.gyroHoldLtChip(lang, settings.gyroHoldLtOnly),
+                                        selected = settings.gyroHoldLtOnly,
+                                        onClick = {
+                                            onUpdateSettings(settings.copy(gyroHoldLtOnly = !settings.gyroHoldLtOnly))
+                                        },
+                                        testTag = "pad_gyro_hold_lt_chip"
+                                    )
+
+                                    SheetChoiceChip(
+                                        label = PadStrings.gyroInvertXLabel(lang, settings.gyroInvertX),
+                                        selected = settings.gyroInvertX,
+                                        onClick = {
+                                            onUpdateSettings(settings.copy(gyroInvertX = !settings.gyroInvertX))
+                                        },
+                                        testTag = "pad_gyro_invert_x_chip"
+                                    )
+
+                                    SheetChoiceChip(
+                                        label = PadStrings.gyroInvertYLabel(lang, settings.gyroInvertY),
+                                        selected = settings.gyroInvertY,
+                                        onClick = {
+                                            onUpdateSettings(settings.copy(gyroInvertY = !settings.gyroInvertY))
+                                        },
+                                        testTag = "pad_gyro_invert_y_chip"
+                                    )
+                                }
                             }
 
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                SheetChoiceChip(
-                                    label = PadStrings.gyroInvertXLabel(lang, settings.gyroInvertX),
-                                    selected = settings.gyroInvertX,
-                                    onClick = {
-                                        onUpdateSettings(settings.copy(gyroInvertX = !settings.gyroInvertX))
-                                    },
-                                    testTag = "pad_gyro_invert_x_chip"
-                                )
+                            PadGyroMode.RACING_STEER -> {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = PadStrings.gyroSteerSensTitle(lang),
+                                            color = SheetText,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            text = "${settings.gyroSensX}%",
+                                            color = SheetAccent,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Slider(
+                                        value = settings.gyroSensX / 100f,
+                                        onValueChange = {
+                                            onUpdateSettings(settings.copy(gyroSensX = (it * 100).roundToInt().coerceIn(10, 300)))
+                                        },
+                                        valueRange = 0.10f..3.00f,
+                                        colors = SliderDefaults.colors(
+                                            thumbColor = SheetAccent,
+                                            activeTrackColor = SheetAccent,
+                                            inactiveTrackColor = SheetBorder
+                                        )
+                                    )
+                                }
 
-                                SheetPillButton(
-                                    label = PadStrings.gyroRecenterLabel(lang),
-                                    isPrimary = true,
-                                    onClick = onRecenterGyro,
-                                    testTag = "pad_gyro_recenter_btn"
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    SheetChoiceChip(
+                                        label = PadStrings.gyroInvertXLabel(lang, settings.gyroInvertX),
+                                        selected = settings.gyroInvertX,
+                                        onClick = {
+                                            onUpdateSettings(settings.copy(gyroInvertX = !settings.gyroInvertX))
+                                        },
+                                        testTag = "pad_gyro_invert_x_chip"
+                                    )
+
+                                    SheetPillButton(
+                                        label = PadStrings.gyroRecenterLabel(lang),
+                                        isPrimary = true,
+                                        onClick = onRecenterGyro,
+                                        testTag = "pad_gyro_recenter_btn"
+                                    )
+                                }
+                            }
+
+                            PadGyroMode.GAME_NATIVE -> {
+                                Text(
+                                    text = PadStrings.gyroGameNativePadNotice(lang),
+                                    color = SheetMuted,
+                                    fontSize = 11.5.sp,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(SheetBg, RoundedCornerShape(10.dp))
+                                        .border(1.dp, SheetBorder, RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 12.dp, vertical = 10.dp)
                                 )
                             }
                         }

@@ -89,14 +89,14 @@ internal fun HudControlsTabContent(
         HudSwitchRow(
             title = config.tr("Bật con quay hồi chuyển", "Enable Gyroscope"),
             subtitle = config.tr(
-                "Mặc định tắt — bật để dùng theo game hỗ trợ hoặc nghiêng lái xe thủ công.",
-                "Off by default — turn on for game-supported gyro or manual racing tilt."
+                "Mặc định tắt — bật để ngắm Cần Phải, nghiêng lái xe hoặc theo game.",
+                "Off by default — turn on for Right Stick aim, racing tilt, or game native."
             ),
             checked = config.gyroEnabled,
             onCheckedChange = { enabled ->
                 onInteraction()
                 SettingsRepository.updateGyroEnabled(enabled)
-                if (enabled && config.gyroMode == GyroControlMode.RACING_STEER) {
+                if (enabled && config.gyroMode != GyroControlMode.GAME_NATIVE) {
                     com.example.cloudplay.GyroscopeController.requestRecenterNow()
                 }
             }
@@ -112,7 +112,7 @@ internal fun HudControlsTabContent(
                     onInteraction()
                     gyroModes.getOrNull(idx)?.let {
                         SettingsRepository.updateGyroMode(it)
-                        if (it == GyroControlMode.RACING_STEER) {
+                        if (it != GyroControlMode.GAME_NATIVE) {
                             com.example.cloudplay.GyroscopeController.requestRecenterNow()
                         }
                     }
@@ -120,71 +120,110 @@ internal fun HudControlsTabContent(
                 tagPrefix = "hud_gyro_mode_seg"
             )
 
-            if (config.gyroMode == GyroControlMode.GAME_NATIVE) {
-                val nativeGyroSupported by XboxBridge.nativeGyroSupported.collectAsState()
-                HudSurfaceRow(minHeight = 42.dp) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(3.dp)
+            when (config.gyroMode) {
+                GyroControlMode.AIM_RIGHT_STICK -> {
+                    HudSwitchRow(
+                        title = config.tr("Chỉ bật khi giữ ngắm (LT)", "Only active while holding Aim (LT)"),
+                        subtitle = config.tr(
+                            "Nhả LT là khóa tâm ngay, tránh chóng mặt khi di chuyển.",
+                            "Release LT to lock aim immediately and avoid motion sickness."
+                        ),
+                        checked = config.gyroHoldLtOnly,
+                        onCheckedChange = {
+                            onInteraction()
+                            SettingsRepository.updateGyroHoldLtOnly(it)
+                        }
+                    )
+                    HudSliderRow(
+                        label = config.tr("Độ nhạy ngang (X)", "Horizontal sens (X)"),
+                        valueText = "${(config.gyroSensitivityX * 100f).roundToInt()}%",
+                        value = config.gyroSensitivityX,
+                        valueRange = 0.10f..3.00f,
+                        onValueChange = {
+                            onInteraction()
+                            SettingsRepository.updateGyroSensitivityX(it)
+                        }
+                    )
+                    HudSliderRow(
+                        label = config.tr("Độ nhạy dọc (Y)", "Vertical sens (Y)"),
+                        valueText = "${(config.gyroSensitivityY * 100f).roundToInt()}%",
+                        value = config.gyroSensitivityY,
+                        valueRange = 0.10f..3.00f,
+                        onValueChange = {
+                            onInteraction()
+                            SettingsRepository.updateGyroSensitivityY(it)
+                        }
+                    )
+                }
+
+                GyroControlMode.RACING_STEER -> {
+                    HudSliderRow(
+                        label = config.tr("Độ nhạy lái", "Steer sens"),
+                        valueText = "${(config.gyroSensitivityX * 100f).roundToInt()}%",
+                        value = config.gyroSensitivityX,
+                        valueRange = 0.10f..3.00f,
+                        onValueChange = {
+                            onInteraction()
+                            SettingsRepository.updateGyroSensitivityX(it)
+                        }
+                    )
+
+                    HudSurfaceRow(
+                        minHeight = 36.dp,
+                        onClick = {
+                            onInteraction()
+                            com.example.cloudplay.GyroscopeController.requestRecenterNow()
+                        },
+                        modifier = Modifier.testTag("hud_gyro_recenter_btn")
                     ) {
                         Text(
-                            text = if (nativeGyroSupported) {
-                                config.tr(
-                                    "● Game hiện tại đang hỗ trợ cảm biến gốc",
-                                    "● Native game gyro detected"
-                                )
-                            } else {
-                                config.tr(
-                                    "○ Chưa phát hiện game hỗ trợ cảm biến gốc",
-                                    "○ No native gyro detected in current game"
-                                )
-                            },
-                            color = if (nativeGyroSupported) HudAccent else HudWarn,
-                            fontSize = 12.sp,
+                            text = config.tr("🎯 Đặt lại tâm con quay (0°)", "🎯 Recenter Gyro (0°)"),
+                            color = HudAccent,
+                            fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = config.tr(
-                                "Chế độ này không giả lập cần tay cầm. Chuyển thủ công sang Đua xe (Trái/Phải) nếu muốn nghiêng lái xe.",
-                                "No synthetic stick input is active in this mode. Switch manually to Racing (Tilt) to steer left/right."
-                            ),
-                            color = HudFaint,
-                            fontSize = 11.sp
+                            text = config.tr("Đặt lại", "Reset"),
+                            color = HudCyan,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
-            } else {
-                HudSliderRow(
-                    label = config.tr("Độ nhạy lái", "Steer sens"),
-                    valueText = "${(config.gyroSensitivityX * 100f).roundToInt()}%",
-                    value = config.gyroSensitivityX,
-                    valueRange = 0.10f..3.00f,
-                    onValueChange = {
-                        onInteraction()
-                        SettingsRepository.updateGyroSensitivityX(it)
-                    }
-                )
 
-                HudSurfaceRow(
-                    minHeight = 36.dp,
-                    onClick = {
-                        onInteraction()
-                        com.example.cloudplay.GyroscopeController.requestRecenterNow()
-                    },
-                    modifier = Modifier.testTag("hud_gyro_recenter_btn")
-                ) {
-                    Text(
-                        text = config.tr("🎯 Đặt lại tâm con quay (0°)", "🎯 Recenter Gyro (0°)"),
-                        color = HudAccent,
-                        fontSize = 12.5.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = config.tr("Đặt lại", "Reset"),
-                        color = HudCyan,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                GyroControlMode.GAME_NATIVE -> {
+                    val nativeGyroSupported by XboxBridge.nativeGyroSupported.collectAsState()
+                    HudSurfaceRow(minHeight = 42.dp) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Text(
+                                text = if (nativeGyroSupported) {
+                                    config.tr(
+                                        "● Game hiện tại đang hỗ trợ cảm biến gốc",
+                                        "● Native game gyro detected"
+                                    )
+                                } else {
+                                    config.tr(
+                                        "○ Chưa phát hiện game hỗ trợ cảm biến gốc",
+                                        "○ No native gyro detected in current game"
+                                    )
+                                },
+                                color = if (nativeGyroSupported) HudAccent else HudWarn,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = config.tr(
+                                    "Chỉ dùng cảm biến gốc nếu tựa game hỗ trợ; không giả lập cần tay cầm.",
+                                    "Only uses native sensors when the game supports it; no stick emulation."
+                                ),
+                                color = HudFaint,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
                 }
             }
         }

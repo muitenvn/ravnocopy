@@ -696,27 +696,38 @@ enum class GyroControlMode(
     val targetStickIndexPair: Pair<Int, Int>,
     val horizontalOnly: Boolean
 ) {
-    GAME_NATIVE(
-        id = "GAME_NATIVE",
-        titleVi = "Theo game hỗ trợ (Mặc định khi bật)",
-        titleEn = "Game Native Support (Default)",
-        shortVi = "Game hỗ trợ",
-        shortEn = "Game Native",
-        descVi = "Chỉ dùng con quay hồi chuyển gốc khi tựa game tự hỗ trợ cảm biến; không giả lập cần tay cầm.",
-        descEn = "Only uses native gyroscope when the game itself supports motion sensors; no stick emulation.",
-        targetStickIndexPair = -1 to -1,
+    AIM_RIGHT_STICK(
+        id = "AIM_RIGHT_STICK",
+        titleVi = "Ngắm bắn — Cần Phải (R)",
+        titleEn = "Aiming — Right Stick (R)",
+        shortVi = "Ngắm (R)",
+        shortEn = "Aim (R)",
+        descVi = "Xoay máy điều khiển Cần Phải (R) theo tốc độ cổ tay, phản hồi nhanh và dừng tâm gọn.",
+        descEn = "Wrist-velocity Right Stick (R) aiming with instant stop and anti-deadzone response.",
+        targetStickIndexPair = 2 to 3,
         horizontalOnly = false
     ),
     RACING_STEER(
         id = "RACING_STEER",
-        titleVi = "Đua xe — Nghiêng trái/phải (Thủ công)",
-        titleEn = "Racing — Left/Right Tilt (Manual)",
-        shortVi = "Đua xe (Trái/Phải)",
-        shortEn = "Racing (Tilt)",
-        descVi = "Người chơi tự bật để nghiêng trái/phải như vô-lăng điều khiển Cần Trái (L), khóa trục dọc.",
-        descEn = "Manually enabled to tilt left/right like a steering wheel on Left Stick (L), vertical axis locked.",
+        titleVi = "Đua xe — Nghiêng trái/phải (L)",
+        titleEn = "Racing — Left/Right Tilt (L)",
+        shortVi = "Đua xe (L)",
+        shortEn = "Race (L)",
+        descVi = "Nghiêng trái/phải như vô-lăng điều khiển Cần Trái (L), khóa trục dọc.",
+        descEn = "Tilt left/right like a steering wheel on Left Stick (L), vertical axis locked.",
         targetStickIndexPair = 0 to 1,
         horizontalOnly = true
+    ),
+    GAME_NATIVE(
+        id = "GAME_NATIVE",
+        titleVi = "Theo game hỗ trợ gốc",
+        titleEn = "Game Native Support",
+        shortVi = "Game gốc",
+        shortEn = "Native",
+        descVi = "Chỉ dùng cảm biến gốc nếu tựa game hỗ trợ; không giả lập cần tay cầm.",
+        descEn = "Only uses native sensors when the game supports it; no stick emulation.",
+        targetStickIndexPair = -1 to -1,
+        horizontalOnly = false
     );
 
     fun localizedTitle(isEn: Boolean): String = if (isEn) titleEn else titleVi
@@ -807,7 +818,7 @@ data class AppConfig(
     val shortcutToggleVirtualPadButton: Int = 1, // B
     val shortcutToggleRecordingButton: Int = 5, // RB
     val gyroEnabled: Boolean = false, // Mặc định TẮT hoàn toàn
-    val gyroMode: GyroControlMode = GyroControlMode.GAME_NATIVE,
+    val gyroMode: GyroControlMode = GyroControlMode.AIM_RIGHT_STICK,
     val gyroSensitivityX: Float = 1.0f, // 0.10f .. 3.00f
     val gyroSensitivityY: Float = 1.0f, // 0.10f .. 3.00f
     val gyroDeadzone: Float = 0.03f, // 0.00f .. 0.20f
@@ -1074,10 +1085,10 @@ object SettingsRepository {
             gyroEnabled = sp.getBoolean("gyro_enabled", false),
             gyroMode = try {
                 GyroControlMode.valueOf(
-                    sp.getString("gyro_control_mode", GyroControlMode.GAME_NATIVE.name)
-                        ?: GyroControlMode.GAME_NATIVE.name
+                    sp.getString("gyro_control_mode", GyroControlMode.AIM_RIGHT_STICK.name)
+                        ?: GyroControlMode.AIM_RIGHT_STICK.name
                 )
-            } catch (_: Exception) { GyroControlMode.GAME_NATIVE },
+            } catch (_: Exception) { GyroControlMode.AIM_RIGHT_STICK },
             gyroSensitivityX = sp.getFloat("gyro_sensitivity_x", 1.0f).coerceIn(0.10f, 3.00f),
             gyroSensitivityY = sp.getFloat("gyro_sensitivity_y", 1.0f).coerceIn(0.10f, 3.00f),
             gyroDeadzone = sp.getFloat("gyro_deadzone", 0.03f).coerceIn(0.00f, 0.20f),
@@ -2669,7 +2680,7 @@ object SettingsRepository {
     fun resetGyroDefaults() {
         _config.update {
             it.copy(
-                gyroMode = GyroControlMode.GAME_NATIVE,
+                gyroMode = GyroControlMode.AIM_RIGHT_STICK,
                 gyroSensitivityX = 1.0f,
                 gyroSensitivityY = 1.0f,
                 gyroDeadzone = 0.03f,

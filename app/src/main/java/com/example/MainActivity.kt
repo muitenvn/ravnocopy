@@ -299,6 +299,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    fun lockLandscapeOrientation() {
+        requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+    }
+
     fun toggleOrientation() {
         requestedOrientation = if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
             android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
