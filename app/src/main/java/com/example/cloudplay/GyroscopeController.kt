@@ -40,11 +40,19 @@ class GyroscopeController(
     companion object {
         private const val MIN_DISPATCH_INTERVAL_NS = 16_000_000L // ~60 Hz cap to match cloud stream and prevent WebView decode lag
         private const val AIM_KEEPALIVE_INTERVAL_NS = 70_000_000L // refresh active aim every 70ms for JS stale watchdog
-        private const val AIM_FULL_VEL_RAD_S = 2.40f
-        private const val AIM_GENTLE_ANTI_DEADZONE = 0.07f
-        private const val AIM_MAX_STICK_OUT = 0.85f
-        private const val AIM_MAX_SLEW_UP_PER_SEC = 4.5f
-        private const val AIM_MAX_SLEW_DOWN_PER_SEC = 14.0f
+
+        // Thông số chuẩn công nghiệp (Steam Input Gyro-to-Joystick Camera + Jibb Smart GyroWiki / Fortnite):
+        private const val AIM_MAX_SPEED_RAD_S = 3.1415927f // 180°/s (Steam Input default full-stick speed)
+        private const val AIM_TIGHTENING_RAD_S = 0.08726646f // 5°/s (Jibb Smart tightening threshold)
+        private const val AIM_SMOOTH_LOWER_RAD_S = 0.08726646f // 5°/s (1/2 ngưỡng trên theo JoyShockMapper)
+        private const val AIM_SMOOTH_UPPER_RAD_S = 0.17453292f // 10°/s (GYRO_SMOOTH_THRESHOLD)
+        private const val AIM_SMOOTH_TAU_SEC = 0.025f // cửa sổ lọc nhẹ 25ms chỉ áp dụng dưới 10°/s
+        private const val AIM_BIAS_STILL_RAD_S = 0.06981317f // 4°/s (chỉ trừ trôi tĩnh khi thật sự cầm yên)
+        private const val AIM_CONSOLE_ANTI_DEADZONE = 0.12f // 12% (vùng chết mặc định cần R của Fortnite / console Xbox)
+
+        // Thông số chuẩn Steam Input Deflection (nghiêng theo góc tương đối cho máy chỉ có cảm biến Trọng lực / Gia tốc kế):
+        private const val AIM_GRAV_MAX_ANGLE_RAD = 0.5235988f // 30° nghiêng cổ tay = 100% cần R
+        private const val AIM_GRAV_BASE_DEADZONE_RAD = 0.034906585f // 2° vùng yên quanh tâm 0°
 
         @Volatile
         private var recenterRequestTick: Long = 0L
@@ -134,8 +142,6 @@ class GyroscopeController(
     private var aimBiasY = 0f
     private var aimElapsedSec = 0f
     private var lastAimGyroTsNs = 0L
-    private var slewedAimOutX = 0f
-    private var slewedAimOutY = 0f
     private var hasPrevAimRot = false
     private var prevAimTimestampNs = 0L
     private var hasPrevAimTilt = false
@@ -227,8 +233,6 @@ class GyroscopeController(
         aimBiasY = 0f
         aimElapsedSec = 0f
         lastAimGyroTsNs = 0L
-        slewedAimOutX = 0f
-        slewedAimOutY = 0f
         hasPrevAimRot = false
         prevAimTimestampNs = 0L
         hasPrevAimTilt = false
@@ -384,19 +388,20 @@ class GyroscopeController(
         enableBiasTracking: Boolean
     ) {
         val safeDt = dt.coerceIn(0.001f, 0.05f)
-        val clampedVx = rawVx.coerceIn(-4.5f, 4.5f)
-        val clampedVy = rawVy.coerceIn(-4.5f, 4.5f)
+        val clampedVx = rawVx.coerceIn(-6.0f, 6.0f)
+        val clampedVy = rawVy.coerceIn(-6.0f, 6.0f)
 
-        // Tự hiệu chuẩn sai số tĩnh (zero-bias) khi tay cầm yên để không bị trôi camera lên trời / xuống đất
+        // 1. Tự trừ sai số tĩnh (zero-bias) chỉ khi máy thật sự đứng yên (< 4°/s), không ăn mất thao tác ngắm chậm
         val corrVx: Float
         val corrVy: Float
         if (enableBiasTracking) {
             aimElapsedSec += safeDt
-            if (abs(clampedVx - aimBiasX) < 0.14f && abs(clampedVy - aimBiasY) < 0.14f) {
-                val biasTau = if (aimElapsedSec < 0.6f) 0.20f else 1.50f
+            val deltaMag = hypot(clampedVx - aimBiasX, clampedVy - aimBiasY)
+            if (deltaMag < AIM_BIAS_STILL_RAD_S) {
+                val biasTau = if (aimElapsedSec < 0.5f) 0.18f else 1.80f
                 val biasAlpha = (safeDt / (biasTau + safeDt)).coerceIn(0f, 0.25f)
-                aimBiasX = (aimBiasX + biasAlpha * (clampedVx - aimBiasX)).coerceIn(-0.25f, 0.25f)
-                aimBiasY = (aimBiasY + biasAlpha * (clampedVy - aimBiasY)).coerceIn(-0.25f, 0.25f)
+                aimBiasX = (aimBiasX + biasAlpha * (clampedVx - aimBiasX)).coerceIn(-0.20f, 0.20f)
+                aimBiasY = (aimBiasY + biasAlpha * (clampedVy - aimBiasY)).coerceIn(-0.20f, 0.20f)
             }
             corrVx = clampedVx - aimBiasX
             corrVy = clampedVy - aimBiasY
@@ -405,45 +410,110 @@ class GyroscopeController(
             corrVy = clampedVy
         }
 
-        // Bộ lọc thích ứng tốc độ (kiểu One-Euro):
-        // - Khi giữ yên / nhích nhỏ để ngắm bắn: lọc sâu (tau ~55ms) hãm rung tay li ti.
-        // - Khi vẩy cổ tay nhanh: mở lọc (tau ~12ms) giữ phản hồi gọn.
-        val speed = hypot(corrVx, corrVy)
-        val fastRatio = ((speed - 0.30f) / 1.10f).coerceIn(0f, 1f)
-        val tau = 0.055f * (1f - fastRatio) + 0.012f * fastRatio
-        val blend = (safeDt / (tau + safeDt)).coerceIn(0.02f, 0.85f)
-        if (!hasAimVelFilter) {
+        // 2. Jibb Smart Tiered Smoothing (JoyShockMapper):
+        // - Dưới 5°/s: lọc nhẹ 25ms để êm tay cầm.
+        // - Từ 5°/s -> 10°/s: giảm dần lọc về 0.
+        // - Trên 10°/s: giữ nguyên tín hiệu thô 1:1 (độ trễ bằng 0, không bị ì/cứng).
+        val rawSpeed = hypot(corrVx, corrVy)
+        if (!hasAimVelFilter || rawSpeed >= AIM_SMOOTH_UPPER_RAD_S) {
             filtAimVx = corrVx
             filtAimVy = corrVy
             hasAimVelFilter = true
         } else {
+            val smoothWeight = if (rawSpeed <= AIM_SMOOTH_LOWER_RAD_S) {
+                1f
+            } else {
+                1f - ((rawSpeed - AIM_SMOOTH_LOWER_RAD_S) / (AIM_SMOOTH_UPPER_RAD_S - AIM_SMOOTH_LOWER_RAD_S))
+            }
+            val tau = AIM_SMOOTH_TAU_SEC * smoothWeight
+            val blend = if (tau <= 0.0005f) 1f else (safeDt / (tau + safeDt)).coerceIn(0.05f, 1f)
             filtAimVx += blend * (corrVx - filtAimVx)
             filtAimVy += blend * (corrVy - filtAimVy)
         }
 
-        val targetX = shapeAimStickAxis(filtAimVx, sensitivityXPercent, deadzonePercent, invertX)
-        val targetY = shapeAimStickAxis(filtAimVy, sensitivityYPercent, deadzonePercent, invertY)
-
-        // Bộ hãm tốc độ biến thiên (slew-rate limiter):
-        // - Khi tăng lực / đổi hướng: hãm mượt để cú va tay hay nhiễu đột biến không hất tung camera lên trời.
-        // - Khi nhả về 0: trả nhanh để dừng tay là tâm đứng ngay.
-        slewedAimOutX = applyAimSlewLimit(slewedAimOutX, targetX, safeDt)
-        slewedAimOutY = applyAimSlewLimit(slewedAimOutY, targetY, safeDt)
-
-        dispatchOutput(targetRightStick = true, outX = slewedAimOutX, outY = slewedAimOutY, force = false)
+        // 3. Jibb Smart 2D Vector Tightening (5°/s) + Steam Input Linear 180°/s + 2D Radial Anti-Deadzone 12%
+        val (outX, outY) = mapAimVelocityToStick(filtAimVx, filtAimVy)
+        dispatchOutput(targetRightStick = true, outX = outX, outY = outY, force = false)
     }
 
-    private fun applyAimSlewLimit(current: Float, target: Float, dt: Float): Float {
-        if (target == 0f && abs(current) < 0.06f) return 0f
-        val delta = target - current
-        val movingTowardZero = abs(target) < abs(current) && (target == 0f || sign(target) == sign(current))
-        val maxRate = if (movingTowardZero) AIM_MAX_SLEW_DOWN_PER_SEC else AIM_MAX_SLEW_UP_PER_SEC
-        val maxStep = maxRate * dt
-        return if (abs(delta) <= maxStep) {
-            target
+    /**
+     * Chuyển vận tốc xoay 2D (rad/s) sang Cần Phải (R) theo chuẩn Jibb Smart + Steam Input:
+     * - Tightening dưới 5°/s (nén rung tay mượt mà không cắt cứng).
+     * - Tuyến tính 1:1 tới 180°/s (Steam Input default).
+     * - Bù vùng chết tròn 2D (Radial Anti-Deadzone 12%) khớp vùng chết mặc định của Fortnite/Xbox.
+     */
+    private fun mapAimVelocityToStick(vx: Float, vy: Float): Pair<Float, Float> {
+        if (!vx.isFinite() || !vy.isFinite()) return 0f to 0f
+        val rawMag = hypot(vx, vy)
+        if (rawMag <= 1e-5f) return 0f to 0f
+
+        // Tightening theo độ lớn vector 2D (Jibb Smart GyroWiki)
+        val tightenedScale = if (rawMag < AIM_TIGHTENING_RAD_S) {
+            (rawMag / AIM_TIGHTENING_RAD_S)
         } else {
-            current + sign(delta) * maxStep
+            1f
         }
+        val tvx = vx * tightenedScale
+        val tvy = vy * tightenedScale
+
+        val sensX = sensitivityXPercent.coerceIn(10, 300) / 100f
+        val sensY = sensitivityYPercent.coerceIn(10, 300) / 100f
+        val velDz = 0.015f + (deadzonePercent.coerceIn(0, 20) / 100f) * 0.14f
+        val mag = hypot(tvx, tvy)
+        if (mag <= velDz) return 0f to 0f
+
+        val effMag = mag - velDz
+        val dirX = tvx / mag
+        val dirY = tvy / mag
+        val normX = (dirX * effMag / AIM_MAX_SPEED_RAD_S) * sensX
+        val normY = (dirY * effMag / AIM_MAX_SPEED_RAD_S) * sensY
+        val normMag = hypot(normX, normY)
+        if (normMag <= 1e-5f) return 0f to 0f
+
+        val clampedNorm = normMag.coerceAtMost(1f)
+        // Smoothstep cực ngắn (4% đầu) vào ngưỡng 12% Minimum Joystick Output để qua vùng chết game mà không giật
+        val ramp = (clampedNorm / 0.04f).coerceIn(0f, 1f).let { it * it * (3f - 2f * it) }
+        val outMag = (ramp * AIM_CONSOLE_ANTI_DEADZONE + (1f - AIM_CONSOLE_ANTI_DEADZONE) * clampedNorm)
+            .coerceIn(0f, 1f)
+
+        val scale = outMag / normMag
+        val outX = (normX * scale).coerceIn(-1f, 1f)
+        val outY = (normY * scale).coerceIn(-1f, 1f)
+        return (if (invertX) -outX else outX) to (if (invertY) -outY else outY)
+    }
+
+    /**
+     * Chuyển góc nghiêng tương đối (rad) quanh tư thế chuẩn 0° sang Cần Phải (R) theo chuẩn Steam Input Deflection
+     * dành riêng cho máy chỉ dùng cảm biến Trọng lực / Gia tốc kế (mượt như cần thật, không bị khóa cứng hay giật nhiễu).
+     */
+    private fun mapTiltDeflectionToStick(dRollRad: Float, dPitchUpRad: Float): Pair<Float, Float> {
+        if (!dRollRad.isFinite() || !dPitchUpRad.isFinite()) return 0f to 0f
+        // Nghiêng phải (dRoll > 0) -> R phải (+X); ngẩng lên (dPitchUp > 0) -> R lên (-Y)
+        val rawX = dRollRad
+        val rawY = -dPitchUpRad
+        val angleMag = hypot(rawX, rawY)
+        val dzRad = AIM_GRAV_BASE_DEADZONE_RAD + (deadzonePercent.coerceIn(0, 20) / 100f) * 0.16f
+        if (angleMag <= dzRad) return 0f to 0f
+
+        val effRange = (AIM_GRAV_MAX_ANGLE_RAD - dzRad).coerceAtLeast(0.15f)
+        val effMag = angleMag - dzRad
+        val sensX = sensitivityXPercent.coerceIn(10, 300) / 100f
+        val sensY = sensitivityYPercent.coerceIn(10, 300) / 100f
+        val normX = ((rawX / angleMag) * effMag / effRange) * sensX
+        val normY = ((rawY / angleMag) * effMag / effRange) * sensY
+        val normMag = hypot(normX, normY)
+        if (normMag <= 1e-5f) return 0f to 0f
+
+        val clampedNorm = normMag.coerceAtMost(1f)
+        val curved = clampedNorm.pow(1.15f)
+        val ramp = (clampedNorm / 0.10f).coerceIn(0f, 1f).let { it * it * (3f - 2f * it) }
+        val outMag = (ramp * AIM_CONSOLE_ANTI_DEADZONE + (1f - AIM_CONSOLE_ANTI_DEADZONE) * curved)
+            .coerceIn(0f, 1f)
+
+        val scale = outMag / normMag
+        val outX = (normX * scale).coerceIn(-1f, 1f)
+        val outY = (normY * scale).coerceIn(-1f, 1f)
+        return (if (invertX) -outX else outX) to (if (invertY) -outY else outY)
     }
 
     private fun handleAimRightStickEvent(event: SensorEvent) {
@@ -508,8 +578,6 @@ class GyroscopeController(
                     processFilteredAimVelocity(rawVx, rawVy, dt, enableBiasTracking = false)
                 } else if (dt > 0.12f) {
                     // Nghẽn cảm biến: xả mượt về 0 để không kẹt camera
-                    slewedAimOutX = 0f
-                    slewedAimOutY = 0f
                     dispatchOutput(targetRightStick = true, outX = 0f, outY = 0f, force = true)
                 }
                 System.arraycopy(remappedMatrix, 0, prevRotMatrix, 0, 9)
@@ -535,8 +603,9 @@ class GyroscopeController(
                     return
                 }
 
-                // Fallback cho máy không có Gyroscope vật lý: lọc sâu góc nghiêng + lọc tốc độ + sửa đúng dấu lên/xuống
-                val alpha = if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) 0.82f else 0.55f
+                // Chế độ Steam Input Deflection (nghiêng góc tương đối so với tư thế chuẩn 0°) cho máy dùng Trọng lực / Gia tốc kế:
+                // phản hồi tức thì, nhẹ tay, không khóa cứng và không nhân nhiễu vi phân dAngle/dt.
+                val alpha = if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) 0.55f else 0.20f
                 if (!hasFilteredGravity) {
                     filtGx = rawSx
                     filtGy = rawSy
@@ -549,33 +618,19 @@ class GyroscopeController(
                 }
 
                 val rollRight = atan2(-filtGx, hypot(filtGy, filtGz).coerceAtLeast(0.01f))
-                // Ngẩng mặt lưng máy lên trời -> filtGz giảm âm -> pitchUp tăng dương -> -dPitch/dt âm (Cần Phải đi LÊN)
                 val pitchUp = atan2(-filtGz, hypot(filtGx, filtGy).coerceAtLeast(0.01f))
-                val nowNs = event.timestamp
                 if (!hasPrevAimTilt) {
+                    // Lưu tư thế cầm hiện tại làm tâm 0° (có thể bấm "Đặt lại tâm 0°" bất kỳ lúc nào)
                     prevAimRollRad = rollRight
                     prevAimPitchRad = pitchUp
-                    prevAimTimestampNs = nowNs
                     hasPrevAimTilt = true
-                    return
-                }
-                val dt = ((nowNs - prevAimTimestampNs) * 1e-9f)
-                val dRoll = normalizeAngleRad(rollRight - prevAimRollRad)
-                val dPitch = normalizeAngleRad(pitchUp - prevAimPitchRad)
-                prevAimRollRad = rollRight
-                prevAimPitchRad = pitchUp
-                prevAimTimestampNs = nowNs
-                if (dt <= 0.004f) return
-                if (dt > 0.15f) {
-                    slewedAimOutX = 0f
-                    slewedAimOutY = 0f
                     dispatchOutput(targetRightStick = true, outX = 0f, outY = 0f, force = true)
                     return
                 }
-
-                val velX = (dRoll / dt).coerceIn(-3.5f, 3.5f)
-                val velY = (-dPitch / dt).coerceIn(-3.5f, 3.5f)
-                processFilteredAimVelocity(velX, velY, dt, enableBiasTracking = false)
+                val dRoll = normalizeAngleRad(rollRight - prevAimRollRad)
+                val dPitchUp = normalizeAngleRad(pitchUp - prevAimPitchRad)
+                val (outX, outY) = mapTiltDeflectionToStick(dRoll, dPitchUp)
+                dispatchOutput(targetRightStick = true, outX = outX, outY = outY, force = false)
             }
         }
     }
@@ -710,34 +765,6 @@ class GyroscopeController(
         while (a > pi) a -= 2f * pi
         while (a < -pi) a += 2f * pi
         return a
-    }
-
-    /**
-     * Biến tốc độ xoay (rad/s) thành tín hiệu Cần Phải (R) êm, có hãm rung và có giới hạn:
-     * - Nhích nhỏ vẫn nhận đều để ngắm bắn tinh, nhưng được hãm bằng đường cong mũ 1.35 (không nhảy bậc giật).
-     * - Bù vùng chết console êm (tối đa 7%, mượt theo smoothstep trong 30% đầu).
-     * - Giới hạn biên độ tối đa (0.85) để camera không bị hất văng quá đà.
-     */
-    private fun shapeAimStickAxis(
-        velRadPerSec: Float,
-        sensPercent: Int,
-        deadzonePct: Int,
-        invert: Boolean
-    ): Float {
-        if (!velRadPerSec.isFinite()) return 0f
-        val velDz = 0.035f + (deadzonePct.coerceIn(0, 20) / 100f) * 0.22f
-        val absVel = abs(velRadPerSec)
-        if (absVel <= velDz) return 0f
-
-        val sensScale = sensPercent.coerceIn(10, 300) / 100f
-        val norm = (((absVel - velDz) / AIM_FULL_VEL_RAD_S) * sensScale).coerceIn(0f, 1f)
-        val curved = norm.pow(1.35f)
-        val t = (norm / 0.30f).coerceIn(0f, 1f)
-        val smoothRamp = t * t * (3f - 2f * t)
-        val damped = (smoothRamp * AIM_GENTLE_ANTI_DEADZONE + (1f - AIM_GENTLE_ANTI_DEADZONE) * curved)
-            .coerceIn(0f, AIM_MAX_STICK_OUT)
-        val signed = damped * sign(velRadPerSec)
-        return if (invert) -signed else signed
     }
 
     private fun processAxis(

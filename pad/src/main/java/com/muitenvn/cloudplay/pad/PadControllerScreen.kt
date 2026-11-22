@@ -337,8 +337,6 @@ internal fun PadLandscapeControllerScreen(
             var aimBiasY = 0f
             var aimElapsedSec = 0f
             var lastAimGyroTsNs = 0L
-            var slewedAimOutX = 0f
-            var slewedAimOutY = 0f
             var hasPrevAimRot = false
             var prevAimTsNs = 0L
             var hasPrevAimTilt = false
@@ -358,8 +356,6 @@ internal fun PadLandscapeControllerScreen(
                 aimBiasY = 0f
                 aimElapsedSec = 0f
                 lastAimGyroTsNs = 0L
-                slewedAimOutX = 0f
-                slewedAimOutY = 0f
                 hasPrevAimRot = false
                 prevAimTsNs = 0L
                 hasPrevAimTilt = false
@@ -428,33 +424,67 @@ internal fun PadLandscapeControllerScreen(
                 return v
             }
 
-            fun shapeAimAxis(velRadPerSec: Float, sensPct: Int, dzPct: Int, invert: Boolean): Float {
-                if (!velRadPerSec.isFinite()) return 0f
-                val velDz = 0.035f + (dzPct.coerceIn(0, 20) / 100f) * 0.22f
-                val absVel = abs(velRadPerSec)
-                if (absVel <= velDz) return 0f
-                val sensScale = sensPct.coerceIn(10, 300) / 100f
-                val norm = (((absVel - velDz) / 2.40f) * sensScale).coerceIn(0f, 1f)
-                val curved = Math.pow(norm.toDouble(), 1.35).toFloat()
-                val t = (norm / 0.30f).coerceIn(0f, 1f)
-                val smoothRamp = t * t * (3f - 2f * t)
-                val damped = (smoothRamp * 0.07f + 0.93f * curved).coerceIn(0f, 0.85f)
-                val signed = damped * (if (velRadPerSec < 0f) -1f else 1f)
-                return if (invert) -signed else signed
+            val aimMaxSpeedRadS = 3.1415927f // 180°/s (Steam Input default)
+            val aimTighteningRadS = 0.08726646f // 5°/s (Jibb Smart tightening)
+            val aimSmoothLowerRadS = 0.08726646f // 5°/s
+            val aimSmoothUpperRadS = 0.17453292f // 10°/s
+            val aimSmoothTauSec = 0.025f
+            val aimBiasStillRadS = 0.06981317f // 4°/s
+            val aimConsoleAntiDz = 0.12f // 12% (Fortnite / Xbox console default right-stick deadzone)
+            val aimGravMaxAngleRad = 0.5235988f // 30°
+            val aimGravBaseDzRad = 0.034906585f // 2°
+
+            fun mapPadAimVelToStick(vx: Float, vy: Float): Pair<Float, Float> {
+                val gs = currentGyroSettings
+                if (!vx.isFinite() || !vy.isFinite()) return 0f to 0f
+                val rawMag = kotlin.math.hypot(vx, vy)
+                if (rawMag <= 1e-5f) return 0f to 0f
+                val tightenedScale = if (rawMag < aimTighteningRadS) (rawMag / aimTighteningRadS) else 1f
+                val tvx = vx * tightenedScale
+                val tvy = vy * tightenedScale
+                val velDz = 0.015f + (gs.gyroDeadzone.coerceIn(0, 20) / 100f) * 0.14f
+                val mag = kotlin.math.hypot(tvx, tvy)
+                if (mag <= velDz) return 0f to 0f
+                val effMag = mag - velDz
+                val sensX = gs.gyroSensX.coerceIn(10, 300) / 100f
+                val sensY = gs.gyroSensY.coerceIn(10, 300) / 100f
+                val normX = ((tvx / mag) * effMag / aimMaxSpeedRadS) * sensX
+                val normY = ((tvy / mag) * effMag / aimMaxSpeedRadS) * sensY
+                val normMag = kotlin.math.hypot(normX, normY)
+                if (normMag <= 1e-5f) return 0f to 0f
+                val clampedNorm = normMag.coerceAtMost(1f)
+                val ramp = (clampedNorm / 0.04f).coerceIn(0f, 1f).let { it * it * (3f - 2f * it) }
+                val outMag = (ramp * aimConsoleAntiDz + (1f - aimConsoleAntiDz) * clampedNorm).coerceIn(0f, 1f)
+                val scale = outMag / normMag
+                val outX = (normX * scale).coerceIn(-1f, 1f)
+                val outY = (normY * scale).coerceIn(-1f, 1f)
+                return (if (gs.gyroInvertX) -outX else outX) to (if (gs.gyroInvertY) -outY else outY)
             }
 
-            fun applyPadAimSlew(current: Float, target: Float, dt: Float): Float {
-                if (target == 0f && abs(current) < 0.06f) return 0f
-                val delta = target - current
-                val movingTowardZero = abs(target) < abs(current) &&
-                    (target == 0f || (target < 0f) == (current < 0f))
-                val maxRate = if (movingTowardZero) 14.0f else 4.5f
-                val maxStep = maxRate * dt
-                return if (abs(delta) <= maxStep) {
-                    target
-                } else {
-                    current + (if (delta < 0f) -1f else 1f) * maxStep
-                }
+            fun mapPadTiltDeflectionToStick(dRollRad: Float, dPitchUpRad: Float): Pair<Float, Float> {
+                val gs = currentGyroSettings
+                if (!dRollRad.isFinite() || !dPitchUpRad.isFinite()) return 0f to 0f
+                val rawX = dRollRad
+                val rawY = -dPitchUpRad
+                val angleMag = kotlin.math.hypot(rawX, rawY)
+                val dzRad = aimGravBaseDzRad + (gs.gyroDeadzone.coerceIn(0, 20) / 100f) * 0.16f
+                if (angleMag <= dzRad) return 0f to 0f
+                val effRange = (aimGravMaxAngleRad - dzRad).coerceAtLeast(0.15f)
+                val effMag = angleMag - dzRad
+                val sensX = gs.gyroSensX.coerceIn(10, 300) / 100f
+                val sensY = gs.gyroSensY.coerceIn(10, 300) / 100f
+                val normX = ((rawX / angleMag) * effMag / effRange) * sensX
+                val normY = ((rawY / angleMag) * effMag / effRange) * sensY
+                val normMag = kotlin.math.hypot(normX, normY)
+                if (normMag <= 1e-5f) return 0f to 0f
+                val clampedNorm = normMag.coerceAtMost(1f)
+                val curved = Math.pow(clampedNorm.toDouble(), 1.15).toFloat()
+                val ramp = (clampedNorm / 0.10f).coerceIn(0f, 1f).let { it * it * (3f - 2f * it) }
+                val outMag = (ramp * aimConsoleAntiDz + (1f - aimConsoleAntiDz) * curved).coerceIn(0f, 1f)
+                val scale = outMag / normMag
+                val outX = (normX * scale).coerceIn(-1f, 1f)
+                val outY = (normY * scale).coerceIn(-1f, 1f)
+                return (if (gs.gyroInvertX) -outX else outX) to (if (gs.gyroInvertY) -outY else outY)
             }
 
             fun processPadAimVelocity(
@@ -465,17 +495,18 @@ internal fun PadLandscapeControllerScreen(
             ) {
                 val gs = currentGyroSettings
                 val safeDt = dt.coerceIn(0.001f, 0.05f)
-                val clampedVx = rawVx.coerceIn(-4.5f, 4.5f)
-                val clampedVy = rawVy.coerceIn(-4.5f, 4.5f)
+                val clampedVx = rawVx.coerceIn(-6.0f, 6.0f)
+                val clampedVy = rawVy.coerceIn(-6.0f, 6.0f)
                 val corrVx: Float
                 val corrVy: Float
                 if (enableBiasTracking) {
                     aimElapsedSec += safeDt
-                    if (abs(clampedVx - aimBiasX) < 0.14f && abs(clampedVy - aimBiasY) < 0.14f) {
-                        val biasTau = if (aimElapsedSec < 0.6f) 0.20f else 1.50f
+                    val deltaMag = kotlin.math.hypot(clampedVx - aimBiasX, clampedVy - aimBiasY)
+                    if (deltaMag < aimBiasStillRadS) {
+                        val biasTau = if (aimElapsedSec < 0.5f) 0.18f else 1.80f
                         val biasAlpha = (safeDt / (biasTau + safeDt)).coerceIn(0f, 0.25f)
-                        aimBiasX = (aimBiasX + biasAlpha * (clampedVx - aimBiasX)).coerceIn(-0.25f, 0.25f)
-                        aimBiasY = (aimBiasY + biasAlpha * (clampedVy - aimBiasY)).coerceIn(-0.25f, 0.25f)
+                        aimBiasX = (aimBiasX + biasAlpha * (clampedVx - aimBiasX)).coerceIn(-0.20f, 0.20f)
+                        aimBiasY = (aimBiasY + biasAlpha * (clampedVy - aimBiasY)).coerceIn(-0.20f, 0.20f)
                     }
                     corrVx = clampedVx - aimBiasX
                     corrVy = clampedVy - aimBiasY
@@ -483,26 +514,27 @@ internal fun PadLandscapeControllerScreen(
                     corrVx = clampedVx
                     corrVy = clampedVy
                 }
-                val speed = kotlin.math.hypot(corrVx, corrVy)
-                val fastRatio = ((speed - 0.30f) / 1.10f).coerceIn(0f, 1f)
-                val tau = 0.055f * (1f - fastRatio) + 0.012f * fastRatio
-                val blend = (safeDt / (tau + safeDt)).coerceIn(0.02f, 0.85f)
-                if (!hasAimVelFilter) {
+                val rawSpeed = kotlin.math.hypot(corrVx, corrVy)
+                if (!hasAimVelFilter || rawSpeed >= aimSmoothUpperRadS) {
                     filtAimVx = corrVx
                     filtAimVy = corrVy
                     hasAimVelFilter = true
                 } else {
+                    val smoothWeight = if (rawSpeed <= aimSmoothLowerRadS) {
+                        1f
+                    } else {
+                        1f - ((rawSpeed - aimSmoothLowerRadS) / (aimSmoothUpperRadS - aimSmoothLowerRadS))
+                    }
+                    val tau = aimSmoothTauSec * smoothWeight
+                    val blend = if (tau <= 0.0005f) 1f else (safeDt / (tau + safeDt)).coerceIn(0.05f, 1f)
                     filtAimVx += blend * (corrVx - filtAimVx)
                     filtAimVy += blend * (corrVy - filtAimVy)
                 }
-                val targetX = shapeAimAxis(filtAimVx, gs.gyroSensX, gs.gyroDeadzone, gs.gyroInvertX)
-                val targetY = shapeAimAxis(filtAimVy, gs.gyroSensY, gs.gyroDeadzone, gs.gyroInvertY)
-                slewedAimOutX = applyPadAimSlew(slewedAimOutX, targetX, safeDt)
-                slewedAimOutY = applyPadAimSlew(slewedAimOutY, targetY, safeDt)
+                val (outX, outY) = mapPadAimVelToStick(filtAimVx, filtAimVy)
                 PadNetworkClient.updateGyroOffset(
                     rightStick = true,
-                    gx = slewedAimOutX,
-                    gy = slewedAimOutY,
+                    gx = outX,
+                    gy = outY,
                     holdLtOnly = gs.gyroHoldLtOnly
                 )
             }
@@ -586,8 +618,6 @@ internal fun PadLandscapeControllerScreen(
                                     val rawVy = -sx
                                     processPadAimVelocity(rawVx, rawVy, dt, enableBiasTracking = false)
                                 } else if (dt > 0.12f) {
-                                    slewedAimOutX = 0f
-                                    slewedAimOutY = 0f
                                     PadNetworkClient.updateGyroOffset(rightStick = true, gx = 0f, gy = 0f, holdLtOnly = gs.gyroHoldLtOnly)
                                 }
                                 System.arraycopy(remapMatrix, 0, prevRotMatrix, 0, 9)
@@ -610,7 +640,7 @@ internal fun PadLandscapeControllerScreen(
                                     }
                                     return
                                 }
-                                val alpha = if (event.sensor.type == android.hardware.Sensor.TYPE_ACCELEROMETER) 0.82f else 0.55f
+                                val alpha = if (event.sensor.type == android.hardware.Sensor.TYPE_ACCELEROMETER) 0.55f else 0.20f
                                 if (!hasFilteredGravity) {
                                     filtGx = rawSx
                                     filtGy = rawSy
@@ -623,32 +653,21 @@ internal fun PadLandscapeControllerScreen(
                                 }
                                 val rollRight = atan2(-filtGx, kotlin.math.hypot(filtGy, filtGz).coerceAtLeast(0.01f))
                                 val pitchUp = atan2(-filtGz, kotlin.math.hypot(filtGx, filtGy).coerceAtLeast(0.01f))
-                                val nowNs = event.timestamp
                                 if (!hasPrevAimTilt) {
                                     prevAimRoll = rollRight
                                     prevAimPitch = pitchUp
-                                    prevAimTsNs = nowNs
                                     hasPrevAimTilt = true
-                                    return
-                                }
-                                val dt = (nowNs - prevAimTsNs) * 1e-9f
-                                val dRoll = normAngle(rollRight - prevAimRoll)
-                                val dPitch = normAngle(pitchUp - prevAimPitch)
-                                prevAimRoll = rollRight
-                                prevAimPitch = pitchUp
-                                prevAimTsNs = nowNs
-                                if (dt <= 0.004f) return
-                                if (dt > 0.15f) {
-                                    slewedAimOutX = 0f
-                                    slewedAimOutY = 0f
                                     PadNetworkClient.updateGyroOffset(rightStick = true, gx = 0f, gy = 0f, holdLtOnly = gs.gyroHoldLtOnly)
                                     return
                                 }
-                                processPadAimVelocity(
-                                    rawVx = (dRoll / dt).coerceIn(-3.5f, 3.5f),
-                                    rawVy = (-dPitch / dt).coerceIn(-3.5f, 3.5f),
-                                    dt = dt,
-                                    enableBiasTracking = false
+                                val dRoll = normAngle(rollRight - prevAimRoll)
+                                val dPitchUp = normAngle(pitchUp - prevAimPitch)
+                                val (outX, outY) = mapPadTiltDeflectionToStick(dRoll, dPitchUp)
+                                PadNetworkClient.updateGyroOffset(
+                                    rightStick = true,
+                                    gx = outX,
+                                    gy = outY,
+                                    holdLtOnly = gs.gyroHoldLtOnly
                                 )
                             }
                         }
