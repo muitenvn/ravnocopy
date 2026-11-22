@@ -2327,6 +2327,9 @@ class XboxBridge(
 
                     function mixGyroIntoAxesAndButtons(axesArr, buttonsArr) {
                         if (!gyroInputState.active) return axesArr;
+                        if (gyroInputState.rightStick && (nowTs() - (gyroInputState.timestamp || 0)) > 160) {
+                            return axesArr;
+                        }
                         if (gyroInputState.holdLtOnly) {
                             const ltBtn = buttonsArr && buttonsArr[6];
                             const ltPressed = !!(ltBtn && (ltBtn.pressed || (ltBtn.value || 0) > 0.15));

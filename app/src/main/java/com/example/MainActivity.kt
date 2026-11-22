@@ -299,8 +299,38 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun getCurrentDisplayRotation(): Int {
+        val currentDisplay = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            display
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay
+        }
+        return currentDisplay?.rotation ?: android.view.Surface.ROTATION_0
+    }
+
     fun lockLandscapeOrientation() {
-        requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        if (requestedOrientation == android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE ||
+            requestedOrientation == android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+        ) {
+            return
+        }
+        requestedOrientation = if (getCurrentDisplayRotation() == android.view.Surface.ROTATION_270) {
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+        } else {
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        }
+    }
+
+    fun flipLockedLandscapeSide() {
+        val currentlyReverse = requestedOrientation == android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE ||
+            (requestedOrientation != android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE &&
+                getCurrentDisplayRotation() == android.view.Surface.ROTATION_270)
+        requestedOrientation = if (currentlyReverse) {
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+        }
     }
 
     fun toggleOrientation() {

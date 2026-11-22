@@ -757,36 +757,25 @@ fun CloudBrowserScreen(
 
     val isTvMode = remember(config.appUiMode, context) { config.isEffectiveTvMode(context) }
     val isRealTvHardware = remember(context) { com.example.data.isSystemTvDevice(context) }
-    var autoRotatedForCurrentStream by remember { mutableStateOf(false) }
-    var userManuallyToggledOrientation by remember { mutableStateOf(false) }
+    val isInActiveGameStream = streamUiState.isStreamConnected ||
+        (streamUiState.isGameActive && streamUiState.autoBypassTriggered)
 
-    // Tự động xoay màn hình ngang ngay khi phát hiện đã vào luồng game / tự tắt VPN;
-    // khi thoát game quay lại danh sách Xbox thì mở khóa lại hướng màn hình tự nhiên (không chặn nút xoay thủ công trên HUD).
-    LaunchedEffect(
-        streamUiState.isStreamConnected,
-        streamUiState.isGameActive,
-        streamUiState.autoBypassTriggered,
-        isTvMode,
-        isRealTvHardware
-    ) {
-        val enteredGame = streamUiState.isStreamConnected ||
-            (streamUiState.isGameActive && streamUiState.autoBypassTriggered)
-        if (enteredGame) {
-            if (!autoRotatedForCurrentStream && !userManuallyToggledOrientation && !isRealTvHardware) {
-                autoRotatedForCurrentStream = true
+    // Khóa cứng màn ngang trong suốt thời gian đang chơi game;
+    // khi thoát game (quay lại danh sách Xbox / ngoài luồng game) thì mở khóa xoay tự do.
+    LaunchedEffect(isInActiveGameStream, isTvMode, isRealTvHardware) {
+        if (isInActiveGameStream) {
+            if (!isRealTvHardware) {
                 (activity as? com.example.MainActivity)?.lockLandscapeOrientation()
                 com.example.data.AppLogger.info(
                     "UI",
-                    "Phát hiện vào game (stream=${streamUiState.isStreamConnected}, autoBypass=${streamUiState.autoBypassTriggered}) -> tự xoay màn hình ngang"
+                    "Đang trong game (stream=${streamUiState.isStreamConnected}, autoBypass=${streamUiState.autoBypassTriggered}) -> khóa cứng màn hình ngang"
                 )
             }
         } else {
-            if (autoRotatedForCurrentStream && !isTvMode && !isRealTvHardware) {
+            if (!isTvMode && !isRealTvHardware) {
                 (activity as? com.example.MainActivity)?.resetOrientation()
-                com.example.data.AppLogger.info("UI", "Đã thoát luồng game -> mở khóa hướng màn hình mặc định")
+                com.example.data.AppLogger.info("UI", "Ngoài luồng game -> mở khóa xoay màn hình tự do")
             }
-            autoRotatedForCurrentStream = false
-            userManuallyToggledOrientation = false
         }
     }
 
@@ -2087,9 +2076,13 @@ fun CloudBrowserScreen(
                 showTranslatorDialog = true
             },
             onToggleOrientation = {
-                userManuallyToggledOrientation = true
-                com.example.data.AppLogger.info("UI", "Bấm Xoay ngang/dọc màn hình từ HUD")
-                (activity as? com.example.MainActivity)?.toggleOrientation()
+                if (isInActiveGameStream && !isRealTvHardware) {
+                    com.example.data.AppLogger.info("UI", "Đang trong game -> đảo chiều khóa cứng màn hình ngang từ HUD")
+                    (activity as? com.example.MainActivity)?.flipLockedLandscapeSide()
+                } else {
+                    com.example.data.AppLogger.info("UI", "Bấm Xoay ngang/dọc màn hình từ HUD")
+                    (activity as? com.example.MainActivity)?.toggleOrientation()
+                }
             },
             videoTopRatio = videoTopRatio,
             lowEndDeviceMode = config.lowEndDeviceMode,
