@@ -33,6 +33,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -400,6 +403,16 @@ object GamepadUiNavigation {
     }
 
     fun isFromGamepadOrKeyboard(event: KeyEvent): Boolean {
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP,
+            KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_VOLUME_MUTE,
+            KeyEvent.KEYCODE_POWER,
+            KeyEvent.KEYCODE_BACK,
+            KeyEvent.KEYCODE_HOME,
+            KeyEvent.KEYCODE_APP_SWITCH,
+            KeyEvent.KEYCODE_CAMERA -> return false
+        }
         val src = event.source
         if ((src and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
             (src and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK ||
@@ -623,12 +636,16 @@ fun Modifier.gamepadControllerScope(
         }
     }
 
-    LaunchedEffect(enabled, autoRequestDefaultFocus, defaultFocusRequester) {
-        if (enabled && autoRequestDefaultFocus && defaultFocusRequester != null) {
+    LaunchedEffect(enabled, autoRequestDefaultFocus, defaultFocusRequester, GamepadUiNavigation.isGamepadModeActive, GamepadUiNavigation.keepFocusVisibleInTvMode) {
+        val shouldAutoFocus = GamepadUiNavigation.isGamepadModeActive ||
+            GamepadUiNavigation.keepFocusVisibleInTvMode
+        if (enabled && autoRequestDefaultFocus && defaultFocusRequester != null && shouldAutoFocus) {
             ensureComposeViewFocused()
             delay(45L)
-            ensureComposeViewFocused()
-            runCatching { defaultFocusRequester.requestFocus() }
+            if (GamepadUiNavigation.isGamepadModeActive || GamepadUiNavigation.keepFocusVisibleInTvMode) {
+                ensureComposeViewFocused()
+                runCatching { defaultFocusRequester.requestFocus() }
+            }
         }
     }
 
@@ -653,6 +670,16 @@ fun Modifier.gamepadControllerScope(
     }
 
     this
+        .pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    if (event.changes.any { it.pressed && it.type == PointerType.Touch }) {
+                        GamepadUiNavigation.onTouchInteraction()
+                    }
+                }
+            }
+        }
         .onFocusChanged { state ->
             hasFocusInsideScope = state.hasFocus || state.isFocused
         }

@@ -57,14 +57,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.ApkDownloadState
@@ -177,17 +184,25 @@ fun UpdateAvailableDialog(
         else -> fastBtnFocusRequester
     }
 
-    LaunchedEffect(downloadState, isTvUiMode) {
-        if (isTvUiMode) {
+    val remotePadServerState by com.example.cloudplay.RemotePadTvServer.state.collectAsState()
+    val hasRemotePadConnected = remotePadServerState.connectedDeviceId.isNotBlank()
+    val showGamepadHint = isTvUiMode ||
+        GamepadUiNavigation.keepFocusVisibleInTvMode ||
+        GamepadUiNavigation.isGamepadModeActive
+
+    LaunchedEffect(downloadState, isTvUiMode, hasRemotePadConnected) {
+        if (isTvUiMode || hasRemotePadConnected) {
             GamepadUiNavigation.onGamepadInteraction()
         }
-        for (attempt in 0..3) {
-            delay(if (attempt == 0) 24L else 60L)
-            val ok = runCatching {
-                defaultFocusRequester.requestFocus()
-                true
-            }.getOrDefault(false)
-            if (ok) break
+        if (isTvUiMode || hasRemotePadConnected || GamepadUiNavigation.keepFocusVisibleInTvMode || GamepadUiNavigation.isGamepadModeActive) {
+            for (attempt in 0..3) {
+                delay(if (attempt == 0) 24L else 60L)
+                val ok = runCatching {
+                    defaultFocusRequester.requestFocus()
+                    true
+                }.getOrDefault(false)
+                if (ok) break
+            }
         }
     }
 
@@ -198,6 +213,16 @@ fun UpdateAvailableDialog(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            if (event.changes.any { it.pressed && it.type == PointerType.Touch }) {
+                                GamepadUiNavigation.onTouchInteraction()
+                            }
+                        }
+                    }
+                }
                 .windowInsetsPadding(WindowInsets.safeDrawing),
             contentAlignment = Alignment.Center
         ) {
@@ -207,15 +232,23 @@ fun UpdateAvailableDialog(
             val isLandscapeOrWideShort = winW > winH
             val useTwoColumnLayout = isTvUiMode || isLandscapeOrWideShort
 
-            // Mọi kích thước và cỡ chữ đều tính theo tỉ lệ cửa sổ & bù cỡ chữ hệ thống để không bao giờ bị cắt
+            // Tối ưu tỉ lệ chữ và kích thước nút rõ ràng cho cả điện thoại cảm ứng lẫn giao diện TV
             val shortSide = minOf(winW, winH)
-            val unit = shortSide * 0.01f
             val fontScale = density.fontScale.coerceAtLeast(1f)
-            val compactFactor = if (useTwoColumnLayout) 0.92f else 1.0f
-            val textScale = (compactFactor / fontScale.coerceIn(1f, 1.75f))
+            val dpScale = when {
+                isTvUiMode -> (shortSide.value / 360f).coerceIn(1.06f, 1.24f)
+                useTwoColumnLayout -> (shortSide.value / 360f).coerceIn(0.88f, 1.04f)
+                else -> (shortSide.value / 360f).coerceIn(0.96f, 1.16f)
+            }
+            val fontScaleComp = if (fontScale > 1.15f) (1.15f / fontScale).coerceIn(0.76f, 1f) else 1f
+            val textBoost = when {
+                isTvUiMode -> 1.24f
+                useTwoColumnLayout -> 1.20f
+                else -> 1.28f
+            }
 
-            fun rDp(v: Float): Dp = unit * (v * compactFactor)
-            fun rSp(v: Float): TextUnit = with(density) { (unit * v * textScale).toSp() }
+            fun rDp(v: Float): Dp = (v * 3.6f * dpScale).dp
+            fun rSp(v: Float): TextUnit = (v * 3.6f * dpScale * textBoost * fontScaleComp).sp
 
             val cardWidthFraction = if (useTwoColumnLayout) 0.94f else 0.92f
             val cardMaxHeight = winH * (if (useTwoColumnLayout) 0.92f else 0.90f)
@@ -224,14 +257,14 @@ fun UpdateAvailableDialog(
             val btnCorner = rDp(2.6f)
             val chipCorner = rDp(1.9f)
             val padOuter = rDp(3.4f)
-            val padInner = rDp(2.4f)
+            val padInner = rDp(2.5f)
             val gapLarge = rDp(2.2f)
-            val gapMed = rDp(1.6f)
-            val gapSmall = rDp(1.1f)
-            val borderThin = (unit * 0.28f).coerceAtLeast(winW * 0.0012f)
-            val iconBoxSize = rDp(8.8f)
-            val iconSize = rDp(5.0f)
-            val smallIconSize = rDp(3.2f)
+            val gapMed = rDp(1.7f)
+            val gapSmall = rDp(1.2f)
+            val borderThin = (1.1f * dpScale).dp.coerceAtLeast(1.dp)
+            val iconBoxSize = rDp(9.2f)
+            val iconSize = rDp(5.2f)
+            val smallIconSize = rDp(3.6f)
 
             val selectedNodeName = mirrorNodes.firstOrNull { it.id == selectedMirrorId }?.name
             val startFastDownload: () -> Unit = {
@@ -348,12 +381,13 @@ fun UpdateAvailableDialog(
                     val notesInteraction = remember { MutableInteractionSource() }
                     val scrollStepPx = with(density) { rDp(10f).toPx().toInt().coerceAtLeast(24) }
 
+                    val showNotesFocus = isNotesFocused && showGamepadHint
                     Surface(
                         color = XboxSurface,
                         shape = RoundedCornerShape(sectionCorner),
                         border = BorderStroke(
-                            width = if (isNotesFocused) borderThin * 2f else borderThin,
-                            color = if (isNotesFocused) XboxNeonGreen else XboxCardBorder.copy(alpha = 0.5f)
+                            width = if (showNotesFocus) borderThin * 2f else borderThin,
+                            color = if (showNotesFocus) XboxNeonGreen else XboxCardBorder.copy(alpha = 0.5f)
                         ),
                         modifier = modifier
                             .fillMaxWidth()
@@ -1030,21 +1064,20 @@ private fun UpdateDialogFlatActionButton(
     modifier: Modifier = Modifier
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val hasHardwarePad = remember { isPhysicalGamepadConnectedNow() }
-    val remotePadServerState by com.example.cloudplay.RemotePadTvServer.state.collectAsState()
     val showGamepadHint = GamepadUiNavigation.isGamepadModeActive ||
-        GamepadUiNavigation.keepFocusVisibleInTvMode ||
-        hasHardwarePad ||
-        remotePadServerState.connectedDeviceId.isNotBlank()
+        GamepadUiNavigation.keepFocusVisibleInTvMode
+    val showFocusBorder = isFocused && showGamepadHint
     val effectiveHint = when {
         !showGamepadHint -> null
         !gamepadHint.isNullOrBlank() -> gamepadHint
         isFocused -> "A"
         else -> null
     }
+    val minBtnHeight = if (GamepadUiNavigation.keepFocusVisibleInTvMode) 48.dp else 44.dp
 
     Surface(
         modifier = modifier
+            .heightIn(min = minBtnHeight)
             .clip(RoundedCornerShape(cornerRadius))
             .onFocusChanged { isFocused = it.isFocused }
             .gamepadClickable(
@@ -1056,14 +1089,14 @@ private fun UpdateDialogFlatActionButton(
         shape = RoundedCornerShape(cornerRadius),
         color = containerColor,
         border = BorderStroke(
-            width = if (isFocused) borderWidth * 2.2f else borderWidth,
-            color = if (isFocused) focusBorderColor else borderColor
+            width = if (showFocusBorder) borderWidth * 2.2f else borderWidth,
+            color = if (showFocusBorder) focusBorderColor else borderColor
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = horizontalPad, vertical = verticalPad),
+                .padding(horizontal = horizontalPad, vertical = verticalPad.coerceAtLeast(10.dp)),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1078,7 +1111,8 @@ private fun UpdateDialogFlatActionButton(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
             if (effectiveHint != null) {
                 val isBrightPrimary = containerColor == XboxNeonGreen && effectiveHint == "A"
@@ -1097,21 +1131,28 @@ private fun UpdateDialogFlatActionButton(
                     effectiveHint == "B" -> Color(0xFFFFB4AB)
                     else -> XboxNeonGreen
                 }
-                Box(modifier = Modifier.padding(start = horizontalPad * 0.35f))
+                val badgeSize = if (GamepadUiNavigation.keepFocusVisibleInTvMode) 24.dp else 21.dp
+                val badgeFontSize = if (GamepadUiNavigation.keepFocusVisibleInTvMode) 13.sp else 11.5.sp
+                Box(modifier = Modifier.padding(start = 6.dp))
                 Box(
                     modifier = Modifier
-                        .size(verticalPad * 2.1f)
+                        .size(badgeSize)
                         .clip(androidx.compose.foundation.shape.CircleShape)
                         .background(badgeBg)
-                        .border(borderWidth, badgeBorder, androidx.compose.foundation.shape.CircleShape),
+                        .border(borderWidth.coerceAtLeast(1.2.dp), badgeBorder, androidx.compose.foundation.shape.CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = effectiveHint,
                         color = badgeText,
-                        fontFamily = SpaceGroteskFontFamily,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = fontSize * 0.8f,
+                        style = TextStyle(
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = badgeFontSize,
+                            lineHeight = badgeFontSize,
+                            textAlign = TextAlign.Center,
+                            platformStyle = PlatformTextStyle(includeFontPadding = false)
+                        ),
                         maxLines = 1
                     )
                 }

@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import android.view.InputDevice
 import android.view.KeyEvent
+import android.view.MotionEvent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,11 +52,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,7 +97,19 @@ fun isPhysicalGamepadConnectedNow(): Boolean {
             val src = dev.sources
             val isGamepad = (src and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
             val isJoystick = (src and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
-            if (isGamepad || isJoystick) return@runCatching true
+            if (!isGamepad && !isJoystick) continue
+            val hasRealGamepadKeys = dev.hasKeys(
+                KeyEvent.KEYCODE_BUTTON_A,
+                KeyEvent.KEYCODE_BUTTON_B,
+                KeyEvent.KEYCODE_BUTTON_X,
+                KeyEvent.KEYCODE_BUTTON_Y
+            ).any { it }
+            val hasStickAxis = dev.motionRanges.any {
+                it.axis == MotionEvent.AXIS_X || it.axis == MotionEvent.AXIS_Z
+            }
+            if (hasRealGamepadKeys && (isGamepad || hasStickAxis)) {
+                return@runCatching true
+            }
         }
         false
     }.getOrDefault(false)
@@ -112,12 +130,23 @@ class AdaptivePopupScope(
     private val density: Density
 ) {
     private val shortEdge: Dp = if (winW < winH) winW else winH
-    private val baseUnit: Dp = shortEdge / 360f
+    private val dpFactor: Float = when {
+        isTvUiMode -> (shortEdge.value / 360f).coerceIn(1.06f, 1.28f)
+        useTwoColumnLayout -> (shortEdge.value / 360f).coerceIn(0.90f, 1.12f)
+        else -> (shortEdge.value / 360f).coerceIn(0.96f, 1.18f)
+    }
+    private val baseUnit: Dp = (shortEdge / 360f).let { raw ->
+        val clamped = (raw.value).coerceIn(dpFactor * 0.96f, dpFactor * 1.04f)
+        androidx.compose.ui.unit.Dp(clamped)
+    }
     private val minDpUnit: Dp = shortEdge / 1800f
     private val fontScaleCompensation: Float =
-        if (density.fontScale > 1.12f) (1.12f / density.fontScale).coerceIn(0.72f, 1f) else 1f
-    private val rawScaleFactor: Float =
-        (shortEdge.value / 360f).coerceIn(0.76f, 1.16f) * fontScaleCompensation
+        if (density.fontScale > 1.15f) (1.15f / density.fontScale).coerceIn(0.75f, 1f) else 1f
+    private val rawScaleFactor: Float = when {
+        isTvUiMode -> (shortEdge.value / 360f).coerceIn(1.12f, 1.30f)
+        useTwoColumnLayout -> (shortEdge.value / 360f).coerceIn(0.96f, 1.12f)
+        else -> (shortEdge.value / 360f).coerceIn(1.06f, 1.20f)
+    } * fontScaleCompensation
 
     fun rDp(refPx: Float): Dp {
         val candidate = baseUnit * refPx
@@ -136,13 +165,13 @@ class AdaptivePopupScope(
     val btnCorner: Dp get() = rDp(10f)
     val chipCorner: Dp get() = rDp(8f)
     val padOuter: Dp get() = rDp(if (useTwoColumnLayout) 13f else 15f)
-    val padInner: Dp get() = rDp(10f)
+    val padInner: Dp get() = rDp(11f)
     val gapLarge: Dp get() = rDp(10f)
-    val gapMed: Dp get() = rDp(7f)
-    val gapSmall: Dp get() = rDp(4.5f)
-    val iconBoxSize: Dp get() = rDp(34f)
-    val iconSize: Dp get() = rDp(18f)
-    val btnMinHeight: Dp get() = rDp(38f)
+    val gapMed: Dp get() = rDp(7.5f)
+    val gapSmall: Dp get() = rDp(5f)
+    val iconBoxSize: Dp get() = rDp(36f)
+    val iconSize: Dp get() = rDp(19f)
+    val btnMinHeight: Dp get() = rDp(if (isTvUiMode) 44f else 42f)
 }
 
 /**
@@ -172,20 +201,27 @@ fun AdaptivePopupScope.GamepadKeyHintBadge(
         keyLabel.equals("A", ignoreCase = true) -> XboxNeonGreen
         else -> DirectCyan
     }
+    val badgeSize = rDp(if (isTvUiMode) 24f else 21f)
+    val badgeFontSize = rSp(if (isTvUiMode) 12.5f else 11f)
     Box(
         modifier = Modifier
-            .size(rDp(18f))
+            .size(badgeSize)
             .clip(CircleShape)
             .background(badgeBg)
-            .border(rDp(1f), badgeBorder, CircleShape),
+            .border(rDp(1.3f), badgeBorder, CircleShape),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = keyLabel,
             color = badgeText,
-            fontFamily = SpaceGroteskFontFamily,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = rSp(9.5f),
+            style = TextStyle(
+                fontFamily = SpaceGroteskFontFamily,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = badgeFontSize,
+                lineHeight = badgeFontSize,
+                textAlign = TextAlign.Center,
+                platformStyle = PlatformTextStyle(includeFontPadding = false)
+            ),
             maxLines = 1
         )
     }
@@ -227,21 +263,21 @@ fun AdaptivePopupFrame(
     val isTvUiMode = remember(config.appUiMode, context) {
         config.isEffectiveTvMode(context)
     }
-    val hasHardwarePad = remember { isPhysicalGamepadConnectedNow() }
     val isGamepadDetected = isTvUiMode ||
-        GamepadUiNavigation.isGamepadModeActive ||
-        hasHardwarePad ||
-        hasRemotePadConnected
+        GamepadUiNavigation.keepFocusVisibleInTvMode ||
+        GamepadUiNavigation.isGamepadModeActive
 
     val internalDefaultFocus = remember { FocusRequester() }
     val activeDefaultFocus = defaultFocusRequester ?: internalDefaultFocus
 
-    LaunchedEffect(isTvUiMode, isGamepadDetected, activeDefaultFocus) {
-        if (isTvUiMode || hasHardwarePad || hasRemotePadConnected) {
+    LaunchedEffect(isTvUiMode, hasRemotePadConnected, activeDefaultFocus) {
+        if (isTvUiMode || hasRemotePadConnected) {
             GamepadUiNavigation.onGamepadInteraction()
         }
-        delay(60)
-        runCatching { activeDefaultFocus.requestFocus() }
+        if (isTvUiMode || hasRemotePadConnected || GamepadUiNavigation.keepFocusVisibleInTvMode || GamepadUiNavigation.isGamepadModeActive) {
+            delay(60)
+            runCatching { activeDefaultFocus.requestFocus() }
+        }
     }
 
     Dialog(
@@ -265,6 +301,16 @@ fun AdaptivePopupFrame(
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                if (event.changes.any { it.pressed && it.type == PointerType.Touch }) {
+                                    GamepadUiNavigation.onTouchInteraction()
+                                }
+                            }
+                        }
+                    }
                     .windowInsetsPadding(WindowInsets.safeDrawing),
                 contentAlignment = Alignment.Center
             ) {
@@ -388,17 +434,19 @@ fun AdaptivePopupScope.AdaptiveFlatActionButton(
     var isFocused by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
 
+    val showFocusVisual = isFocused && isGamepadDetected
+
     val resolvedBg = when {
         !enabled -> XboxSurface.copy(alpha = 0.45f)
-        isFocused -> focusedContainerColor
+        showFocusVisual -> focusedContainerColor
         else -> containerColor
     }
     val resolvedBorderColor = when {
         !enabled -> XboxCardBorder.copy(alpha = 0.4f)
-        isFocused -> focusedBorderColor
+        showFocusVisual -> focusedBorderColor
         else -> borderColor
     }
-    val resolvedBorderWidth = if (isFocused) borderFocus else borderThin
+    val resolvedBorderWidth = if (showFocusVisual) borderFocus else borderThin
 
     val effectiveHintBadge: String? = when {
         !enabled || !isGamepadDetected -> null
@@ -413,9 +461,6 @@ fun AdaptivePopupScope.AdaptiveFlatActionButton(
             .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
             .onFocusChanged { state ->
                 isFocused = state.isFocused
-                if (state.isFocused) {
-                    GamepadUiNavigation.onGamepadInteraction()
-                }
             }
             .onKeyEvent { event ->
                 if (!enabled) return@onKeyEvent false
@@ -1046,7 +1091,7 @@ fun AdaptiveLanguagePickerDialog(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier.weight(1f),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(gapSmall)
                                 ) {
