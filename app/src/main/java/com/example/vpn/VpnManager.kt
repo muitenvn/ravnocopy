@@ -2430,6 +2430,10 @@ object VpnManager {
     }
 
     fun onAppForeground() {
+        isAppInForeground = true
+        if (latencyMonitoringRequested && pingJob?.isActive != true) {
+            startLatencyMonitoring()
+        }
         if (isInGameStreamActive || com.example.cloudplay.NetworkOptimizer.status.value.isLowLatencyStreamActive) {
             return
         }
@@ -2443,6 +2447,12 @@ object VpnManager {
             return
         }
         checkCurrentIp(reason = "quay lại foreground", force = true)
+    }
+
+    fun onAppBackground() {
+        isAppInForeground = false
+        pingJob?.cancel()
+        pingJob = null
     }
 
     fun checkCurrentIp(reason: String = "khởi động", force: Boolean = false) {
@@ -3325,6 +3335,12 @@ object VpnManager {
     @Volatile
     private var isInGameStreamActive: Boolean = false
 
+    @Volatile
+    private var isAppInForeground: Boolean = true
+
+    @Volatile
+    private var latencyMonitoringRequested: Boolean = false
+
     fun isStreamActive(): Boolean = isInGameStreamActive
 
     /**
@@ -3367,9 +3383,14 @@ object VpnManager {
     }
 
     private fun startLatencyMonitoring() {
+        latencyMonitoringRequested = true
         pingJob?.cancel()
+        if (!isAppInForeground) {
+            pingJob = null
+            return
+        }
         pingJob = scope.launch(Dispatchers.IO) {
-            while (isActive) {
+            while (isActive && isAppInForeground) {
                 val cur = _state.value
                 val isDirect = cur.mode == NetworkMode.DIRECT_NETWORK
                 val currentEngine = cur.engine

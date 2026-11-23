@@ -168,11 +168,14 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         com.example.data.AppLogger.info("SYSTEM", "Ứng dụng vào tiền cảnh (Foreground)")
         com.example.data.PerformanceMonitor.onAppStart()
+        com.example.cloudplay.NetworkOptimizer.setAppForeground(true)
         VpnManager.onAppForeground()
     }
 
     override fun onStop() {
         com.example.cloudplay.PhysicalGamepadCaptureBus.releaseAllInGameKeys()
+        com.example.cloudplay.NetworkOptimizer.setAppForeground(false)
+        VpnManager.onAppBackground()
         com.example.data.AppLogger.info("SYSTEM", "Ứng dụng vào nền (Background)")
         com.example.data.PerformanceMonitor.onAppStop()
         super.onStop()

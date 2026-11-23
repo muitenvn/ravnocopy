@@ -92,6 +92,9 @@ object NetworkOptimizer {
     private var isStreamCurrentlyActive: Boolean = false
 
     @Volatile
+    private var isAppInForeground: Boolean = true
+
+    @Volatile
     private var currentBoundNetwork: Network? = null
 
     // Telemetry tracking for estimated data savings using actual elapsed time
@@ -216,8 +219,6 @@ object NetworkOptimizer {
                 if (currentBoundNetwork != null) {
                     cm.bindProcessToNetwork(null)
                     currentBoundNetwork = null
-                } else {
-                    cm.bindProcessToNetwork(null)
                 }
                 return
             }
@@ -240,9 +241,9 @@ object NetworkOptimizer {
                 if (currentBoundNetwork != net) {
                     cm.bindProcessToNetwork(net)
                     currentBoundNetwork = net
+                    cm.reportNetworkConnectivity(net, true)
                 }
-                cm.reportNetworkConnectivity(net, true)
-            } else {
+            } else if (currentBoundNetwork != null) {
                 cm.bindProcessToNetwork(null)
                 currentBoundNetwork = null
             }
@@ -251,6 +252,25 @@ object NetworkOptimizer {
                 "NET",
                 "Lỗi gắn kết mạng tiến trình (${com.example.data.AppLogger.shortThrowable(e)})"
             )
+        }
+    }
+
+    private fun syncWifiLowLatencyLock(isWifi: Boolean = _status.value.isWifi) {
+        val lock = wifiLowLatencyLock ?: return
+        val shouldHold = isStreamCurrentlyActive && isAppInForeground && isWifi
+        if (shouldHold) {
+            if (!lock.isHeld) lock.acquire()
+        } else {
+            if (lock.isHeld) lock.release()
+        }
+    }
+
+    fun setAppForeground(foreground: Boolean) {
+        if (isAppInForeground == foreground) return
+        isAppInForeground = foreground
+        try {
+            syncWifiLowLatencyLock()
+        } catch (_: Exception) {
         }
     }
 
@@ -270,14 +290,7 @@ object NetworkOptimizer {
             )
         }
         try {
-            val lock = wifiLowLatencyLock
-            if (lock != null) {
-                if (active && _status.value.isWifi) {
-                    if (!lock.isHeld) lock.acquire()
-                } else {
-                    if (lock.isHeld) lock.release()
-                }
-            }
+            syncWifiLowLatencyLock()
             updateProcessNetworkBinding(null)
         } catch (e: Exception) {
             com.example.data.AppLogger.error(
@@ -377,14 +390,7 @@ object NetworkOptimizer {
         recomputeEffectiveProfile(config, candidateStatus)
         if (isStreamCurrentlyActive) {
             try {
-                val lock = wifiLowLatencyLock
-                if (lock != null) {
-                    if (isWifi) {
-                        if (!lock.isHeld) lock.acquire()
-                    } else {
-                        if (lock.isHeld) lock.release()
-                    }
-                }
+                syncWifiLowLatencyLock(isWifi)
             } catch (_: Exception) {}
         }
     }

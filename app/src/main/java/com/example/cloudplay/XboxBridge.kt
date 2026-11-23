@@ -1055,6 +1055,7 @@ class XboxBridge(
                                 stopStatsPolling();
                                 return;
                             }
+                            if (document.hidden || window.__appInBackground) return;
                             try {
                                 const stats = await pc.getStats();
                                 let currentBytes = 0;
@@ -1324,22 +1325,6 @@ class XboxBridge(
 
                                     // Ghi log chẩn đoán nội bộ theo chuỗi thời gian (không hiện UI, không đổi hành vi)
                                     try {
-                                        if (vEl && !vEl.paused && typeof vEl.requestVideoFrameCallback === 'function' && !diagRvfcPending) {
-                                            diagRvfcPending = true;
-                                            vEl.requestVideoFrameCallback(function(cbNow, meta) {
-                                                diagRvfcPending = false;
-                                                if (meta) {
-                                                    const recvToPres = (typeof meta.receiveTime === 'number' && typeof meta.presentationTime === 'number')
-                                                        ? parseFloat((meta.presentationTime - meta.receiveTime).toFixed(1)) : -1;
-                                                    const presToExp = (typeof meta.expectedDisplayTime === 'number' && typeof meta.presentationTime === 'number')
-                                                        ? parseFloat((meta.expectedDisplayTime - meta.presentationTime).toFixed(1)) : -1;
-                                                    const procDur = (typeof meta.processingDuration === 'number')
-                                                        ? parseFloat((meta.processingDuration * 1000.0).toFixed(1)) : -1;
-                                                    diagLastRvfc = { r2p: recvToPres, p2e: presToExp, pd: procDur };
-                                                }
-                                            });
-                                        }
-
                                         let jbTargetMs = 0.0;
                                         let jbMinMs = 0.0;
                                         let procMs = 0.0;
@@ -1386,9 +1371,28 @@ class XboxBridge(
                                         diagLastFreezes = freezeCount;
                                         diagLastDropped = framesDropped;
 
-                                        const shouldEmitDiag = (now - diagLastSentAt >= 5000) ||
-                                            Math.abs(jitterBufferDelayMs - diagLastJbMs) >= 50.0 ||
-                                            dFrz > 0;
+                                        const isDiagAnomaly = dFrz > 0 ||
+                                            dDrp >= 5 ||
+                                            rawDecUnclampedMs >= 16.0 ||
+                                            Math.abs(jitterBufferDelayMs - diagLastJbMs) >= 50.0;
+                                        if (vEl && !vEl.paused && typeof vEl.requestVideoFrameCallback === 'function' && !diagRvfcPending &&
+                                            (isDiagAnomaly || diagLastSentAt === 0 || (now - diagLastSentAt >= 25000))) {
+                                            diagRvfcPending = true;
+                                            vEl.requestVideoFrameCallback(function(cbNow, meta) {
+                                                diagRvfcPending = false;
+                                                if (meta) {
+                                                    const recvToPres = (typeof meta.receiveTime === 'number' && typeof meta.presentationTime === 'number')
+                                                        ? parseFloat((meta.presentationTime - meta.receiveTime).toFixed(1)) : -1;
+                                                    const presToExp = (typeof meta.expectedDisplayTime === 'number' && typeof meta.presentationTime === 'number')
+                                                        ? parseFloat((meta.expectedDisplayTime - meta.presentationTime).toFixed(1)) : -1;
+                                                    const procDur = (typeof meta.processingDuration === 'number')
+                                                        ? parseFloat((meta.processingDuration * 1000.0).toFixed(1)) : -1;
+                                                    diagLastRvfc = { r2p: recvToPres, p2e: presToExp, pd: procDur };
+                                                }
+                                            });
+                                        }
+
+                                        const shouldEmitDiag = (now - diagLastSentAt >= 30000) || isDiagAnomaly;
                                         if (shouldEmitDiag && framesDecoded > 0) {
                                             diagLastSentAt = now;
                                             diagLastJbMs = jitterBufferDelayMs;
@@ -1949,7 +1953,9 @@ class XboxBridge(
                     }
 
                     // Lightweight fallback check (2500ms) for edge cases where video mounts silently & region lock check
+                    let lastCatalogScanAt = 0;
                     setInterval(function() {
+                        if (document.hidden || window.__appInBackground) return;
                         handleNavigationChange();
                         if (!notifiedStreamConnection && regionCheckCountForUrl < 4) {
                             checkRegionLockDomState();
@@ -2011,7 +2017,11 @@ class XboxBridge(
                             }
                         } else {
                             removeFortniteMultiTouchClawCss();
-                            scanVisibleCatalogGameCards();
+                            const nowCatalogMs = Date.now();
+                            if (nowCatalogMs - lastCatalogScanAt >= 6000) {
+                                lastCatalogScanAt = nowCatalogMs;
+                                scanVisibleCatalogGameCards();
+                            }
                         }
                     }, 2500);
 
@@ -2217,6 +2227,7 @@ class XboxBridge(
                     // Chỉ tự động phát hiện hộp thoại phản hồi khi người dùng BẬT tự động chuyển & chọn Giao diện cũ
                     setInterval(function() {
                         try {
+                            if (document.hidden || window.__appInBackground) return;
                             if (!window.__autoExitPreviewEnabled) return;
                             if (isGameplayStreamActiveNow()) return;
                             if (location.hostname !== 'play.xbox.com') return;
