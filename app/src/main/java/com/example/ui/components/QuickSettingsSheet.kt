@@ -197,123 +197,12 @@ private fun QuickSettingsColControls(
     onSelectXboxWebUiMode: (XboxWebUiMode) -> Unit,
     onToggleRecording: () -> Unit
 ) {
-    val kbmState by com.example.cloudplay.KeyboardMousePrototype.state.collectAsState()
-    val activeControlIdx = when {
-        kbmState.isPcModeActive -> 1
-        config.showVirtualController -> 0
-        else -> 2
-    }
-
-    HudSectionLabel(com.example.cloudplay.KbmPrototypeStrings.controllerAndKeyboardTitle(config))
-    HudSegmentedControl(
-        options = listOf(
-            com.example.cloudplay.KbmPrototypeStrings.gamepadModeLabel(config),
-            com.example.cloudplay.KbmPrototypeStrings.pcKbmModeLabel(config),
-            com.example.cloudplay.KbmPrototypeStrings.hideModeLabel(config)
-        ),
-        selectedIndex = activeControlIdx,
-        onSelect = { idx ->
-            when (idx) {
-                0 -> {
-                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
-                    onToggleVirtualController(true)
-                }
-                1 -> {
-                    onToggleVirtualController(false)
-                    com.example.cloudplay.KeyboardMousePrototype.refreshPhysicalPeripherals()
-                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(true)
-                }
-                else -> {
-                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
-                    onToggleVirtualController(false)
-                }
-            }
-        },
-        tagPrefix = "quick_sheet_ctrl_mode",
-        fontSize = 11.5.sp
+    HudSectionLabel(config.tr("Điều khiển & Giao diện", "Controls & UI"))
+    HudSwitchRow(
+        title = config.tr("Tay cầm ảo", "Virtual Gamepad"),
+        checked = config.showVirtualController,
+        onCheckedChange = onToggleVirtualController
     )
-
-    if (kbmState.isPcModeActive) {
-        val overlayModes = com.example.cloudplay.PcOverlayMode.entries
-        HudSegmentedControl(
-            options = listOf(
-                com.example.cloudplay.KbmPrototypeStrings.overlayAutoLabel(config),
-                com.example.cloudplay.KbmPrototypeStrings.overlayTouchPcLabel(config),
-                com.example.cloudplay.KbmPrototypeStrings.overlayHardwareLabel(config)
-            ),
-            selectedIndex = overlayModes.indexOf(kbmState.pcOverlayMode).coerceAtLeast(0),
-            onSelect = { idx ->
-                overlayModes.getOrNull(idx)?.let {
-                    com.example.cloudplay.KeyboardMousePrototype.setPcOverlayMode(it)
-                }
-            },
-            tagPrefix = "quick_sheet_pc_overlay",
-            fontSize = 11.sp
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "${com.example.cloudplay.KbmPrototypeStrings.mouseSensitivityLabel(config)}: ${String.format(java.util.Locale.US, "%.1fx", kbmState.mouseSensitivity)}",
-                color = HudMuted,
-                fontSize = 11.5.sp,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Box(
-                modifier = Modifier
-                    .heightIn(min = 36.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(HudSurface)
-                    .gamepadClickable(cornerRadius = 8.dp) {
-                        com.example.cloudplay.KeyboardMousePrototype.adjustMouseSensitivity(-0.2f)
-                    }
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                    .testTag("kbm_sheet_sens_minus"),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("-", color = HudInk, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            }
-            Box(
-                modifier = Modifier
-                    .heightIn(min = 36.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(HudSurface)
-                    .gamepadClickable(cornerRadius = 8.dp) {
-                        com.example.cloudplay.KeyboardMousePrototype.adjustMouseSensitivity(+0.2f)
-                    }
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                    .testTag("kbm_sheet_sens_plus"),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("+", color = HudInk, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        HudSegmentedControl(
-            options = listOf(
-                com.example.cloudplay.KbmPrototypeStrings.engineAllGamesLabel(config),
-                com.example.cloudplay.KbmPrototypeStrings.engineNativeWebLabel(config)
-            ),
-            selectedIndex = if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) 1 else 0,
-            onSelect = { idx ->
-                val target = if (idx == 1) {
-                    com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH
-                } else {
-                    com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD
-                }
-                com.example.cloudplay.KeyboardMousePrototype.setPreferredPcEngine(target)
-            },
-            tagPrefix = "quick_sheet_pc_engine",
-            fontSize = 11.sp
-        )
-    }
 
     HudSwitchRow(
         title = config.tr("Dịch tiếng Việt", "Translate interface"),

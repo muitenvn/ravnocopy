@@ -197,7 +197,7 @@ internal fun VirtualAnalogStick(
                                         lastSentX = curvedX
                                         lastSentY = curvedY
                                         lastSentAtMs = nowMs
-                                        onMove(curvedX, curvedY)
+                                        currentOnMove(curvedX, curvedY)
                                     }
                                 }
 
@@ -213,34 +213,36 @@ internal fun VirtualAnalogStick(
                                     }
                                     if (shouldSprint != isAutoSprinting) {
                                         isAutoSprinting = shouldSprint
-                                        onSprintStateChange(shouldSprint)
+                                        currentOnSprintChange(shouldSprint)
                                     }
                                 } else if (isAutoSprinting) {
                                     isAutoSprinting = false
-                                    onSprintStateChange(false)
+                                    currentOnSprintChange(false)
                                 }
                             }
 
-                            updateFromPos(down.position, forceImmediate = true)
+                            try {
+                                updateFromPos(down.position, forceImmediate = true)
 
-                            do {
-                                val event = awaitPointerEvent()
-                                val activeChange = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
-                                if (activeChange != null && activeChange.pressed) {
-                                    activeChange.consume()
-                                    updateFromPos(activeChange.position, forceImmediate = false)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val activeChange = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
+                                    if (activeChange != null && activeChange.pressed) {
+                                        activeChange.consume()
+                                        updateFromPos(activeChange.position, forceImmediate = false)
+                                    }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                isTouching = false
+                                stickX = 0f
+                                stickY = 0f
+                                lastSentX = 0f
+                                lastSentY = 0f
+                                currentOnMove(0f, 0f)
+                                if (isAutoSprinting) {
+                                    isAutoSprinting = false
+                                    currentOnSprintChange(false)
                                 }
-                            } while (event.changes.any { it.pressed })
-
-                            isTouching = false
-                            stickX = 0f
-                            stickY = 0f
-                            lastSentX = 0f
-                            lastSentY = 0f
-                            onMove(0f, 0f)
-                            if (isAutoSprinting) {
-                                isAutoSprinting = false
-                                onSprintStateChange(false)
                             }
                         }
                     }
@@ -404,17 +406,19 @@ internal fun VirtualDpadCross(
                                 updateDirections(u, d, l, r)
                             }
 
-                            evaluatePosition(down.position)
-                            do {
-                                val event = awaitPointerEvent()
-                                val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
-                                if (change != null && change.pressed) {
-                                    change.consume()
-                                    evaluatePosition(change.position)
-                                }
-                            } while (event.changes.any { it.pressed })
-
-                            updateDirections(false, false, false, false)
+                            try {
+                                evaluatePosition(down.position)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
+                                    if (change != null && change.pressed) {
+                                        change.consume()
+                                        evaluatePosition(change.position)
+                                    }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                updateDirections(false, false, false, false)
+                            }
                         }
                     }
                 }
@@ -651,14 +655,17 @@ internal fun GamepadTriggerButton(
         if (isEditMode) return@LaunchedEffect
         if (pressMode == GamepadButtonPressMode.TURBO && fingerDown) {
             val halfPeriodMs = (500L / turboHz.coerceIn(5, 20)).coerceAtLeast(22L)
-            while (fingerDown) {
-                val lvl = if (analogDragMode && analogLevel > 0f) analogLevel else 1f
-                emit(true, lvl)
-                delay(halfPeriodMs)
+            try {
+                while (fingerDown) {
+                    val lvl = if (analogDragMode && analogLevel > 0f) analogLevel else 1f
+                    emit(true, lvl)
+                    delay(halfPeriodMs)
+                    emit(false, 0f)
+                    delay(halfPeriodMs)
+                }
+            } finally {
                 emit(false, 0f)
-                delay(halfPeriodMs)
             }
-            emit(false, 0f)
         }
     }
 
@@ -711,38 +718,41 @@ internal fun GamepadTriggerButton(
                             val initLevel = if (analogDragMode) 0.35f else 1f
                             analogLevel = initLevel
 
-                            when (pressMode) {
-                                GamepadButtonPressMode.NORMAL -> emit(true, initLevel)
-                                GamepadButtonPressMode.TOGGLE_HOLD -> {
-                                    latched = !latched
-                                    if (latched) {
-                                        emit(true, if (analogDragMode) 1f else 1f)
-                                    } else {
-                                        analogLevel = 0f
-                                        emit(false, 0f)
+                            try {
+                                when (pressMode) {
+                                    GamepadButtonPressMode.NORMAL -> emit(true, initLevel)
+                                    GamepadButtonPressMode.TOGGLE_HOLD -> {
+                                        latched = !latched
+                                        if (latched) {
+                                            analogLevel = 1f
+                                            emit(true, 1f)
+                                        } else {
+                                            analogLevel = 0f
+                                            emit(false, 0f)
+                                        }
                                     }
+                                    GamepadButtonPressMode.TURBO -> {}
                                 }
-                                GamepadButtonPressMode.TURBO -> {}
-                            }
 
-                            do {
-                                val event = awaitPointerEvent()
-                                val ch = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
-                                if (ch != null && ch.pressed && analogDragMode) {
-                                    ch.consume()
-                                    val dy = (ch.position.y - down.position.y).coerceIn(0f, 80f)
-                                    val computed = (0.35f + (dy / 80f) * 0.65f).coerceIn(0.2f, 1f)
-                                    analogLevel = computed
-                                    if (pressMode == GamepadButtonPressMode.NORMAL || (pressMode == GamepadButtonPressMode.TOGGLE_HOLD && latched)) {
-                                        emit(true, computed)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val ch = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
+                                    if (ch != null && ch.pressed && analogDragMode) {
+                                        ch.consume()
+                                        val dy = (ch.position.y - down.position.y).coerceIn(0f, 80f)
+                                        val computed = (0.35f + (dy / 80f) * 0.65f).coerceIn(0.2f, 1f)
+                                        analogLevel = computed
+                                        if (pressMode == GamepadButtonPressMode.NORMAL || (pressMode == GamepadButtonPressMode.TOGGLE_HOLD && latched)) {
+                                            emit(true, computed)
+                                        }
                                     }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                fingerDown = false
+                                if (pressMode != GamepadButtonPressMode.TOGGLE_HOLD) {
+                                    analogLevel = 0f
+                                    emit(false, 0f)
                                 }
-                            } while (event.changes.any { it.pressed })
-
-                            fingerDown = false
-                            if (pressMode == GamepadButtonPressMode.NORMAL) {
-                                analogLevel = 0f
-                                emit(false, 0f)
                             }
                         }
                     }
@@ -886,22 +896,28 @@ internal fun GamepadShoulderButton(
         if (isEditMode) return@LaunchedEffect
         if (pressMode == GamepadButtonPressMode.TURBO && swipeIncludeShoulder && fingerDown) {
             val halfPeriodMs = (500L / turboHz.coerceIn(5, 20)).coerceAtLeast(22L)
-            while (fingerDown && swipeIncludeShoulder) {
-                emitShoulder(true)
-                delay(halfPeriodMs)
+            try {
+                while (fingerDown && swipeIncludeShoulder) {
+                    emitShoulder(true)
+                    delay(halfPeriodMs)
+                    emitShoulder(false)
+                    delay(halfPeriodMs)
+                }
+            } finally {
                 emitShoulder(false)
-                delay(halfPeriodMs)
             }
-            emitShoulder(false)
         }
     }
 
     LaunchedEffect(tapPulseSeq, isEditMode) {
         if (isEditMode || tapPulseSeq <= 0) return@LaunchedEffect
-        emitShoulder(true)
-        delay(65L)
-        if (!fingerDown || !swipeIncludeShoulder) {
-            emitShoulder(false)
+        try {
+            emitShoulder(true)
+            delay(65L)
+        } finally {
+            if (!fingerDown || !swipeIncludeShoulder) {
+                emitShoulder(false)
+            }
         }
     }
 
@@ -975,63 +991,68 @@ internal fun GamepadShoulderButton(
                             val enterThresholdPx = (14.dp * scale.coerceIn(0.85f, 1.25f)).toPx()
                             val exitThresholdPx = enterThresholdPx * 0.72f
                             var hasSwipedOut = false
+                            var completedNormally = false
 
                             fingerDown = true
                             emitDirection(ShoulderSwipeDir.NONE)
 
-                            if (swipeIncludeShoulder) {
-                                when (pressMode) {
-                                    GamepadButtonPressMode.NORMAL -> emitShoulder(true)
-                                    GamepadButtonPressMode.TOGGLE_HOLD -> {
-                                        latched = !latched
-                                        emitShoulder(latched)
-                                    }
-                                    GamepadButtonPressMode.TURBO -> {}
-                                }
-                            }
-
-                            do {
-                                val event = awaitPointerEvent()
-                                val ch = event.changes.firstOrNull { it.id == pointerId }
-                                if (ch != null && ch.pressed) {
-                                    ch.consume()
-                                    val dx = ch.position.x - startPos.x
-                                    val dy = ch.position.y - startPos.y
-                                    val dist = sqrt(dx * dx + dy * dy)
-                                    val threshold = if (activeDir == ShoulderSwipeDir.NONE) {
-                                        enterThresholdPx
-                                    } else {
-                                        exitThresholdPx
-                                    }
-                                    if (dist >= threshold) {
-                                        hasSwipedOut = true
-                                        val nextDir = if (abs(dx) >= abs(dy)) {
-                                            if (dx > 0f) ShoulderSwipeDir.RIGHT else ShoulderSwipeDir.LEFT
-                                        } else {
-                                            if (dy > 0f) ShoulderSwipeDir.DOWN else ShoulderSwipeDir.UP
+                            try {
+                                if (swipeIncludeShoulder) {
+                                    when (pressMode) {
+                                        GamepadButtonPressMode.NORMAL -> emitShoulder(true)
+                                        GamepadButtonPressMode.TOGGLE_HOLD -> {
+                                            latched = !latched
+                                            emitShoulder(latched)
                                         }
-                                        emitDirection(nextDir)
-                                    } else {
-                                        emitDirection(ShoulderSwipeDir.NONE)
+                                        GamepadButtonPressMode.TURBO -> {}
                                     }
                                 }
-                            } while (event.changes.any { it.id == pointerId && it.pressed })
 
-                            fingerDown = false
-                            emitDirection(ShoulderSwipeDir.NONE)
-
-                            if (swipeIncludeShoulder) {
-                                if (pressMode == GamepadButtonPressMode.NORMAL) {
-                                    emitShoulder(false)
-                                }
-                            } else if (!hasSwipedOut) {
-                                when (pressMode) {
-                                    GamepadButtonPressMode.TOGGLE_HOLD -> {
-                                        latched = !latched
-                                        emitShoulder(latched)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val ch = event.changes.firstOrNull { it.id == pointerId }
+                                    if (ch != null && ch.pressed) {
+                                        ch.consume()
+                                        val dx = ch.position.x - startPos.x
+                                        val dy = ch.position.y - startPos.y
+                                        val dist = sqrt(dx * dx + dy * dy)
+                                        val threshold = if (activeDir == ShoulderSwipeDir.NONE) {
+                                            enterThresholdPx
+                                        } else {
+                                            exitThresholdPx
+                                        }
+                                        if (dist >= threshold) {
+                                            hasSwipedOut = true
+                                            val nextDir = if (abs(dx) >= abs(dy)) {
+                                                if (dx > 0f) ShoulderSwipeDir.RIGHT else ShoulderSwipeDir.LEFT
+                                            } else {
+                                                if (dy > 0f) ShoulderSwipeDir.DOWN else ShoulderSwipeDir.UP
+                                            }
+                                            emitDirection(nextDir)
+                                        } else {
+                                            emitDirection(ShoulderSwipeDir.NONE)
+                                        }
                                     }
-                                    GamepadButtonPressMode.NORMAL, GamepadButtonPressMode.TURBO -> {
-                                        tapPulseSeq++
+                                } while (event.changes.any { it.id == pointerId && it.pressed })
+
+                                completedNormally = true
+                            } finally {
+                                fingerDown = false
+                                emitDirection(ShoulderSwipeDir.NONE)
+
+                                if (swipeIncludeShoulder) {
+                                    if (pressMode != GamepadButtonPressMode.TOGGLE_HOLD) {
+                                        emitShoulder(false)
+                                    }
+                                } else if (completedNormally && !hasSwipedOut) {
+                                    when (pressMode) {
+                                        GamepadButtonPressMode.TOGGLE_HOLD -> {
+                                            latched = !latched
+                                            emitShoulder(latched)
+                                        }
+                                        GamepadButtonPressMode.NORMAL, GamepadButtonPressMode.TURBO -> {
+                                            tapPulseSeq++
+                                        }
                                     }
                                 }
                             }
@@ -1351,13 +1372,16 @@ private fun GamepadConfigurableButtonBox(
         if (isEditMode) return@LaunchedEffect
         if (pressMode == GamepadButtonPressMode.TURBO && fingerDown) {
             val halfPeriodMs = (500L / turboHz.coerceIn(5, 20)).coerceAtLeast(22L)
-            while (fingerDown) {
-                emit(true)
-                delay(halfPeriodMs)
+            try {
+                while (fingerDown) {
+                    emit(true)
+                    delay(halfPeriodMs)
+                    emit(false)
+                    delay(halfPeriodMs)
+                }
+            } finally {
                 emit(false)
-                delay(halfPeriodMs)
             }
-            emit(false)
         }
     }
 
@@ -1413,22 +1437,24 @@ private fun GamepadConfigurableButtonBox(
                             val down = awaitFirstDown(requireUnconsumed = true)
                             down.consume()
                             fingerDown = true
-                            when (pressMode) {
-                                GamepadButtonPressMode.NORMAL -> emit(true)
-                                GamepadButtonPressMode.TOGGLE_HOLD -> {
-                                    latched = !latched
-                                    emit(latched)
+                            try {
+                                when (pressMode) {
+                                    GamepadButtonPressMode.NORMAL -> emit(true)
+                                    GamepadButtonPressMode.TOGGLE_HOLD -> {
+                                        latched = !latched
+                                        emit(latched)
+                                    }
+                                    GamepadButtonPressMode.TURBO -> {}
                                 }
-                                GamepadButtonPressMode.TURBO -> {}
-                            }
-                            do {
-                                val event = awaitPointerEvent()
-                                event.changes.forEach { if (it.pressed) it.consume() }
-                            } while (event.changes.any { it.pressed })
-
-                            fingerDown = false
-                            if (pressMode == GamepadButtonPressMode.NORMAL) {
-                                emit(false)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    event.changes.forEach { if (it.pressed) it.consume() }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                fingerDown = false
+                                if (pressMode != GamepadButtonPressMode.TOGGLE_HOLD) {
+                                    emit(false)
+                                }
                             }
                         }
                     }
@@ -1530,20 +1556,22 @@ internal fun VirtualAbxyPad(
                                 updateAbxyState(hitA, hitB, hitX, hitY)
                             }
 
-                            evaluateTouchPoints(listOf(down.position))
+                            try {
+                                evaluateTouchPoints(listOf(down.position))
 
-                            do {
-                                val event = awaitPointerEvent()
-                                val pressedPoints = event.changes.filter { it.pressed }.map {
-                                    it.consume()
-                                    it.position
-                                }
-                                if (pressedPoints.isNotEmpty()) {
-                                    evaluateTouchPoints(pressedPoints)
-                                }
-                            } while (event.changes.any { it.pressed })
-
-                            updateAbxyState(false, false, false, false)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val pressedPoints = event.changes.filter { it.pressed }.map {
+                                        it.consume()
+                                        it.position
+                                    }
+                                    if (pressedPoints.isNotEmpty()) {
+                                        evaluateTouchPoints(pressedPoints)
+                                    }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                updateAbxyState(false, false, false, false)
+                            }
                         }
                     }
                 }

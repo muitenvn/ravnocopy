@@ -10,6 +10,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.WindowManager
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -162,6 +163,18 @@ internal fun PadLandscapeControllerScreen(
     var showManageButtonsModal by remember { mutableStateOf(false) }
     var selectedNodeKey by remember { mutableStateOf("abxy") }
     var activePopoverNodeKey by remember { mutableStateOf<String?>(null) }
+
+    BackHandler(enabled = showManageButtonsModal || showGlobalSettingsSheet || activePopoverNodeKey != null || isCustomizeMode) {
+        when {
+            showManageButtonsModal -> showManageButtonsModal = false
+            showGlobalSettingsSheet -> showGlobalSettingsSheet = false
+            activePopoverNodeKey != null -> activePopoverNodeKey = null
+            isCustomizeMode -> {
+                isCustomizeMode = false
+                PadNetworkClient.releaseAllInputsImmediate()
+            }
+        }
+    }
 
     var rootSizePx by remember { mutableStateOf(IntSize.Zero) }
     var rootPosInWindow by remember { mutableStateOf(Offset.Zero) }
@@ -2124,16 +2137,19 @@ private fun OfficialGamepadTriggerButton(
         if (isEditMode) return@LaunchedEffect
         if (pressMode == PadPressMode.TURBO && fingerDown) {
             val halfPeriodMs = (500L / turboHz.coerceIn(5, 20)).coerceAtLeast(22L)
-            while (fingerDown) {
-                activeVal = 1.0f
-                updateTriggerAndCombo(1.0f, false)
-                delay(halfPeriodMs)
+            try {
+                while (fingerDown) {
+                    activeVal = 1.0f
+                    updateTriggerAndCombo(1.0f, false)
+                    delay(halfPeriodMs)
+                    activeVal = 0f
+                    updateTriggerAndCombo(0f, false)
+                    delay(halfPeriodMs)
+                }
+            } finally {
                 activeVal = 0f
                 updateTriggerAndCombo(0f, false)
-                delay(halfPeriodMs)
             }
-            activeVal = 0f
-            updateTriggerAndCombo(0f, false)
         }
     }
 
@@ -2178,43 +2194,45 @@ private fun OfficialGamepadTriggerButton(
                             fingerDown = true
                             val startY = down.position.y
 
-                            when (pressMode) {
-                                PadPressMode.NORMAL -> {
-                                    val initV = if (analogDragMode) 0.35f else 1.0f
-                                    activeVal = initV
-                                    updateTriggerAndCombo(initV, true)
-                                }
-                                PadPressMode.TOGGLE_HOLD -> {
-                                    latched = !latched
-                                    activeVal = if (latched) 1.0f else 0f
-                                    updateTriggerAndCombo(activeVal, latched)
-                                }
-                                PadPressMode.TURBO -> {
-                                    updateTriggerAndCombo(1.0f, true)
-                                }
-                            }
-
-                            do {
-                                val event = awaitPointerEvent()
-                                val activeChange = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
-                                if (activeChange != null && activeChange.pressed) {
-                                    activeChange.consume()
-                                    val dy = activeChange.position.y - startY
-                                    val hPx = size.height.coerceAtLeast(1).toFloat()
-                                    if (analogDragMode || abs(dy) >= hPx * 0.18f) {
-                                        val v = ((dy / hPx) + 0.65f).coerceIn(0.15f, 1.0f)
-                                        activeVal = v
-                                        if (pressMode == PadPressMode.NORMAL || (pressMode == PadPressMode.TOGGLE_HOLD && latched)) {
-                                            updateTriggerAndCombo(v, false)
-                                        }
+                            try {
+                                when (pressMode) {
+                                    PadPressMode.NORMAL -> {
+                                        val initV = if (analogDragMode) 0.35f else 1.0f
+                                        activeVal = initV
+                                        updateTriggerAndCombo(initV, true)
+                                    }
+                                    PadPressMode.TOGGLE_HOLD -> {
+                                        latched = !latched
+                                        activeVal = if (latched) 1.0f else 0f
+                                        updateTriggerAndCombo(activeVal, latched)
+                                    }
+                                    PadPressMode.TURBO -> {
+                                        updateTriggerAndCombo(1.0f, true)
                                     }
                                 }
-                            } while (event.changes.any { it.pressed })
 
-                            fingerDown = false
-                            if (pressMode == PadPressMode.NORMAL) {
-                                activeVal = 0f
-                                updateTriggerAndCombo(0f, false)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val activeChange = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
+                                    if (activeChange != null && activeChange.pressed) {
+                                        activeChange.consume()
+                                        val dy = activeChange.position.y - startY
+                                        val hPx = size.height.coerceAtLeast(1).toFloat()
+                                        if (analogDragMode || abs(dy) >= hPx * 0.18f) {
+                                            val v = ((dy / hPx) + 0.65f).coerceIn(0.15f, 1.0f)
+                                            activeVal = v
+                                            if (pressMode == PadPressMode.NORMAL || (pressMode == PadPressMode.TOGGLE_HOLD && latched)) {
+                                                updateTriggerAndCombo(v, false)
+                                            }
+                                        }
+                                    }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                fingerDown = false
+                                if (pressMode != PadPressMode.TOGGLE_HOLD) {
+                                    activeVal = 0f
+                                    updateTriggerAndCombo(0f, false)
+                                }
                             }
                         }
                     }
@@ -2288,10 +2306,13 @@ private fun OfficialGamepadShoulderButton(
 
     LaunchedEffect(tapPulseToken) {
         if (tapPulseToken > 0) {
-            PadNetworkClient.updateButtonsMask(fullPrimaryMask, fullPrimaryMask)
-            delay(65L)
-            if (!fingerDown && !latched) {
-                PadNetworkClient.updateButtonsMask(fullPrimaryMask, 0)
+            try {
+                PadNetworkClient.updateButtonsMask(fullPrimaryMask, fullPrimaryMask)
+                delay(65L)
+            } finally {
+                if (!fingerDown && !latched) {
+                    PadNetworkClient.updateButtonsMask(fullPrimaryMask, 0)
+                }
             }
         }
     }
@@ -2316,13 +2337,16 @@ private fun OfficialGamepadShoulderButton(
         if (isEditMode) return@LaunchedEffect
         if (pressMode == PadPressMode.TURBO && fingerDown) {
             val halfPeriodMs = (500L / turboHz.coerceIn(5, 20)).coerceAtLeast(22L)
-            while (fingerDown) {
-                PadNetworkClient.updateButtonsMask(fullPrimaryMask, fullPrimaryMask)
-                delay(halfPeriodMs)
+            try {
+                while (fingerDown) {
+                    PadNetworkClient.updateButtonsMask(fullPrimaryMask, fullPrimaryMask)
+                    delay(halfPeriodMs)
+                    PadNetworkClient.updateButtonsMask(fullPrimaryMask, 0)
+                    delay(halfPeriodMs)
+                }
+            } finally {
                 PadNetworkClient.updateButtonsMask(fullPrimaryMask, 0)
-                delay(halfPeriodMs)
             }
-            PadNetworkClient.updateButtonsMask(fullPrimaryMask, 0)
         }
     }
 
@@ -2386,70 +2410,77 @@ private fun OfficialGamepadShoulderButton(
                             val startPos = down.position
                             var triggeredSwipeBit = 0
                             var triggeredDir = 0
+                            var completedNormally = false
                             fingerDown = true
                             onHaptic(false)
 
                             val holdPrimaryImmediately = !directionalSwipeEnabled || swipeIncludeShoulder
-                            when (pressMode) {
-                                PadPressMode.NORMAL -> {
-                                    if (holdPrimaryImmediately) {
-                                        PadNetworkClient.updateButtonsMask(fullPrimaryMask, fullPrimaryMask)
+                            try {
+                                when (pressMode) {
+                                    PadPressMode.NORMAL -> {
+                                        if (holdPrimaryImmediately) {
+                                            PadNetworkClient.updateButtonsMask(fullPrimaryMask, fullPrimaryMask)
+                                        }
                                     }
+                                    PadPressMode.TOGGLE_HOLD -> {
+                                        latched = !latched
+                                        PadNetworkClient.updateButtonsMask(fullPrimaryMask, if (latched) fullPrimaryMask else 0)
+                                    }
+                                    PadPressMode.TURBO -> {}
                                 }
-                                PadPressMode.TOGGLE_HOLD -> {
-                                    latched = !latched
-                                    PadNetworkClient.updateButtonsMask(fullPrimaryMask, if (latched) fullPrimaryMask else 0)
-                                }
-                                PadPressMode.TURBO -> {}
-                            }
 
-                            do {
-                                val event = awaitPointerEvent()
-                                val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
-                                if (change != null && change.pressed) {
-                                    change.consume()
-                                    if (directionalSwipeEnabled) {
-                                        val dx = change.position.x - startPos.x
-                                        val dy = change.position.y - startPos.y
-                                        val dist = hypot(dx, dy)
-                                        val threshold = minOf(size.width, size.height).coerceAtLeast(24) * 0.34f
-                                        if (dist >= threshold) {
-                                            val (candDir, candBit) = if (abs(dx) > abs(dy)) {
-                                                if (dx < 0) 3 to swipeLeftBit else 4 to swipeRightBit
-                                            } else {
-                                                if (dy < 0) 1 to swipeUpBit else 2 to swipeDownBit
-                                            }
-                                            if (candBit != 0 && candBit != triggeredSwipeBit) {
-                                                if (triggeredSwipeBit != 0) {
-                                                    PadNetworkClient.updateButtonsMask(triggeredSwipeBit, 0)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
+                                    if (change != null && change.pressed) {
+                                        change.consume()
+                                        if (directionalSwipeEnabled) {
+                                            val dx = change.position.x - startPos.x
+                                            val dy = change.position.y - startPos.y
+                                            val dist = hypot(dx, dy)
+                                            val threshold = minOf(size.width, size.height).coerceAtLeast(24) * 0.34f
+                                            if (dist >= threshold) {
+                                                val (candDir, candBit) = if (abs(dx) > abs(dy)) {
+                                                    if (dx < 0) 3 to swipeLeftBit else 4 to swipeRightBit
+                                                } else {
+                                                    if (dy < 0) 1 to swipeUpBit else 2 to swipeDownBit
                                                 }
-                                                triggeredSwipeBit = candBit
-                                                triggeredDir = candDir
-                                                activeSwipeBit = candBit
-                                                activeSwipeDir = candDir
-                                                onHaptic(true)
-                                                if (!swipeIncludeShoulder && pressMode == PadPressMode.NORMAL) {
-                                                    PadNetworkClient.updateButtonsMask(fullPrimaryMask, 0)
+                                                if (candBit != 0 && candBit != triggeredSwipeBit) {
+                                                    if (triggeredSwipeBit != 0) {
+                                                        PadNetworkClient.updateButtonsMask(triggeredSwipeBit, 0)
+                                                    }
+                                                    triggeredSwipeBit = candBit
+                                                    triggeredDir = candDir
+                                                    activeSwipeBit = candBit
+                                                    activeSwipeDir = candDir
+                                                    onHaptic(true)
+                                                    if (!swipeIncludeShoulder && pressMode == PadPressMode.NORMAL) {
+                                                        PadNetworkClient.updateButtonsMask(fullPrimaryMask, 0)
+                                                    }
+                                                    PadNetworkClient.updateButtonsMask(candBit, candBit)
                                                 }
-                                                PadNetworkClient.updateButtonsMask(candBit, candBit)
                                             }
                                         }
                                     }
-                                }
-                            } while (event.changes.any { it.pressed })
+                                } while (event.changes.any { it.pressed })
 
-                            fingerDown = false
-                            if (pressMode == PadPressMode.NORMAL) {
-                                if (holdPrimaryImmediately) {
+                                completedNormally = true
+                            } finally {
+                                fingerDown = false
+                                if (pressMode == PadPressMode.NORMAL) {
+                                    if (holdPrimaryImmediately) {
+                                        PadNetworkClient.updateButtonsMask(fullPrimaryMask, 0)
+                                    } else if (completedNormally && triggeredSwipeBit == 0 && triggeredDir == 0) {
+                                        tapPulseToken++
+                                    }
+                                } else if (pressMode == PadPressMode.TURBO) {
                                     PadNetworkClient.updateButtonsMask(fullPrimaryMask, 0)
-                                } else if (triggeredSwipeBit == 0 && triggeredDir == 0) {
-                                    tapPulseToken++
                                 }
-                            }
-                            if (triggeredSwipeBit != 0) {
-                                activeSwipeBit = 0
-                                activeSwipeDir = 0
-                                PadNetworkClient.updateButtonsMask(triggeredSwipeBit, 0)
+                                if (triggeredSwipeBit != 0) {
+                                    activeSwipeBit = 0
+                                    activeSwipeDir = 0
+                                    PadNetworkClient.updateButtonsMask(triggeredSwipeBit, 0)
+                                }
                             }
                         }
                     }
@@ -2561,13 +2592,16 @@ private fun OfficialGamepadPillButton(
         if (isEditMode) return@LaunchedEffect
         if (pressMode == PadPressMode.TURBO && fingerDown) {
             val halfPeriodMs = (500L / turboHz.coerceIn(5, 20)).coerceAtLeast(22L)
-            while (fingerDown) {
-                PadNetworkClient.updateButtonsMask(fullMask, fullMask)
-                delay(halfPeriodMs)
+            try {
+                while (fingerDown) {
+                    PadNetworkClient.updateButtonsMask(fullMask, fullMask)
+                    delay(halfPeriodMs)
+                    PadNetworkClient.updateButtonsMask(fullMask, 0)
+                    delay(halfPeriodMs)
+                }
+            } finally {
                 PadNetworkClient.updateButtonsMask(fullMask, 0)
-                delay(halfPeriodMs)
             }
-            PadNetworkClient.updateButtonsMask(fullMask, 0)
         }
     }
 
@@ -2611,22 +2645,24 @@ private fun OfficialGamepadPillButton(
                             down.consume()
                             fingerDown = true
                             onHaptic()
-                            when (pressMode) {
-                                PadPressMode.NORMAL -> PadNetworkClient.updateButtonsMask(fullMask, fullMask)
-                                PadPressMode.TOGGLE_HOLD -> {
-                                    latched = !latched
-                                    PadNetworkClient.updateButtonsMask(fullMask, if (latched) fullMask else 0)
+                            try {
+                                when (pressMode) {
+                                    PadPressMode.NORMAL -> PadNetworkClient.updateButtonsMask(fullMask, fullMask)
+                                    PadPressMode.TOGGLE_HOLD -> {
+                                        latched = !latched
+                                        PadNetworkClient.updateButtonsMask(fullMask, if (latched) fullMask else 0)
+                                    }
+                                    PadPressMode.TURBO -> {}
                                 }
-                                PadPressMode.TURBO -> {}
-                            }
-                            do {
-                                val event = awaitPointerEvent()
-                                event.changes.forEach { if (it.pressed) it.consume() }
-                            } while (event.changes.any { it.pressed })
-
-                            fingerDown = false
-                            if (pressMode == PadPressMode.NORMAL) {
-                                PadNetworkClient.updateButtonsMask(fullMask, 0)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    event.changes.forEach { if (it.pressed) it.consume() }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                fingerDown = false
+                                if (pressMode != PadPressMode.TOGGLE_HOLD) {
+                                    PadNetworkClient.updateButtonsMask(fullMask, 0)
+                                }
                             }
                         }
                     }
@@ -2720,21 +2756,23 @@ private fun OfficialXboxNexusButton(
                             down.consume()
                             fingerDown = true
                             onHaptic()
-                            when (pressMode) {
-                                PadPressMode.NORMAL, PadPressMode.TURBO -> PadNetworkClient.updateButtonsMask(fullMask, fullMask)
-                                PadPressMode.TOGGLE_HOLD -> {
-                                    latched = !latched
-                                    PadNetworkClient.updateButtonsMask(fullMask, if (latched) fullMask else 0)
+                            try {
+                                when (pressMode) {
+                                    PadPressMode.NORMAL, PadPressMode.TURBO -> PadNetworkClient.updateButtonsMask(fullMask, fullMask)
+                                    PadPressMode.TOGGLE_HOLD -> {
+                                        latched = !latched
+                                        PadNetworkClient.updateButtonsMask(fullMask, if (latched) fullMask else 0)
+                                    }
                                 }
-                            }
-                            do {
-                                val event = awaitPointerEvent()
-                                event.changes.forEach { if (it.pressed) it.consume() }
-                            } while (event.changes.any { it.pressed })
-
-                            fingerDown = false
-                            if (pressMode != PadPressMode.TOGGLE_HOLD) {
-                                PadNetworkClient.updateButtonsMask(fullMask, 0)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    event.changes.forEach { if (it.pressed) it.consume() }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                fingerDown = false
+                                if (pressMode != PadPressMode.TOGGLE_HOLD) {
+                                    PadNetworkClient.updateButtonsMask(fullMask, 0)
+                                }
                             }
                         }
                     }
@@ -2829,19 +2867,21 @@ private fun OfficialVirtualDpadCross(
                                 }
                             }
 
-                            evaluatePos(down.position)
-                            do {
-                                val event = awaitPointerEvent()
-                                val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
-                                if (change != null && change.pressed) {
-                                    change.consume()
-                                    evaluatePos(change.position)
+                            try {
+                                evaluatePos(down.position)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
+                                    if (change != null && change.pressed) {
+                                        change.consume()
+                                        evaluatePos(change.position)
+                                    }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                if (activeMask != 0) {
+                                    activeMask = 0
+                                    PadNetworkClient.updateButtonsMask(allDpadMask, 0)
                                 }
-                            } while (event.changes.any { it.pressed })
-
-                            if (activeMask != 0) {
-                                activeMask = 0
-                                PadNetworkClient.updateButtonsMask(allDpadMask, 0)
                             }
                         }
                     }
@@ -3003,40 +3043,42 @@ private fun OfficialVirtualAbxyPad(
                 } else {
                     Modifier.pointerInput(swapSwitchAbxy) {
                         awaitEachGesture {
-                            do {
-                                val event = awaitPointerEvent()
-                                var mask = 0
-                                val wPx = this.size.width.coerceAtLeast(1).toFloat()
-                                val hPx = this.size.height.coerceAtLeast(1).toFloat()
-                                val hitRadius = minOf(wPx, hPx) * 0.28f
+                            try {
+                                do {
+                                    val event = awaitPointerEvent()
+                                    var mask = 0
+                                    val wPx = this.size.width.coerceAtLeast(1).toFloat()
+                                    val hPx = this.size.height.coerceAtLeast(1).toFloat()
+                                    val hitRadius = minOf(wPx, hPx) * 0.28f
 
-                                val topCenter = Offset(wPx * 0.50f, hPx * 0.18f)
-                                val bottomCenter = Offset(wPx * 0.50f, hPx * 0.82f)
-                                val leftCenter = Offset(wPx * 0.18f, hPx * 0.50f)
-                                val rightCenter = Offset(wPx * 0.82f, hPx * 0.50f)
+                                    val topCenter = Offset(wPx * 0.50f, hPx * 0.18f)
+                                    val bottomCenter = Offset(wPx * 0.50f, hPx * 0.82f)
+                                    val leftCenter = Offset(wPx * 0.18f, hPx * 0.50f)
+                                    val rightCenter = Offset(wPx * 0.82f, hPx * 0.50f)
 
-                                for (ch in event.changes) {
-                                    if (!ch.pressed) continue
-                                    ch.consume()
-                                    val p = ch.position
-                                    if (hypot(p.x - topCenter.x, p.y - topCenter.y) <= hitRadius) mask = mask or topBit
-                                    if (hypot(p.x - bottomCenter.x, p.y - bottomCenter.y) <= hitRadius) mask = mask or bottomBit
-                                    if (hypot(p.x - leftCenter.x, p.y - leftCenter.y) <= hitRadius) mask = mask or leftBit
-                                    if (hypot(p.x - rightCenter.x, p.y - rightCenter.y) <= hitRadius) mask = mask or rightBit
-                                }
-
-                                if (mask != activeMask) {
-                                    if ((mask and activeMask.inv()) != 0) {
-                                        onHaptic()
+                                    for (ch in event.changes) {
+                                        if (!ch.pressed) continue
+                                        ch.consume()
+                                        val p = ch.position
+                                        if (hypot(p.x - topCenter.x, p.y - topCenter.y) <= hitRadius) mask = mask or topBit
+                                        if (hypot(p.x - bottomCenter.x, p.y - bottomCenter.y) <= hitRadius) mask = mask or bottomBit
+                                        if (hypot(p.x - leftCenter.x, p.y - leftCenter.y) <= hitRadius) mask = mask or leftBit
+                                        if (hypot(p.x - rightCenter.x, p.y - rightCenter.y) <= hitRadius) mask = mask or rightBit
                                     }
-                                    activeMask = mask
-                                    PadNetworkClient.updateButtonsMask(allAbxyMask, mask)
-                                }
-                            } while (event.changes.any { it.pressed })
 
-                            if (activeMask != 0) {
-                                activeMask = 0
-                                PadNetworkClient.updateButtonsMask(allAbxyMask, 0)
+                                    if (mask != activeMask) {
+                                        if ((mask and activeMask.inv()) != 0) {
+                                            onHaptic()
+                                        }
+                                        activeMask = mask
+                                        PadNetworkClient.updateButtonsMask(allAbxyMask, mask)
+                                    }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                if (activeMask != 0) {
+                                    activeMask = 0
+                                    PadNetworkClient.updateButtonsMask(allAbxyMask, 0)
+                                }
                             }
                         }
                     }
@@ -3171,13 +3213,16 @@ private fun OfficialStandaloneColoredAbxyButton(
         if (isEditMode) return@LaunchedEffect
         if (pressMode == PadPressMode.TURBO && fingerDown) {
             val halfPeriodMs = (500L / turboHz.coerceIn(5, 20)).coerceAtLeast(22L)
-            while (fingerDown) {
-                PadNetworkClient.updateButtonsMask(fullMask, fullMask)
-                delay(halfPeriodMs)
+            try {
+                while (fingerDown) {
+                    PadNetworkClient.updateButtonsMask(fullMask, fullMask)
+                    delay(halfPeriodMs)
+                    PadNetworkClient.updateButtonsMask(fullMask, 0)
+                    delay(halfPeriodMs)
+                }
+            } finally {
                 PadNetworkClient.updateButtonsMask(fullMask, 0)
-                delay(halfPeriodMs)
             }
-            PadNetworkClient.updateButtonsMask(fullMask, 0)
         }
     }
 
@@ -3221,22 +3266,24 @@ private fun OfficialStandaloneColoredAbxyButton(
                             down.consume()
                             fingerDown = true
                             onHaptic()
-                            when (pressMode) {
-                                PadPressMode.NORMAL -> PadNetworkClient.updateButtonsMask(fullMask, fullMask)
-                                PadPressMode.TOGGLE_HOLD -> {
-                                    latched = !latched
-                                    PadNetworkClient.updateButtonsMask(fullMask, if (latched) fullMask else 0)
+                            try {
+                                when (pressMode) {
+                                    PadPressMode.NORMAL -> PadNetworkClient.updateButtonsMask(fullMask, fullMask)
+                                    PadPressMode.TOGGLE_HOLD -> {
+                                        latched = !latched
+                                        PadNetworkClient.updateButtonsMask(fullMask, if (latched) fullMask else 0)
+                                    }
+                                    PadPressMode.TURBO -> {}
                                 }
-                                PadPressMode.TURBO -> {}
-                            }
-                            do {
-                                val event = awaitPointerEvent()
-                                event.changes.forEach { if (it.pressed) it.consume() }
-                            } while (event.changes.any { it.pressed })
-
-                            fingerDown = false
-                            if (pressMode == PadPressMode.NORMAL) {
-                                PadNetworkClient.updateButtonsMask(fullMask, 0)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    event.changes.forEach { if (it.pressed) it.consume() }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                fingerDown = false
+                                if (pressMode != PadPressMode.TOGGLE_HOLD) {
+                                    PadNetworkClient.updateButtonsMask(fullMask, 0)
+                                }
                             }
                         }
                     }
@@ -3290,6 +3337,8 @@ private fun OfficialVirtualAnalogStick(
     var stickPxY by remember { mutableFloatStateOf(0f) }
     var isTouching by remember { mutableStateOf(false) }
     var isAutoSprinting by remember { mutableStateOf(false) }
+    val currentOnStickChanged by rememberUpdatedState(onStickChanged)
+    val currentOnDoubleTapStickClick by rememberUpdatedState(onDoubleTapStickClick)
 
     val idleBorder = OfficialHudBorder.copy(alpha = (opacity * 0.45f).coerceIn(0.05f, 0.70f))
     val outerBgAlpha = (opacity * 0.58f).coerceIn(0.04f, 0.78f)
@@ -3332,7 +3381,7 @@ private fun OfficialVirtualAnalogStick(
                             val now = System.currentTimeMillis()
                             if (now - lastDownTimeMs <= 260L) {
                                 doubleTapHeld = true
-                                onDoubleTapStickClick(true)
+                                currentOnDoubleTapStickClick(true)
                             }
                             lastDownTimeMs = now
 
@@ -3384,26 +3433,28 @@ private fun OfficialVirtualAnalogStick(
                                 }
 
                                 val sprintBit = if (isAutoSprinting) RemotePadButtons.L3 else 0
-                                onStickChanged(nx, ny, sprintBit)
+                                currentOnStickChanged(nx, ny, sprintBit)
                             }
 
-                            updateFromPos(down.position)
-                            do {
-                                val event = awaitPointerEvent()
-                                val ch = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
-                                if (ch != null && ch.pressed) {
-                                    ch.consume()
-                                    updateFromPos(ch.position)
+                            try {
+                                updateFromPos(down.position)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val ch = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
+                                    if (ch != null && ch.pressed) {
+                                        ch.consume()
+                                        updateFromPos(ch.position)
+                                    }
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                isTouching = false
+                                stickPxX = 0f
+                                stickPxY = 0f
+                                isAutoSprinting = false
+                                currentOnStickChanged(0f, 0f, 0)
+                                if (doubleTapHeld) {
+                                    currentOnDoubleTapStickClick(false)
                                 }
-                            } while (event.changes.any { it.pressed })
-
-                            isTouching = false
-                            stickPxX = 0f
-                            stickPxY = 0f
-                            isAutoSprinting = false
-                            onStickChanged(0f, 0f, 0)
-                            if (doubleTapHeld) {
-                                onDoubleTapStickClick(false)
                             }
                         }
                     }

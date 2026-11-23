@@ -137,12 +137,9 @@ internal fun SettingsGamepadTouchSection(
         } catch (_: Exception) {}
     }
 
-    val kbmState by com.example.cloudplay.KeyboardMousePrototype.state.collectAsState()
-
     CollapsibleSettingsGroup(
-        title = com.example.cloudplay.KbmPrototypeStrings.controllerAndKeyboardTitle(config),
+        title = if (isEn) "Gamepad & Touch Controls" else "Tay cầm & Điều khiển cảm ứng",
         subtitle = when {
-            kbmState.isPcModeActive -> com.example.cloudplay.KbmPrototypeStrings.toastSwitchedToPc(config)
             gamepadStatus.hasPhysicalController -> gamepadStatus.summaryBadge(isEn)
             config.showVirtualController -> if (isEn) "Virtual Gamepad: ON" else "Tay cầm ảo: Đang bật"
             else -> if (isEn) "Virtual Gamepad: OFF" else "Tay cầm ảo: Đang tắt"
@@ -466,150 +463,6 @@ internal fun SettingsGamepadTouchSection(
                                 fontSize = 11.sp
                             )
                         }
-                    }
-                }
-            }
-        }
-
-        SettingsCard(title = com.example.cloudplay.KbmPrototypeStrings.pcSectionTitle(config)) {
-            val activeModeIdx = when {
-                kbmState.isPcModeActive -> 1
-                config.showVirtualController -> 0
-                else -> 2
-            }
-            val modeOptions = listOf(
-                com.example.cloudplay.KbmPrototypeStrings.gamepadModeLabel(config),
-                com.example.cloudplay.KbmPrototypeStrings.pcKbmModeLabel(config),
-                com.example.cloudplay.KbmPrototypeStrings.hideModeLabel(config)
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                modeOptions.forEachIndexed { idx, label ->
-                    val selected = activeModeIdx == idx
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(if (selected) Color(0xFF16352A) else XboxSurface)
-                            .border(
-                                width = 1.dp,
-                                color = if (selected) (if (idx == 1) DirectCyan else XboxNeonGreen) else XboxCardBorder,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .gamepadClickable(cornerRadius = 10.dp) {
-                                when (idx) {
-                                    0 -> {
-                                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
-                                        SettingsRepository.updateShowVirtualController(true)
-                                    }
-                                    1 -> {
-                                        SettingsRepository.updateShowVirtualController(false)
-                                        com.example.cloudplay.KeyboardMousePrototype.refreshPhysicalPeripherals()
-                                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(true)
-                                    }
-                                    else -> {
-                                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
-                                        SettingsRepository.updateShowVirtualController(false)
-                                    }
-                                }
-                            }
-                            .padding(vertical = 10.dp, horizontal = 6.dp)
-                            .testTag("settings_ctrl_mode_$idx"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = label,
-                            color = if (selected) (if (idx == 1) DirectCyan else XboxNeonGreen) else TextPrimary,
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-
-            if (kbmState.isPcModeActive) {
-                val overlayModes = com.example.cloudplay.PcOverlayMode.entries
-                val overlayLabels = listOf(
-                    com.example.cloudplay.KbmPrototypeStrings.overlayAutoLabel(config),
-                    com.example.cloudplay.KbmPrototypeStrings.overlayTouchPcLabel(config),
-                    com.example.cloudplay.KbmPrototypeStrings.overlayHardwareLabel(config)
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    overlayLabels.forEachIndexed { idx, label ->
-                        val selected = kbmState.pcOverlayMode == overlayModes[idx]
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(if (selected) Color(0xFF16352A) else XboxSurface)
-                                .border(1.dp, if (selected) DirectCyan else XboxCardBorder, RoundedCornerShape(10.dp))
-                                .gamepadClickable(cornerRadius = 10.dp) {
-                                    com.example.cloudplay.KeyboardMousePrototype.setPcOverlayMode(overlayModes[idx])
-                                }
-                                .padding(vertical = 9.dp, horizontal = 4.dp)
-                                .testTag("settings_pc_overlay_$idx"),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = label,
-                                color = if (selected) DirectCyan else TextPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "${com.example.cloudplay.KbmPrototypeStrings.mouseSensitivityLabel(config)}: ${String.format(java.util.Locale.US, "%.1fx", kbmState.mouseSensitivity)}",
-                        color = TextPrimary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(XboxSurface)
-                            .border(1.dp, XboxCardBorder, RoundedCornerShape(9.dp))
-                            .gamepadClickable(cornerRadius = 9.dp) {
-                                com.example.cloudplay.KeyboardMousePrototype.adjustMouseSensitivity(-0.2f)
-                            }
-                            .padding(horizontal = 14.dp, vertical = 8.dp)
-                            .testTag("settings_pc_sens_minus"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("-", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(XboxSurface)
-                            .border(1.dp, XboxCardBorder, RoundedCornerShape(9.dp))
-                            .gamepadClickable(cornerRadius = 9.dp) {
-                                com.example.cloudplay.KeyboardMousePrototype.adjustMouseSensitivity(+0.2f)
-                            }
-                            .padding(horizontal = 14.dp, vertical = 8.dp)
-                            .testTag("settings_pc_sens_plus"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("+", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

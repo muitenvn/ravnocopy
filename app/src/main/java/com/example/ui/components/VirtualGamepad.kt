@@ -7,6 +7,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.webkit.WebView
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -85,6 +86,7 @@ fun VirtualGamepadOverlay(
     opacity: Float? = null,
     gameKey: String? = null,
     gameDisplayName: String? = null,
+    onOverlayModalOpenChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -208,8 +210,26 @@ fun VirtualGamepadOverlay(
         }
     }
 
+    val isOverlayModalOpen = showAddButtonModal || activePopoverNodeId != null || isEditPositionMode
+
+    LaunchedEffect(isOverlayModalOpen) {
+        onOverlayModalOpenChanged(isOverlayModalOpen)
+    }
+
+    BackHandler(enabled = isOverlayModalOpen) {
+        when {
+            showAddButtonModal -> showAddButtonModal = false
+            activePopoverNodeId != null -> activePopoverNodeId = null
+            isEditPositionMode -> {
+                isEditPositionMode = false
+                selectedButtonId = null
+            }
+        }
+    }
+
     DisposableEffect(Unit) {
         onDispose {
+            onOverlayModalOpenChanged(false)
             releaseAllVirtualInputs()
         }
     }
@@ -1511,16 +1531,6 @@ fun VirtualGamepadOverlay(
                             resetAllCustomizations()
                             activePopoverNodeId = null
                         },
-                        onSwitchToPcMode = {
-                            vibrate()
-                            activePopoverNodeId = null
-                            isEditPositionMode = false
-                            showAddButtonModal = false
-                            webView?.evaluateJavascript("if(window.__cpReleaseAll){window.__cpReleaseAll();}", null)
-                            SettingsRepository.updateShowVirtualController(false)
-                            com.example.cloudplay.KeyboardMousePrototype.refreshPhysicalPeripherals()
-                            com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(true, rememberStyle = true)
-                        },
                         onClose = { activePopoverNodeId = null }
                     )
                 }
@@ -1548,7 +1558,6 @@ fun VirtualGamepadOverlay(
                 .size(width = 38.dp, height = 30.dp)
                 .alpha(if (isEditPositionMode && !isAllOpen) 0.85f else 1f)
                 .clip(RoundedCornerShape(10.dp))
-                .background(if (isAllOpen) HudSelBg else HudSurface2)
                 .background(if (isAllOpen) HudSelBg else PadBtnBg)
                 .border(
                     1.dp,

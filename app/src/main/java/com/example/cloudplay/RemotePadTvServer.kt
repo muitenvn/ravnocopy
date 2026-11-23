@@ -593,7 +593,7 @@ object RemotePadTvServer {
                         clientDeviceId = authFrame.deviceId,
                         candidateHmacHex = authFrame.tokenHmacHex
                     )
-                    if (!tokenValid || saved == null) {
+                    if (saved == null || !tokenValid) {
                         sendFrame(
                             writer,
                             RemoteControlFrame.AuthFail(

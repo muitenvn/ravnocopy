@@ -46,136 +46,66 @@ internal fun HudControlsTabContent(
     onSelectXboxWebUiMode: (XboxWebUiMode) -> Unit,
     onToggleOrientation: () -> Unit
 ) {
-    val kbmState by com.example.cloudplay.KeyboardMousePrototype.state.collectAsState()
-    val activeControlModeIdx = when {
-        kbmState.isPcModeActive -> 1
-        virtualControllerEnabled -> 0
-        else -> 2
-    }
-
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        HudSectionLabel(com.example.cloudplay.KbmPrototypeStrings.controllerAndKeyboardTitle(config))
+        HudSectionLabel(config.tr("Tay cầm ảo", "Virtual Gamepad"))
 
         HudSegmentedControl(
             options = listOf(
-                com.example.cloudplay.KbmPrototypeStrings.gamepadModeLabel(config),
-                com.example.cloudplay.KbmPrototypeStrings.pcKbmModeLabel(config),
-                com.example.cloudplay.KbmPrototypeStrings.hideModeLabel(config)
+                config.tr("Hiện", "Show"),
+                config.tr("Ẩn", "Hide")
             ),
-            selectedIndex = activeControlModeIdx,
+            selectedIndex = if (virtualControllerEnabled) 0 else 1,
             onSelect = { idx ->
                 onInteraction()
-                when (idx) {
-                    0 -> {
-                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
-                        SettingsRepository.updateShowVirtualController(true)
-                    }
-                    1 -> {
-                        SettingsRepository.updateShowVirtualController(false)
-                        com.example.cloudplay.KeyboardMousePrototype.refreshPhysicalPeripherals()
-                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(true)
-                    }
-                    else -> {
-                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
-                        SettingsRepository.updateShowVirtualController(false)
-                    }
+                val wantOn = idx == 0
+                if (wantOn != virtualControllerEnabled) {
+                    onToggleVirtualController()
                 }
             },
-            tagPrefix = "hud_ctrl_gamepad_seg",
-            fontSize = 11.5.sp
+            tagPrefix = "hud_ctrl_gamepad_seg"
         )
 
-        if (kbmState.isPcModeActive) {
-            val overlayModes = com.example.cloudplay.PcOverlayMode.entries
-            HudSegmentedControl(
-                options = listOf(
-                    com.example.cloudplay.KbmPrototypeStrings.overlayAutoLabel(config),
-                    com.example.cloudplay.KbmPrototypeStrings.overlayTouchPcLabel(config),
-                    com.example.cloudplay.KbmPrototypeStrings.overlayHardwareLabel(config)
-                ),
-                selectedIndex = overlayModes.indexOf(kbmState.pcOverlayMode).coerceAtLeast(0),
-                onSelect = { idx ->
-                    onInteraction()
-                    overlayModes.getOrNull(idx)?.let {
-                        com.example.cloudplay.KeyboardMousePrototype.setPcOverlayMode(it)
-                    }
-                },
-                tagPrefix = "hud_pc_overlay_seg",
-                fontSize = 11.sp
-            )
+        HudSliderRow(
+            label = config.tr("Cỡ nút", "Button size"),
+            valueText = "${(config.gamepadScale * 100).roundToInt()}%",
+            value = config.gamepadScale,
+            valueRange = 0.75f..1.35f,
+            onValueChange = {
+                onInteraction()
+                SettingsRepository.updateGamepadScale(it)
+            }
+        )
 
-            HudSliderRow(
-                label = com.example.cloudplay.KbmPrototypeStrings.mouseSensitivityLabel(config),
-                valueText = String.format(java.util.Locale.US, "%.1fx", kbmState.mouseSensitivity),
-                value = kbmState.mouseSensitivity,
-                valueRange = 0.4f..2.5f,
-                onValueChange = {
-                    onInteraction()
-                    com.example.cloudplay.KeyboardMousePrototype.setMouseSensitivity(it)
+        HudSliderRow(
+            label = config.tr("Độ mờ", "Opacity"),
+            valueText = "${(config.gamepadOpacity * 100).roundToInt()}%",
+            value = config.gamepadOpacity,
+            valueRange = 0.25f..0.95f,
+            onValueChange = {
+                onInteraction()
+                SettingsRepository.updateGamepadOpacity(it)
+            }
+        )
+
+        HudSectionLabel(config.tr("Con quay hồi chuyển (Gyro)", "Gyroscope Motion"))
+
+        HudSwitchRow(
+            title = config.tr("Bật con quay hồi chuyển", "Enable Gyroscope"),
+            subtitle = config.tr(
+                "Mặc định tắt — bật để ngắm Cần Phải, nghiêng lái xe hoặc theo game.",
+                "Off by default — turn on for Right Stick aim, racing tilt, or game native."
+            ),
+            checked = config.gyroEnabled,
+            onCheckedChange = { enabled ->
+                onInteraction()
+                SettingsRepository.updateGyroEnabled(enabled)
+                if (enabled && config.gyroMode != GyroControlMode.GAME_NATIVE) {
+                    com.example.cloudplay.GyroscopeController.requestRecenterNow()
                 }
-            )
+            }
+        )
 
-            HudSegmentedControl(
-                options = listOf(
-                    com.example.cloudplay.KbmPrototypeStrings.engineAllGamesLabel(config),
-                    com.example.cloudplay.KbmPrototypeStrings.engineNativeWebLabel(config)
-                ),
-                selectedIndex = if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) 1 else 0,
-                onSelect = { idx ->
-                    onInteraction()
-                    val target = if (idx == 1) {
-                        com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH
-                    } else {
-                        com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD
-                    }
-                    com.example.cloudplay.KeyboardMousePrototype.setPreferredPcEngine(target)
-                },
-                tagPrefix = "hud_pc_engine_seg",
-                fontSize = 11.sp
-            )
-        } else {
-            HudSliderRow(
-                label = config.tr("Cỡ nút", "Button size"),
-                valueText = "${(config.gamepadScale * 100).roundToInt()}%",
-                value = config.gamepadScale,
-                valueRange = 0.75f..1.35f,
-                onValueChange = {
-                    onInteraction()
-                    SettingsRepository.updateGamepadScale(it)
-                }
-            )
-
-            HudSliderRow(
-                label = config.tr("Độ mờ", "Opacity"),
-                valueText = "${(config.gamepadOpacity * 100).roundToInt()}%",
-                value = config.gamepadOpacity,
-                valueRange = 0.25f..0.95f,
-                onValueChange = {
-                    onInteraction()
-                    SettingsRepository.updateGamepadOpacity(it)
-                }
-            )
-
-            HudSectionLabel(config.tr("Con quay hồi chuyển (Gyro)", "Gyroscope Motion"))
-
-            HudSwitchRow(
-                title = config.tr("Bật con quay hồi chuyển", "Enable Gyroscope"),
-                subtitle = config.tr(
-                    "Mặc định tắt — bật để ngắm Cần Phải, nghiêng lái xe hoặc theo game.",
-                    "Off by default — turn on for Right Stick aim, racing tilt, or game native."
-                ),
-                checked = config.gyroEnabled,
-                onCheckedChange = { enabled ->
-                    onInteraction()
-                    SettingsRepository.updateGyroEnabled(enabled)
-                    if (enabled && config.gyroMode != GyroControlMode.GAME_NATIVE) {
-                        com.example.cloudplay.GyroscopeController.requestRecenterNow()
-                    }
-                }
-            )
-        }
-
-        if (!kbmState.isPcModeActive && config.gyroEnabled) {
+        if (config.gyroEnabled) {
             val gyroModes = GyroControlMode.entries
             val curGyroIdx = gyroModes.indexOf(config.gyroMode).coerceAtLeast(0)
             HudSegmentedControl(

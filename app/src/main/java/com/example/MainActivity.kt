@@ -172,7 +172,6 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
-        com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("activity_stop")
         com.example.data.AppLogger.info("SYSTEM", "Ứng dụng vào nền (Background)")
         com.example.data.PerformanceMonitor.onAppStop()
         super.onStop()
@@ -189,16 +188,6 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         com.example.ui.components.GamepadUiNavigation.observeKeyEventPassively(event)
-        val isGamepadKey = android.view.KeyEvent.isGamepadButton(event.keyCode) ||
-            (event.source and android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD
-        if (isGamepadKey) {
-            com.example.cloudplay.KeyboardMousePrototype.onTouchOrGamepadDetected("gamepad_key_detected")
-        }
-        if (isBrowserScreenActive && !com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi) {
-            if (com.example.cloudplay.KeyboardMousePrototype.handleKeyEvent(event)) {
-                return true
-            }
-        }
         val handled = super.dispatchKeyEvent(event)
         if (!handled && (!isBrowserScreenActive || com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi)) {
             if (com.example.ui.components.GamepadUiNavigation.handleActivityKeyEvent(event)) {
@@ -210,27 +199,15 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent?): Boolean {
         if (ev != null && ev.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
-            val isTouch = (ev.source and android.view.InputDevice.SOURCE_TOUCHSCREEN) == android.view.InputDevice.SOURCE_TOUCHSCREEN
-            val isMouse = (ev.source and android.view.InputDevice.SOURCE_MOUSE) == android.view.InputDevice.SOURCE_MOUSE
-            if (isTouch && !isMouse) {
-                com.example.ui.components.GamepadUiNavigation.onTouchInteraction()
-                com.example.cloudplay.KeyboardMousePrototype.onTouchOrGamepadDetected("touch_detected")
-            }
+            com.example.ui.components.GamepadUiNavigation.onTouchInteraction()
         }
         return super.dispatchTouchEvent(ev)
     }
 
     override fun dispatchGenericMotionEvent(ev: android.view.MotionEvent?): Boolean {
-        if (ev != null) {
-            val isGamepadMotion = (ev.source and android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK ||
-                (ev.source and android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD
-            if (isGamepadMotion) {
-                com.example.cloudplay.KeyboardMousePrototype.onTouchOrGamepadDetected("gamepad_motion_detected")
-            }
-            if (!isBrowserScreenActive || com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi) {
-                if (com.example.ui.components.GamepadUiNavigation.handleGenericMotionEvent(ev)) {
-                    return true
-                }
+        if (ev != null && (!isBrowserScreenActive || com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi)) {
+            if (com.example.ui.components.GamepadUiNavigation.handleGenericMotionEvent(ev)) {
+                return true
             }
         }
         return super.dispatchGenericMotionEvent(ev)
@@ -238,16 +215,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (!hasFocus) {
-            com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("window_focus_lost")
-        } else if (isBrowserScreenActive) {
+        if (hasFocus && isBrowserScreenActive) {
             applyImmersiveFullscreen(true)
         }
     }
 
     fun applyImmersiveFullscreen(enable: Boolean) {
         if (!enable) {
-            com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("exit_browser")
             com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi = true
         }
         if (!enable && !isBrowserScreenActive) return

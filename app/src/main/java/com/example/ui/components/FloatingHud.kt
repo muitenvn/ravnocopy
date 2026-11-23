@@ -1029,18 +1029,12 @@ private fun HudCompactRail(
                 .testTag("hud_expand_button")
         )
 
-        // Tay cầm ảo / Bàn phím & Chuột PC (giữ nguyên biểu tượng tay cầm)
-        val kbmState by com.example.cloudplay.KeyboardMousePrototype.state.collectAsState()
-        val pcModeActive = kbmState.isPcModeActive
+        // Tay cầm ảo
         HudRailButton(
             icon = Icons.Default.SportsEsports,
-            contentDescription = com.example.cloudplay.KbmPrototypeStrings.controllerAndKeyboardTitle(config),
-            bgColor = if (pcModeActive || gamepadActive) HudSelBg else Color.Transparent,
-            tint = when {
-                pcModeActive -> HudCyan
-                gamepadActive -> HudAccent
-                else -> HudInk
-            },
+            contentDescription = config.tr("Tay cầm ảo", "Virtual Gamepad"),
+            bgColor = if (gamepadActive) HudSelBg else Color.Transparent,
+            tint = if (gamepadActive) HudAccent else HudInk,
             onClick = onToggleGamepad,
             modifier = Modifier.testTag("hud_toggle_controller_button")
         )

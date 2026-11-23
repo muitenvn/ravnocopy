@@ -783,19 +783,9 @@ fun CloudBrowserScreen(
 
     val remotePadServerState by com.example.cloudplay.RemotePadTvServer.state.collectAsState()
     val isRemotePadConnected = remotePadServerState.status == com.muitenvn.cloudplay.protocol.TvServiceStatus.HAS_CONTROLLER
-    val isPcModeActive by remember {
-        com.example.cloudplay.KeyboardMousePrototype.state
-            .map { it.isPcModeActive }
-            .distinctUntilChanged()
-    }.collectAsState(initial = com.example.cloudplay.KeyboardMousePrototype.state.value.isPcModeActive)
-    val isPcVirtualGamepadEngine by remember {
-        com.example.cloudplay.KeyboardMousePrototype.state
-            .map { it.mode == com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD }
-            .distinctUntilChanged()
-    }.collectAsState(initial = com.example.cloudplay.KeyboardMousePrototype.state.value.mode == com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD)
-    val effectiveShowVirtualController = !isTvMode && !isPcModeActive && config.showVirtualController &&
+    val effectiveShowVirtualController = !isTvMode && config.showVirtualController &&
         (!config.autoHideVirtualOnPhysicalController || !gamepadStatus.hasPhysicalController || manualVirtualPadOverrideWithPhys)
-    val effectiveSyntheticGamepadEnabled = effectiveShowVirtualController || isRemotePadConnected || isPcVirtualGamepadEngine
+    val effectiveSyntheticGamepadEnabled = effectiveShowVirtualController || isRemotePadConnected
 
     // Dynamically recompute injectionScript only when structural settings change (bitrate updates go through __updateNetworkProfile)
     val injectionScript = remember(
@@ -1165,9 +1155,6 @@ fun CloudBrowserScreen(
                     private var lastHeaderTouchLogElapsedMs = 0L
 
                     override fun dispatchTouchEvent(event: android.view.MotionEvent?): Boolean {
-                        if (event != null && com.example.cloudplay.KeyboardMousePrototype.handleUnCapturedMouseTouch(event)) {
-                            return true
-                        }
                         val handled = super.dispatchTouchEvent(event)
                         if (event != null &&
                             event.actionMasked == android.view.MotionEvent.ACTION_UP &&
@@ -1256,9 +1243,6 @@ fun CloudBrowserScreen(
 
                     override fun onGenericMotionEvent(event: android.view.MotionEvent?): Boolean {
                         if (event != null) {
-                            if (com.example.cloudplay.KeyboardMousePrototype.handleUnCapturedMouseTouch(event)) {
-                                return true
-                            }
                             if ((event.source and android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK ||
                                 (event.source and android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD
                             ) {
@@ -1272,11 +1256,6 @@ fun CloudBrowserScreen(
                         }
                         return super.onGenericMotionEvent(event)
                     }
-
-                    override fun onPointerCaptureChange(hasCapture: Boolean) {
-                        super.onPointerCaptureChange(hasCapture)
-                        com.example.cloudplay.KeyboardMousePrototype.onPointerCaptureChanged(hasCapture)
-                    }
                 }.apply {
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -1288,9 +1267,6 @@ fun CloudBrowserScreen(
                     keepScreenOn = true
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                         setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
-                        setOnCapturedPointerListener { _, ev ->
-                            com.example.cloudplay.KeyboardMousePrototype.handleCapturedPointerEvent(ev)
-                        }
                     }
 
                     settings.apply {
@@ -1750,24 +1726,16 @@ fun CloudBrowserScreen(
 
         val isLoadingOverlayVisible = !suppressLoadingOverlayAfterExitPreview && isPageLoading && pageLoadingProgress < 0.80f
         var isHudOpen by remember { mutableStateOf(false) }
-        val shouldRouteGamepadToAppUi = isHudOpen || showQuickSettingsDialog || showTranslatorDialog || isLoadingOverlayVisible
+        var isVirtualPadModalOpen by remember { mutableStateOf(false) }
+        LaunchedEffect(effectiveShowVirtualController) {
+            if (!effectiveShowVirtualController) isVirtualPadModalOpen = false
+        }
+        val shouldRouteGamepadToAppUi = isHudOpen || isVirtualPadModalOpen || showQuickSettingsDialog || showTranslatorDialog || isLoadingOverlayVisible
 
-        LaunchedEffect(shouldRouteGamepadToAppUi, webViewInstance, isInActiveGameStream) {
+        LaunchedEffect(shouldRouteGamepadToAppUi, webViewInstance) {
             com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi = shouldRouteGamepadToAppUi
-            com.example.cloudplay.KeyboardMousePrototype.attachWebView(webViewInstance)
-            com.example.cloudplay.KeyboardMousePrototype.updateRoutingContext(
-                inGameStream = isInActiveGameStream,
-                routeToAppUi = shouldRouteGamepadToAppUi
-            )
             if (!shouldRouteGamepadToAppUi) {
                 webViewInstance?.requestFocus()
-            }
-        }
-
-        DisposableEffect(Unit) {
-            onDispose {
-                com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("browser_disposed")
-                com.example.cloudplay.KeyboardMousePrototype.attachWebView(null)
             }
         }
 
@@ -1999,27 +1967,13 @@ fun CloudBrowserScreen(
             )
         }
 
-        // Virtual Gamepad Overlay (ẩn khi đang ở chế độ Bàn phím & Chuột PC)
+        // Virtual Gamepad Overlay
         if (effectiveShowVirtualController) {
             VirtualGamepadOverlay(
                 webView = webViewInstance,
                 gameKey = activeGameKey,
                 gameDisplayName = activeGameDisplayName,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else if (isPcModeActive && !isLoadingOverlayVisible) {
-            // Lớp Bàn phím & Chuột PC tách riêng (nút ⚙ luôn sẵn sàng ở mép trên để chỉnh & chuyển lại Tay cầm)
-            com.example.ui.components.PcKeyboardMouseOverlay(
-                config = config,
-                gameKey = activeGameKey,
-                gameDisplayName = activeGameDisplayName,
-                onSwitchToGamepadMode = {
-                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false, rememberStyle = true)
-                    if (gamepadStatus.hasPhysicalController && config.autoHideVirtualOnPhysicalController) {
-                        manualVirtualPadOverrideWithPhys = true
-                    }
-                    SettingsRepository.updateShowVirtualController(true)
-                },
+                onOverlayModalOpenChanged = { isVirtualPadModalOpen = it },
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -2065,17 +2019,9 @@ fun CloudBrowserScreen(
                 }
             },
             onToggleVirtualController = {
-                // Bật/tắt 1 chạm bộ điều khiển đang chọn (Tay cầm hoặc Bàn phím & Chuột PC)
-                val kbmSnap = com.example.cloudplay.KeyboardMousePrototype.state.value
-                val anyOnScreenActive = effectiveShowVirtualController || kbmSnap.isPcModeActive
-                if (anyOnScreenActive) {
-                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false, rememberStyle = false)
+                if (effectiveShowVirtualController) {
                     manualVirtualPadOverrideWithPhys = false
                     SettingsRepository.updateShowVirtualController(false)
-                } else if (kbmSnap.preferredControlIsPc) {
-                    SettingsRepository.updateShowVirtualController(false)
-                    com.example.cloudplay.KeyboardMousePrototype.refreshPhysicalPeripherals()
-                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(true, rememberStyle = true)
                 } else {
                     if (gamepadStatus.hasPhysicalController && config.autoHideVirtualOnPhysicalController) {
                         manualVirtualPadOverrideWithPhys = true
@@ -2153,7 +2099,8 @@ fun CloudBrowserScreen(
                     webViewInstance?.evaluateJavascript("if (window.__setVirtualGamepadEnabled) window.__setVirtualGamepadEnabled(true);", null)
                 } else {
                     SettingsRepository.updateShowVirtualController(false)
-                    webViewInstance?.evaluateJavascript("if (window.__setVirtualGamepadEnabled) window.__setVirtualGamepadEnabled(false);", null)
+                    val keepSynth = isRemotePadConnected
+                    webViewInstance?.evaluateJavascript("if (window.__setVirtualGamepadEnabled) window.__setVirtualGamepadEnabled($keepSynth);", null)
                 }
             },
             onToggleRecording = {
@@ -2194,8 +2141,9 @@ fun CloudBrowserScreen(
                 config = config,
                 onToggleVirtualController = { enabled ->
                     SettingsRepository.updateShowVirtualController(enabled)
+                    val keepSynth = enabled || isRemotePadConnected
                     webViewInstance?.evaluateJavascript(
-                        "if (window.__setVirtualGamepadEnabled) window.__setVirtualGamepadEnabled($enabled);",
+                        "if (window.__setVirtualGamepadEnabled) window.__setVirtualGamepadEnabled($keepSynth);",
                         null
                     )
                 },
@@ -2242,66 +2190,6 @@ fun CloudBrowserScreen(
             )
         }
 
-        // Chỉ hiện 1 nút khóa/nhả chuột gọn khi có chuột rời cắm vào (ẩn hoàn toàn lúc chơi cảm ứng)
-        if (isPcModeActive && !isHudOpen && !showQuickSettingsDialog && !showTranslatorDialog && !isLoadingOverlayVisible && isInActiveGameStream) {
-            IsolatedKbmHardwareLockPill(
-                config = config,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 12.dp, end = 64.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun IsolatedKbmHardwareLockPill(
-    config: com.example.data.AppConfig,
-    modifier: Modifier = Modifier
-) {
-    val kbmState by com.example.cloudplay.KeyboardMousePrototype.state.collectAsState()
-    if (!kbmState.isPcModeActive || !kbmState.hasPhysicalMouse) return
-
-    val isNative = kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH
-    val label = if (isNative) {
-        com.example.cloudplay.KbmPrototypeStrings.testWebLockLabel(config)
-    } else if (kbmState.isPointerCaptured && !kbmState.isPausedByEsc) {
-        com.example.cloudplay.KbmPrototypeStrings.releaseEscLabel(config)
-    } else {
-        com.example.cloudplay.KbmPrototypeStrings.captureMouseLabel(config)
-    }
-    val accent = if (isNative) Color(0xFF3FD8EE) else if (kbmState.isPointerCaptured) Color(0xFF27D884) else Color(0xFFE3B341)
-
-    Surface(
-        modifier = modifier.testTag("kbm_hw_lock_pill"),
-        shape = RoundedCornerShape(9.dp),
-        color = Color(0xCC0D1511),
-        border = BorderStroke(1.dp, accent),
-        shadowElevation = 0.dp
-    ) {
-        Box(
-            modifier = Modifier
-                .defaultMinSize(minHeight = 30.dp)
-                .clickable {
-                    if (isNative) {
-                        com.example.cloudplay.KeyboardMousePrototype.probeAndRequestNativePointerLock()
-                    } else if (kbmState.isPointerCaptured && !kbmState.isPausedByEsc) {
-                        com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("pill_release")
-                    } else {
-                        com.example.cloudplay.KeyboardMousePrototype.requestPointerCaptureNow()
-                    }
-                }
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = label,
-                color = accent,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
-        }
     }
 }
 
