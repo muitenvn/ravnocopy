@@ -189,6 +189,11 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         com.example.ui.components.GamepadUiNavigation.observeKeyEventPassively(event)
+        val isGamepadKey = android.view.KeyEvent.isGamepadButton(event.keyCode) ||
+            (event.source and android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD
+        if (isGamepadKey) {
+            com.example.cloudplay.KeyboardMousePrototype.onTouchOrGamepadDetected("gamepad_key_detected")
+        }
         if (isBrowserScreenActive && !com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi) {
             if (com.example.cloudplay.KeyboardMousePrototype.handleKeyEvent(event)) {
                 return true
@@ -205,17 +210,27 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent?): Boolean {
         if (ev != null && ev.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
-            if ((ev.source and android.view.InputDevice.SOURCE_TOUCHSCREEN) == android.view.InputDevice.SOURCE_TOUCHSCREEN) {
+            val isTouch = (ev.source and android.view.InputDevice.SOURCE_TOUCHSCREEN) == android.view.InputDevice.SOURCE_TOUCHSCREEN
+            val isMouse = (ev.source and android.view.InputDevice.SOURCE_MOUSE) == android.view.InputDevice.SOURCE_MOUSE
+            if (isTouch && !isMouse) {
                 com.example.ui.components.GamepadUiNavigation.onTouchInteraction()
+                com.example.cloudplay.KeyboardMousePrototype.onTouchOrGamepadDetected("touch_detected")
             }
         }
         return super.dispatchTouchEvent(ev)
     }
 
     override fun dispatchGenericMotionEvent(ev: android.view.MotionEvent?): Boolean {
-        if (ev != null && (!isBrowserScreenActive || com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi)) {
-            if (com.example.ui.components.GamepadUiNavigation.handleGenericMotionEvent(ev)) {
-                return true
+        if (ev != null) {
+            val isGamepadMotion = (ev.source and android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK ||
+                (ev.source and android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD
+            if (isGamepadMotion) {
+                com.example.cloudplay.KeyboardMousePrototype.onTouchOrGamepadDetected("gamepad_motion_detected")
+            }
+            if (!isBrowserScreenActive || com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi) {
+                if (com.example.ui.components.GamepadUiNavigation.handleGenericMotionEvent(ev)) {
+                    return true
+                }
             }
         }
         return super.dispatchGenericMotionEvent(ev)

@@ -73,6 +73,7 @@ internal fun GamepadNodePopover(
     onUseGlobalLayout: () -> Unit,
     onShowAll: () -> Unit,
     onResetAll: () -> Unit,
+    onSwitchToPcMode: () -> Unit = {},
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -145,8 +146,8 @@ internal fun GamepadNodePopover(
 
     Surface(
         modifier = modifier
-            .width(256.dp)
-            .heightIn(max = 356.dp)
+            .width(264.dp)
+            .heightIn(max = 370.dp)
             .testTag(if (nodeId == "all") "virtual_gamepad_tuner_panel" else "virtual_gamepad_node_popover"),
         shape = RoundedCornerShape(18.dp),
         color = HudSurface2,
@@ -209,6 +210,7 @@ internal fun GamepadNodePopover(
                         onEnterEditMode = onEnterEditMode,
                         onUseGlobalLayout = onUseGlobalLayout,
                         onShowAll = onShowAll,
+                        onSwitchToPcMode = onSwitchToPcMode,
                         onRequestResetAll = { showResetAllConfirm = true }
                     )
                 } else {
@@ -252,8 +254,25 @@ private fun GlobalPopoverBody(
     onEnterEditMode: () -> Unit,
     onUseGlobalLayout: () -> Unit,
     onShowAll: () -> Unit,
+    onSwitchToPcMode: () -> Unit,
     onRequestResetAll: () -> Unit
 ) {
+    // Chuyển nhanh giữa Tay cầm và Bàn phím & Chuột ngay dòng đầu của hộp ✥ All Gamepad
+    HudSegmentedControl(
+        options = listOf(
+            com.example.cloudplay.KbmPrototypeStrings.gamepadModeLabel(config),
+            com.example.cloudplay.KbmPrototypeStrings.pcKbmModeLabel(config)
+        ),
+        selectedIndex = 0,
+        onSelect = { idx ->
+            if (idx == 1) onSwitchToPcMode()
+        },
+        bgColor = HudSurface,
+        minButtonHeight = 32.dp,
+        fontSize = 11.5.sp,
+        tagPrefix = "gamepad_all_mode_switch"
+    )
+
     HudSectionLabel(text = config.tr("Bố cục", "Layout"))
     HudSegmentedControl(
         options = listOf(
@@ -317,7 +336,7 @@ private fun GlobalPopoverBody(
         },
         bgColor = HudSurface,
         minButtonHeight = 30.dp,
-        fontSize = 10.5.sp
+        fontSize = 10.sp
     )
 
     HudSliderRow(

@@ -33,6 +33,7 @@ enum class PcOverlayMode {
 
 data class KbmRuntimeState(
     val mode: KbmTestMode = KbmTestMode.OFF,
+    val preferredControlIsPc: Boolean = false,
     val preferredPcEngine: KbmTestMode = KbmTestMode.VIRTUAL_GAMEPAD,
     val pcOverlayMode: PcOverlayMode = PcOverlayMode.AUTO,
     val hasPhysicalKeyboard: Boolean = false,
@@ -41,6 +42,8 @@ data class KbmRuntimeState(
     val isPausedByEsc: Boolean = false,
     val mouseSensitivity: Float = 1.0f,
     val invertMouseY: Boolean = false,
+    val tapBackgroundMouseClick: Boolean = false,
+    val directTouchPassThrough: Boolean = false,
     val nativePointerLockStatus: String = "",
     val lastKeyHint: String = ""
 ) {
@@ -161,8 +164,11 @@ object KeyboardMousePrototype {
         }
     }
 
-    fun setPcModeEnabled(enabled: Boolean) {
+    fun setPcModeEnabled(enabled: Boolean, rememberStyle: Boolean = true) {
         refreshPhysicalPeripherals()
+        if (rememberStyle) {
+            _state.update { it.copy(preferredControlIsPc = enabled) }
+        }
         if (!enabled) {
             setMode(KbmTestMode.OFF)
         } else {
@@ -237,6 +243,27 @@ object KeyboardMousePrototype {
 
     fun setInvertMouseY(invert: Boolean) {
         _state.update { it.copy(invertMouseY = invert) }
+    }
+
+    fun setTapBackgroundMouseClick(enabled: Boolean) {
+        _state.update { it.copy(tapBackgroundMouseClick = enabled) }
+    }
+
+    fun setDirectTouchPassThrough(enabled: Boolean) {
+        _state.update { it.copy(directTouchPassThrough = enabled) }
+        if (enabled) {
+            dispatchTouchTrackpadRelease()
+        }
+    }
+
+    /**
+     * Tự động nhả khóa chuột vật lý nếu phát hiện người dùng chạm màn hình cảm ứng hoặc bấm tay cầm.
+     */
+    fun onTouchOrGamepadDetected(reason: String) {
+        if (_state.value.isPointerCaptured) {
+            releaseAllAndUncapture(reason)
+            _state.update { it.copy(isPausedByEsc = true) }
+        }
     }
 
     fun requestPointerCaptureNow(): Boolean {
@@ -339,6 +366,134 @@ object KeyboardMousePrototype {
         sendStick(0, x, 1, y)
     }
 
+    private val virtualWasdRefCounts = HashMap<String, Int>()
+    private val activeWebKeys = HashSet<String>()
+
+    /**
+     * Gửi 1 hoặc nhiều phím PC (từ bàn phím ảo / nút gộp chọn trên bàn phím Full-Size).
+     * Hỗ trợ đồng thời kiểu Mọi game (ánh xạ tay cầm + phím web bổ sung) và kiểu Gốc Web.
+     */
+    fun dispatchVirtualPcKeySpecs(keys: List<String>, pressed: Boolean) {
+        if (keys.isEmpty()) return
+        val curMode = _state.value.mode
+        if (curMode == KbmTestMode.OFF) return
+
+        for (rawKey in keys) {
+            val k = rawKey.trim().uppercase()
+            if (k.isEmpty()) continue
+            if (curMode == KbmTestMode.VIRTUAL_GAMEPAD) {
+                when (k) {
+                    "W", "A", "S", "D" -> {
+                        val prev = virtualWasdRefCounts[k] ?: 0
+                        if (pressed) {
+                            virtualWasdRefCounts[k] = prev + 1
+                        } else {
+                            val next = (prev - 1).coerceAtLeast(0)
+                            if (next == 0) virtualWasdRefCounts.remove(k) else virtualWasdRefCounts[k] = next
+                        }
+                        recomputeVirtualWasdStick()
+                    }
+                    else -> {
+                        val mappedBtn = mapPcKeyNameToXboxButton(k)
+                        if (mappedBtn != null) {
+                            updateButtonRefCount(mappedBtn, pressed)
+                        } else {
+                            dispatchSyntheticWebKey(k, pressed)
+                        }
+                    }
+                }
+            } else {
+                // NATIVE_PASSTHROUGH: gửi trực tiếp sự kiện phím/chuột xuống trang Xbox
+                dispatchSyntheticWebKey(k, pressed)
+            }
+        }
+        if (pressed) {
+            updateLastHint(keys.joinToString("+"))
+        }
+    }
+
+    private fun recomputeVirtualWasdStick() {
+        var x = 0f
+        var y = 0f
+        if ((virtualWasdRefCounts["A"] ?: 0) > 0) x -= 1f
+        if ((virtualWasdRefCounts["D"] ?: 0) > 0) x += 1f
+        if ((virtualWasdRefCounts["W"] ?: 0) > 0) y -= 1f
+        if ((virtualWasdRefCounts["S"] ?: 0) > 0) y += 1f
+        val mag = hypot(x.toDouble(), y.toDouble()).toFloat()
+        if (mag > 1f) {
+            x /= mag
+            y /= mag
+        }
+        sendStick(0, x, 1, y)
+    }
+
+    private fun mapPcKeyNameToXboxButton(key: String): Int? = when (key) {
+        "SPACE" -> 0
+        "CTRL", "C" -> 1
+        "R", "E" -> 2
+        "F", "1" -> 3
+        "Q" -> 4
+        "G", "2" -> 5
+        "RMB" -> 6
+        "LMB" -> 7
+        "TAB" -> 8
+        "ESC", "M", "ENTER" -> 9
+        "SHIFT" -> 10
+        "V", "MMB" -> 11
+        "UP", "↑" -> 12
+        "DOWN", "↓" -> 13
+        "LEFT", "←" -> 14
+        "RIGHT", "→" -> 15
+        "F1" -> 16
+        else -> null
+    }
+
+    private fun dispatchSyntheticWebKey(key: String, pressed: Boolean) {
+        val wv = webViewRef?.get() ?: return
+        if (pressed) activeWebKeys.add(key) else activeWebKeys.remove(key)
+
+        if (key == "LMB" || key == "RMB" || key == "MMB") {
+            val btnNum = when (key) {
+                "LMB" -> 0
+                "MMB" -> 1
+                else -> 2
+            }
+            val type = if (pressed) "mousedown" else "mouseup"
+            val js = "(function(){var el=document.querySelector('video#stream-video,video')||document.activeElement||document.body;if(el){el.dispatchEvent(new MouseEvent('$type',{bubbles:true,cancelable:true,button:$btnNum}));}})();"
+            wv.post { try { wv.evaluateJavascript(js, null) } catch (_: Exception) {} }
+            return
+        }
+
+        val (jsKey, jsCode) = mapPcKeyNameToWebKeyCode(key)
+        val type = if (pressed) "keydown" else "keyup"
+        val safeKey = jsKey.replace("'", "\\'")
+        val safeCode = jsCode.replace("'", "\\'")
+        val js = "(function(){var el=document.activeElement||document.querySelector('video#stream-video,video')||document.body;var ev=new KeyboardEvent('$type',{key:'$safeKey',code:'$safeCode',bubbles:true,cancelable:true});(el||window).dispatchEvent(ev);})();"
+        wv.post { try { wv.evaluateJavascript(js, null) } catch (_: Exception) {} }
+    }
+
+    private fun mapPcKeyNameToWebKeyCode(key: String): Pair<String, String> = when (key) {
+        "ESC" -> "Escape" to "Escape"
+        "TAB" -> "Tab" to "Tab"
+        "CAPS" -> "CapsLock" to "CapsLock"
+        "SHIFT" -> "Shift" to "ShiftLeft"
+        "CTRL" -> "Control" to "ControlLeft"
+        "ALT" -> "Alt" to "AltLeft"
+        "SPACE" -> " " to "Space"
+        "ENTER" -> "Enter" to "Enter"
+        "BKSP", "BACKSPACE" -> "Backspace" to "Backspace"
+        "UP", "↑" -> "ArrowUp" to "ArrowUp"
+        "DOWN", "↓" -> "ArrowDown" to "ArrowDown"
+        "LEFT", "←" -> "ArrowLeft" to "ArrowLeft"
+        "RIGHT", "→" -> "ArrowRight" to "ArrowRight"
+        else -> when {
+            key.length == 1 && key[0] in 'A'..'Z' -> key.lowercase() to "Key$key"
+            key.length == 1 && key[0] in '0'..'9' -> key to "Digit$key"
+            key.startsWith("F") && key.drop(1).toIntOrNull() in 1..12 -> key to key
+            else -> key to key
+        }
+    }
+
     fun releaseAllAndUncapture(reason: String) {
         mainHandler.removeCallbacks(mouseFlushRunnable)
         mainHandler.removeCallbacks(mouseStopWatchdogRunnable)
@@ -359,14 +514,23 @@ object KeyboardMousePrototype {
 
         val hadAnyState = heldKeyCodes.isNotEmpty() ||
             buttonRefCounts.isNotEmpty() ||
+            virtualWasdRefCounts.isNotEmpty() ||
+            activeWebKeys.isNotEmpty() ||
             lastMouseButtonMask != 0 ||
             lastLeftStickX != 0f || lastLeftStickY != 0f ||
             lastRightStickX != 0f || lastRightStickY != 0f
 
         val activeButtons = buttonRefCounts.keys.toList()
+        val staleWebKeys = activeWebKeys.toList()
         heldKeyCodes.clear()
         buttonRefCounts.clear()
+        virtualWasdRefCounts.clear()
+        activeWebKeys.clear()
         lastMouseButtonMask = 0
+
+        for (wk in staleWebKeys) {
+            dispatchSyntheticWebKey(wk, false)
+        }
 
         if (hadAnyState && wv != null) {
             val sb = StringBuilder()
@@ -989,5 +1153,97 @@ object KbmPrototypeStrings {
         "vi" to "Vuốt nhìn", "en" to "Drag look", "es" to "Mirar", "pt" to "Olhar",
         "fr" to "Viser", "de" to "Umsehen", "ja" to "視点操作", "ko" to "시점 이동",
         "zh" to "滑动视角", "id" to "Geser lihat", "th" to "ลากเล็ง", "ru" to "Обзор"
+    ))
+
+    fun allKeyboardTitle(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Cả bàn phím", "en" to "All Keyboard", "es" to "Todo el teclado", "pt" to "Todo o teclado",
+        "fr" to "Tout le clavier", "de" to "Ganze Tastatur", "ja" to "キーボード全体", "ko" to "전체 키보드",
+        "zh" to "全部键鼠", "id" to "Semua Keyboard", "th" to "คีย์บอร์ดทั้งหมด", "ru" to "Вся клавиатура"
+    ))
+
+    fun tapBgMouseLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Chạm nền bấm chuột", "en" to "Tap screen = Mouse", "es" to "Tocar fondo = Ratón",
+        "pt" to "Tocar tela = Mouse", "fr" to "Toucher écran = Souris", "de" to "Tippen = Mausklick",
+        "ja" to "画面タップでクリック", "ko" to "화면 탭 = 마우스 클릭", "zh" to "轻触背景=鼠标点击",
+        "id" to "Ketuk layar = Klik", "th" to "แตะจอ = คลิกเมาส์", "ru" to "Тап по фону = Клик"
+    ))
+
+    fun directTouchLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Chạm trực tiếp màn hình", "en" to "Direct Screen Touch", "es" to "Toque directo",
+        "pt" to "Toque direto na tela", "fr" to "Tactile direct", "de" to "Direkte Berührung",
+        "ja" to "直接画面タッチ", "ko" to "화면 직접 터치", "zh" to "直接触摸屏幕",
+        "id" to "Sentuh langsung layar", "th" to "แตะหน้าจอโดยตรง", "ru" to "Прямое касание экрана"
+    ))
+
+    fun addKeyLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "+ Thêm phím", "en" to "+ Add Key", "es" to "+ Tecla", "pt" to "+ Tecla",
+        "fr" to "+ Touche", "de" to "+ Taste", "ja" to "+ キー追加", "ko" to "+ 키 추가",
+        "zh" to "+ 添加按键", "id" to "+ Tambah", "th" to "+ เพิ่มปุ่ม", "ru" to "+ Клавиша"
+    ))
+
+    fun doneEditLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "✓ Xong", "en" to "✓ Done", "es" to "✓ Listo", "pt" to "✓ Pronto",
+        "fr" to "✓ Fini", "de" to "✓ Fertig", "ja" to "✓ 完了", "ko" to "✓ 완료",
+        "zh" to "✓ 完成", "id" to "✓ Selesai", "th" to "✓ เสร็จ", "ru" to "✓ Готово"
+    ))
+
+    fun createComboBtnLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Tạo nút gộp", "en" to "Combo Button", "es" to "Botón combo", "pt" to "Botão combo",
+        "fr" to "Bouton combo", "de" to "Kombi-Taste", "ja" to "同時押しボタン", "ko" to "조합 버튼",
+        "zh" to "组合单键", "id" to "Tombol Kombo", "th" to "สร้างปุ่มรวม", "ru" to "Комбо-кнопка"
+    ))
+
+    fun createClusterBtnLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Tạo cụm phím", "en" to "Key Cluster", "es" to "Grupo teclas", "pt" to "Grupo teclas",
+        "fr" to "Groupe touches", "de" to "Tastengruppe", "ja" to "キーグループ", "ko" to "키 묶음",
+        "zh" to "按键组", "id" to "Grup Tombol", "th" to "สร้างกลุ่มปุ่ม", "ru" to "Группа клавиш"
+    ))
+
+    fun fullKeyboardTitle(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Chọn phím trên bàn phím PC", "en" to "Select PC Keys", "es" to "Elegir teclas PC",
+        "pt" to "Escolher teclas PC", "fr" to "Choisir touches PC", "de" to "PC-Tasten wählen",
+        "ja" to "PCキーを選択", "ko" to "PC 키 선택", "zh" to "选择 PC 按键",
+        "id" to "Pilih Tombol PC", "th" to "เลือกปุ่ม PC", "ru" to "Выбор клавиш ПК"
+    ))
+
+    fun editButtonsPcLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "✥ Sửa & thêm phím", "en" to "✥ Edit & Add Keys", "es" to "✥ Editar y añadir",
+        "pt" to "✥ Editar e adicionar", "fr" to "✥ Modifier touches", "de" to "✥ Tasten bearbeiten",
+        "ja" to "✥ キー編集・追加", "ko" to "✥ 키 편집 및 추가", "zh" to "✥ 编辑与添加按键",
+        "id" to "✥ Edit & Tambah", "th" to "✥ แก้ไขและเพิ่มปุ่ม", "ru" to "✥ Изменить клавиши"
+    ))
+
+    fun deleteKeyLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Xóa nút", "en" to "Delete", "es" to "Borrar", "pt" to "Excluir",
+        "fr" to "Supprimer", "de" to "Löschen", "ja" to "削除", "ko" to "삭제",
+        "zh" to "删除", "id" to "Hapus", "th" to "ลบปุ่ม", "ru" to "Удалить"
+    ))
+
+    fun hideKeyLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Ẩn nút", "en" to "Hide", "es" to "Ocultar", "pt" to "Ocultar",
+        "fr" to "Masquer", "de" to "Ausblenden", "ja" to "非表示", "ko" to "숨기기",
+        "zh" to "隐藏", "id" to "Sembunyikan", "th" to "ซ่อนปุ่ม", "ru" to "Скрыть"
+    ))
+
+    fun analogWasdName(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Cần WASD (+Shift)", "en" to "WASD Stick (+Shift)", "es" to "Stick WASD (+Shift)",
+        "pt" to "Stick WASD (+Shift)", "fr" to "Stick WASD (+Shift)", "de" to "WASD-Stick (+Shift)",
+        "ja" to "WASDスティック(+Shift)", "ko" to "WASD 스틱 (+Shift)", "zh" to "WASD 摇杆(+Shift)",
+        "id" to "Stik WASD (+Shift)", "th" to "คันโยก WASD (+Shift)", "ru" to "Стик WASD (+Shift)"
+    ))
+
+    fun doubleTapEditHint(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Nhấn đúp một phím để chỉnh riêng phím đó",
+        "en" to "Double-tap any key to customize it",
+        "es" to "Toca dos veces una tecla para ajustarla",
+        "pt" to "Toque duas vezes em uma tecla para ajustar",
+        "fr" to "Double-tapez une touche pour la régler",
+        "de" to "Doppeltippe eine Taste zum Anpassen",
+        "ja" to "キーをダブルタップして個別調整",
+        "ko" to "키를 두 번 탭해 개별 설정",
+        "zh" to "双击任意按键单独调整",
+        "id" to "Ketuk dua kali tombol untuk atur",
+        "th" to "แตะสองครั้งที่ปุ่มเพื่อปรับแต่ง",
+        "ru" to "Дважды нажмите клавишу для настройки"
     ))
 }

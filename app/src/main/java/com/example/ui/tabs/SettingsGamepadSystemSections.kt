@@ -532,19 +532,6 @@ internal fun SettingsGamepadTouchSection(
             }
 
             if (kbmState.isPcModeActive) {
-                Text(
-                    text = com.example.cloudplay.KbmPrototypeStrings.peripheralStatus(config, kbmState),
-                    color = DirectCyan,
-                    fontSize = 11.5.sp,
-                    lineHeight = 15.sp
-                )
-
-                Text(
-                    text = com.example.cloudplay.KbmPrototypeStrings.overlayDisplayTitle(config),
-                    color = TextSecondary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
                 val overlayModes = com.example.cloudplay.PcOverlayMode.entries
                 val overlayLabels = listOf(
                     com.example.cloudplay.KbmPrototypeStrings.overlayAutoLabel(config),
@@ -625,73 +612,6 @@ internal fun SettingsGamepadTouchSection(
                         Text("+", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-
-                SettingToggleRow(
-                    title = com.example.cloudplay.KbmPrototypeStrings.invertYLabel(config),
-                    subtitle = "",
-                    checked = kbmState.invertMouseY,
-                    onCheckedChange = { com.example.cloudplay.KeyboardMousePrototype.setInvertMouseY(it) },
-                    activeColor = DirectCyan,
-                    switchTestTag = "settings_switch_pc_invert_y"
-                )
-
-                Text(
-                    text = com.example.cloudplay.KbmPrototypeStrings.engineTitle(config),
-                    color = TextSecondary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                val engineLabels = listOf(
-                    com.example.cloudplay.KbmPrototypeStrings.engineAllGamesLabel(config),
-                    com.example.cloudplay.KbmPrototypeStrings.engineNativeWebLabel(config)
-                )
-                val selectedEngineIdx = if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) 1 else 0
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    engineLabels.forEachIndexed { idx, label ->
-                        val selected = selectedEngineIdx == idx
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(if (selected) Color(0xFF16352A) else XboxSurface)
-                                .border(1.dp, if (selected) XboxNeonGreen else XboxCardBorder, RoundedCornerShape(10.dp))
-                                .gamepadClickable(cornerRadius = 10.dp) {
-                                    val target = if (idx == 1) {
-                                        com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH
-                                    } else {
-                                        com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD
-                                    }
-                                    com.example.cloudplay.KeyboardMousePrototype.setPreferredPcEngine(target)
-                                }
-                                .padding(vertical = 9.dp, horizontal = 6.dp)
-                                .testTag("settings_pc_engine_$idx"),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = label,
-                                color = if (selected) XboxNeonGreen else TextPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-
-                Text(
-                    text = if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) {
-                        com.example.cloudplay.KbmPrototypeStrings.modeBHint(config)
-                    } else {
-                        com.example.cloudplay.KbmPrototypeStrings.modeAHint(config)
-                    },
-                    color = TextSecondary,
-                    fontSize = 11.sp,
-                    lineHeight = 14.5.sp
-                )
             }
         }
 

@@ -86,14 +86,6 @@ internal fun HudControlsTabContent(
         )
 
         if (kbmState.isPcModeActive) {
-            Text(
-                text = com.example.cloudplay.KbmPrototypeStrings.peripheralStatus(config, kbmState),
-                color = HudCyan,
-                fontSize = 11.sp,
-                lineHeight = 14.5.sp
-            )
-
-            HudSectionLabel(com.example.cloudplay.KbmPrototypeStrings.overlayDisplayTitle(config))
             val overlayModes = com.example.cloudplay.PcOverlayMode.entries
             HudSegmentedControl(
                 options = listOf(
@@ -123,39 +115,6 @@ internal fun HudControlsTabContent(
                 }
             )
 
-            HudSwitchRow(
-                title = com.example.cloudplay.KbmPrototypeStrings.invertYLabel(config),
-                checked = kbmState.invertMouseY,
-                onCheckedChange = {
-                    onInteraction()
-                    com.example.cloudplay.KeyboardMousePrototype.setInvertMouseY(it)
-                }
-            )
-
-            if (kbmState.shouldShowTouchPcOverlay) {
-                HudSliderRow(
-                    label = config.tr("Cỡ nút", "Button size"),
-                    valueText = "${(config.gamepadScale * 100).roundToInt()}%",
-                    value = config.gamepadScale,
-                    valueRange = 0.75f..1.35f,
-                    onValueChange = {
-                        onInteraction()
-                        SettingsRepository.updateGamepadScale(it)
-                    }
-                )
-                HudSliderRow(
-                    label = config.tr("Độ mờ", "Opacity"),
-                    valueText = "${(config.gamepadOpacity * 100).roundToInt()}%",
-                    value = config.gamepadOpacity,
-                    valueRange = 0.25f..0.95f,
-                    onValueChange = {
-                        onInteraction()
-                        SettingsRepository.updateGamepadOpacity(it)
-                    }
-                )
-            }
-
-            HudSectionLabel(com.example.cloudplay.KbmPrototypeStrings.engineTitle(config))
             HudSegmentedControl(
                 options = listOf(
                     com.example.cloudplay.KbmPrototypeStrings.engineAllGamesLabel(config),
@@ -174,36 +133,6 @@ internal fun HudControlsTabContent(
                 tagPrefix = "hud_pc_engine_seg",
                 fontSize = 11.sp
             )
-
-            if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) {
-                HudButton(
-                    text = if (kbmState.nativePointerLockStatus.isNotBlank()) {
-                        "${com.example.cloudplay.KbmPrototypeStrings.testWebLockLabel(config)} (${kbmState.nativePointerLockStatus})"
-                    } else {
-                        com.example.cloudplay.KbmPrototypeStrings.testWebLockLabel(config)
-                    },
-                    onClick = {
-                        onInteraction()
-                        com.example.cloudplay.KeyboardMousePrototype.probeAndRequestNativePointerLock()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("hud_pc_weblock_btn")
-                )
-                Text(
-                    text = com.example.cloudplay.KbmPrototypeStrings.modeBHint(config),
-                    color = HudFaint,
-                    fontSize = 11.sp,
-                    lineHeight = 14.5.sp
-                )
-            } else {
-                Text(
-                    text = com.example.cloudplay.KbmPrototypeStrings.modeAHint(config),
-                    color = HudFaint,
-                    fontSize = 11.sp,
-                    lineHeight = 14.5.sp
-                )
-            }
         } else {
             HudSliderRow(
                 label = config.tr("Cỡ nút", "Button size"),

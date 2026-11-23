@@ -2007,10 +2007,19 @@ fun CloudBrowserScreen(
                 gameDisplayName = activeGameDisplayName,
                 modifier = Modifier.fillMaxSize()
             )
-        } else if (isPcModeActive && isInActiveGameStream && !isLoadingOverlayVisible) {
-            // Hybrid PC Mode (Cách 3): tự hiện bộ phím & chuột ảo PC khi chưa cắm phím/chuột rời
-            IsolatedPcKeyboardMouseOverlay(
+        } else if (isPcModeActive && !isLoadingOverlayVisible) {
+            // Lớp Bàn phím & Chuột PC tách riêng (nút ⚙ luôn sẵn sàng ở mép trên để chỉnh & chuyển lại Tay cầm)
+            com.example.ui.components.PcKeyboardMouseOverlay(
                 config = config,
+                gameKey = activeGameKey,
+                gameDisplayName = activeGameDisplayName,
+                onSwitchToGamepadMode = {
+                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false, rememberStyle = true)
+                    if (gamepadStatus.hasPhysicalController && config.autoHideVirtualOnPhysicalController) {
+                        manualVirtualPadOverrideWithPhys = true
+                    }
+                    SettingsRepository.updateShowVirtualController(true)
+                },
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -2056,42 +2065,22 @@ fun CloudBrowserScreen(
                 }
             },
             onToggleVirtualController = {
-                // Giữ nguyên nút biểu tượng tay cầm: bấm để xoay vòng Tay cầm ảo -> Bàn phím & Chuột PC -> Ẩn -> Tay cầm ảo
-                val curPcActive = com.example.cloudplay.KeyboardMousePrototype.state.value.isPcModeActive
-                when {
-                    effectiveShowVirtualController && !curPcActive -> {
-                        manualVirtualPadOverrideWithPhys = false
-                        SettingsRepository.updateShowVirtualController(false)
-                        com.example.cloudplay.KeyboardMousePrototype.refreshPhysicalPeripherals()
-                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(true)
-                        android.widget.Toast.makeText(
-                            context,
-                            com.example.cloudplay.KbmPrototypeStrings.toastSwitchedToPc(config),
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
+                // Bật/tắt 1 chạm bộ điều khiển đang chọn (Tay cầm hoặc Bàn phím & Chuột PC)
+                val kbmSnap = com.example.cloudplay.KeyboardMousePrototype.state.value
+                val anyOnScreenActive = effectiveShowVirtualController || kbmSnap.isPcModeActive
+                if (anyOnScreenActive) {
+                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false, rememberStyle = false)
+                    manualVirtualPadOverrideWithPhys = false
+                    SettingsRepository.updateShowVirtualController(false)
+                } else if (kbmSnap.preferredControlIsPc) {
+                    SettingsRepository.updateShowVirtualController(false)
+                    com.example.cloudplay.KeyboardMousePrototype.refreshPhysicalPeripherals()
+                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(true, rememberStyle = true)
+                } else {
+                    if (gamepadStatus.hasPhysicalController && config.autoHideVirtualOnPhysicalController) {
+                        manualVirtualPadOverrideWithPhys = true
                     }
-                    curPcActive -> {
-                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
-                        manualVirtualPadOverrideWithPhys = false
-                        SettingsRepository.updateShowVirtualController(false)
-                        android.widget.Toast.makeText(
-                            context,
-                            com.example.cloudplay.KbmPrototypeStrings.toastSwitchedToHidden(config),
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    else -> {
-                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
-                        if (gamepadStatus.hasPhysicalController && config.autoHideVirtualOnPhysicalController) {
-                            manualVirtualPadOverrideWithPhys = true
-                        }
-                        SettingsRepository.updateShowVirtualController(true)
-                        android.widget.Toast.makeText(
-                            context,
-                            com.example.cloudplay.KbmPrototypeStrings.toastSwitchedToGamepad(config),
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                    SettingsRepository.updateShowVirtualController(true)
                 }
             },
             onOpenSettings = {
@@ -2253,187 +2242,65 @@ fun CloudBrowserScreen(
             )
         }
 
-        // Thanh nút chỉnh nhanh PC (chỉ hiện khi đang bật chế độ Bàn phím & Chuột PC)
+        // Chỉ hiện 1 nút khóa/nhả chuột gọn khi có chuột rời cắm vào (ẩn hoàn toàn lúc chơi cảm ứng)
         if (isPcModeActive && !isHudOpen && !showQuickSettingsDialog && !showTranslatorDialog && !isLoadingOverlayVisible && isInActiveGameStream) {
-            IsolatedKbmQuickTestBar(
+            IsolatedKbmHardwareLockPill(
                 config = config,
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 6.dp)
+                    .align(Alignment.TopEnd)
+                    .padding(top = 12.dp, end = 64.dp)
             )
         }
     }
 }
 
 @Composable
-private fun IsolatedPcKeyboardMouseOverlay(
-    config: com.example.data.AppConfig,
-    modifier: Modifier = Modifier
-) {
-    val showTouchPc by remember {
-        com.example.cloudplay.KeyboardMousePrototype.state
-            .map { it.shouldShowTouchPcOverlay }
-            .distinctUntilChanged()
-    }.collectAsState(initial = com.example.cloudplay.KeyboardMousePrototype.state.value.shouldShowTouchPcOverlay)
-    if (showTouchPc) {
-        com.example.ui.components.PcKeyboardMouseOverlay(
-            config = config,
-            modifier = modifier
-        )
-    }
-}
-
-@Composable
-private fun IsolatedKbmQuickTestBar(
+private fun IsolatedKbmHardwareLockPill(
     config: com.example.data.AppConfig,
     modifier: Modifier = Modifier
 ) {
     val kbmState by com.example.cloudplay.KeyboardMousePrototype.state.collectAsState()
-    if (!kbmState.isPcModeActive) return
-    val borderColor = when (kbmState.mode) {
-        com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD -> Color(0xFF27D884)
-        com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH -> Color(0xFF3FD8EE)
-        com.example.cloudplay.KbmTestMode.OFF -> Color(0x40FFFFFF)
+    if (!kbmState.isPcModeActive || !kbmState.hasPhysicalMouse) return
+
+    val isNative = kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH
+    val label = if (isNative) {
+        com.example.cloudplay.KbmPrototypeStrings.testWebLockLabel(config)
+    } else if (kbmState.isPointerCaptured && !kbmState.isPausedByEsc) {
+        com.example.cloudplay.KbmPrototypeStrings.releaseEscLabel(config)
+    } else {
+        com.example.cloudplay.KbmPrototypeStrings.captureMouseLabel(config)
     }
+    val accent = if (isNative) Color(0xFF3FD8EE) else if (kbmState.isPointerCaptured) Color(0xFF27D884) else Color(0xFFE3B341)
 
     Surface(
-        modifier = modifier.testTag("kbm_quick_test_bar"),
-        shape = RoundedCornerShape(10.dp),
+        modifier = modifier.testTag("kbm_hw_lock_pill"),
+        shape = RoundedCornerShape(9.dp),
         color = Color(0xCC0D1511),
-        border = BorderStroke(1.dp, borderColor),
+        border = BorderStroke(1.dp, accent),
         shadowElevation = 0.dp
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .defaultMinSize(minHeight = 32.dp)
-                    .clip(RoundedCornerShape(7.dp))
-                    .background(Color(0xFF16352A))
-                    .clickable {
-                        val nextEngine = if (kbmState.mode == com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD) {
-                            com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH
-                        } else {
-                            com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD
-                        }
-                        com.example.cloudplay.KeyboardMousePrototype.setPreferredPcEngine(nextEngine)
+        Box(
+            modifier = Modifier
+                .defaultMinSize(minHeight = 30.dp)
+                .clickable {
+                    if (isNative) {
+                        com.example.cloudplay.KeyboardMousePrototype.probeAndRequestNativePointerLock()
+                    } else if (kbmState.isPointerCaptured && !kbmState.isPausedByEsc) {
+                        com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("pill_release")
+                    } else {
+                        com.example.cloudplay.KeyboardMousePrototype.requestPointerCaptureNow()
                     }
-                    .padding(horizontal = 8.dp, vertical = 5.dp)
-                    .testTag("kbm_quick_mode_btn"),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = com.example.cloudplay.KbmPrototypeStrings.pillModeShort(config, kbmState.mode),
-                    color = borderColor,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-            }
-
-            if (kbmState.mode == com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD) {
-                val captureLabel = if (kbmState.isPointerCaptured && !kbmState.isPausedByEsc) {
-                    com.example.cloudplay.KbmPrototypeStrings.releaseEscLabel(config)
-                } else {
-                    com.example.cloudplay.KbmPrototypeStrings.captureMouseLabel(config)
                 }
-                Box(
-                    modifier = Modifier
-                        .defaultMinSize(minHeight = 32.dp)
-                        .clip(RoundedCornerShape(7.dp))
-                        .background(if (kbmState.isPointerCaptured) Color(0xFF16352A) else Color(0xFF142019))
-                        .clickable {
-                            if (kbmState.isPointerCaptured && !kbmState.isPausedByEsc) {
-                                com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("quick_bar_release")
-                            } else {
-                                com.example.cloudplay.KeyboardMousePrototype.requestPointerCaptureNow()
-                            }
-                        }
-                        .padding(horizontal = 8.dp, vertical = 5.dp)
-                        .testTag("kbm_quick_capture_btn"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = captureLabel,
-                        color = if (kbmState.isPointerCaptured) Color(0xFF27D884) else Color(0xFFE3B341),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .defaultMinSize(minWidth = 30.dp, minHeight = 32.dp)
-                        .clip(RoundedCornerShape(7.dp))
-                        .background(Color(0xFF142019))
-                        .clickable { com.example.cloudplay.KeyboardMousePrototype.adjustMouseSensitivity(-0.2f) }
-                        .padding(horizontal = 7.dp, vertical = 5.dp)
-                        .testTag("kbm_quick_sens_minus"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("-", color = Color(0xFFE6EFEA), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-                Text(
-                    text = String.format(java.util.Locale.US, "%.1fx", kbmState.mouseSensitivity),
-                    color = Color(0xFF9EB3A7),
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1
-                )
-                Box(
-                    modifier = Modifier
-                        .defaultMinSize(minWidth = 30.dp, minHeight = 32.dp)
-                        .clip(RoundedCornerShape(7.dp))
-                        .background(Color(0xFF142019))
-                        .clickable { com.example.cloudplay.KeyboardMousePrototype.adjustMouseSensitivity(+0.2f) }
-                        .padding(horizontal = 7.dp, vertical = 5.dp)
-                        .testTag("kbm_quick_sens_plus"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("+", color = Color(0xFFE6EFEA), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-                if (kbmState.lastKeyHint.isNotBlank()) {
-                    Text(
-                        text = kbmState.lastKeyHint,
-                        color = Color(0xFF3FD8EE),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
-            } else if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) {
-                Box(
-                    modifier = Modifier
-                        .defaultMinSize(minHeight = 32.dp)
-                        .clip(RoundedCornerShape(7.dp))
-                        .background(Color(0xFF16352A))
-                        .clickable { com.example.cloudplay.KeyboardMousePrototype.probeAndRequestNativePointerLock() }
-                        .padding(horizontal = 8.dp, vertical = 5.dp)
-                        .testTag("kbm_quick_weblock_btn"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = com.example.cloudplay.KbmPrototypeStrings.testWebLockLabel(config),
-                        color = Color(0xFF3FD8EE),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
-                if (kbmState.nativePointerLockStatus.isNotBlank()) {
-                    Text(
-                        text = kbmState.nativePointerLockStatus,
-                        color = Color(0xFFE3B341),
-                        fontSize = 10.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
-            }
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                color = accent,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
         }
     }
 }

@@ -1511,6 +1511,16 @@ fun VirtualGamepadOverlay(
                             resetAllCustomizations()
                             activePopoverNodeId = null
                         },
+                        onSwitchToPcMode = {
+                            vibrate()
+                            activePopoverNodeId = null
+                            isEditPositionMode = false
+                            showAddButtonModal = false
+                            webView?.evaluateJavascript("if(window.__cpReleaseAll){window.__cpReleaseAll();}", null)
+                            SettingsRepository.updateShowVirtualController(false)
+                            com.example.cloudplay.KeyboardMousePrototype.refreshPhysicalPeripherals()
+                            com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(true, rememberStyle = true)
+                        },
                         onClose = { activePopoverNodeId = null }
                     )
                 }
