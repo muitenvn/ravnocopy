@@ -498,9 +498,23 @@ class XboxBridge(
                             // và gửi dồn dập IDR Keyframe khổng lồ làm thời gian giải mã (decodeTimeMs) tăng vọt.
                             // Đặt về null để bộ ước lượng Jitter tự nhiên của WebRTC (JitterEstimator + NetEq) tự cân bằng mượt mà.
                             if ('playoutDelayHint' in receiver && receiver.playoutDelayHint !== null) {
+                                window.__cpDiagClearedHint = {
+                                    kind: kind,
+                                    prevPlayout: receiver.playoutDelayHint,
+                                    prevTarget: ('jitterBufferTarget' in receiver) ? receiver.jitterBufferTarget : null,
+                                    at: Date.now()
+                                };
                                 receiver.playoutDelayHint = null;
                             }
                             if ('jitterBufferTarget' in receiver && receiver.jitterBufferTarget !== null) {
+                                if (!window.__cpDiagClearedHint || window.__cpDiagClearedHint.at !== Date.now()) {
+                                    window.__cpDiagClearedHint = {
+                                        kind: kind,
+                                        prevPlayout: ('playoutDelayHint' in receiver) ? receiver.playoutDelayHint : null,
+                                        prevTarget: receiver.jitterBufferTarget,
+                                        at: Date.now()
+                                    };
+                                }
                                 receiver.jitterBufferTarget = null;
                             }
                         } catch (e) {}
@@ -1005,6 +1019,26 @@ class XboxBridge(
                         let lastJitterBufferEmitted = 0;
                         let lastStunResponses = 0;
                         let lastTotalRttSec = 0.0;
+                        // Chẩn đoán nội bộ độ trễ hình ảnh (chỉ đọc/ghi log, không đổi hành vi)
+                        let diagLastJbTarget = 0.0;
+                        let diagLastJbMin = 0.0;
+                        let diagLastJbEmitted = 0;
+                        let diagLastProcDelay = 0.0;
+                        let diagLastAssemblyTime = 0.0;
+                        let diagLastAssembledFrames = 0;
+                        let diagLastAudioJbDelay = 0.0;
+                        let diagLastAudioJbEmitted = 0;
+                        let diagLastNack = 0;
+                        let diagLastPli = 0;
+                        let diagLastKeyFrames = 0;
+                        let diagLastFreezes = 0;
+                        let diagLastDropped = 0;
+                        let diagLastJbMs = 0.0;
+                        let diagLastSentAt = 0;
+                        let diagLastDecodeTime = 0.0;
+                        let diagLastDecodeFrames = 0;
+                        let diagLastRvfc = null;
+                        let diagRvfcPending = false;
 
                         statsIntervalId = setInterval(async function() {
                             if (pc.connectionState === 'closed' || pc.connectionState === 'failed' ||
@@ -1028,11 +1062,31 @@ class XboxBridge(
                                 let rawJitterBufferEmitted = 0;
                                 let currentTotalDecodeTime = 0;
                                 let nativeFps = 0;
+                                let diagJbTarget = 0.0;
+                                let diagJbMin = 0.0;
+                                let diagProcDelay = 0.0;
+                                let diagAssemblyTime = 0.0;
+                                let diagAssembledFrames = 0;
+                                let diagDecoderImpl = '';
+                                let diagCodecId = '';
+                                let diagNack = 0;
+                                let diagPli = 0;
+                                let diagKeyFrames = 0;
+                                let diagFramesReceived = 0;
+                                let diagAudioBytes = 0;
+                                let diagAudioJbDelay = 0.0;
+                                let diagAudioJbEmitted = 0;
+                                const diagCodecsById = {};
 
                                 let selectedPairId = null;
                                 stats.forEach(report => {
                                     if (report.type === 'transport' && report.selectedCandidatePairId) {
                                         selectedPairId = report.selectedCandidatePairId;
+                                    } else if (report.type === 'codec' && report.id) {
+                                        diagCodecsById[report.id] = {
+                                            mime: report.mimeType || '',
+                                            fmtp: report.sdpFmtpLine || ''
+                                        };
                                     }
                                 });
 
@@ -1068,6 +1122,24 @@ class XboxBridge(
                                             if (report.totalDecodeTime !== undefined) {
                                                 currentTotalDecodeTime = report.totalDecodeTime;
                                             }
+                                            if (report.jitterBufferTargetDelay !== undefined) diagJbTarget = report.jitterBufferTargetDelay;
+                                            if (report.jitterBufferMinimumDelay !== undefined) diagJbMin = report.jitterBufferMinimumDelay;
+                                            if (report.totalProcessingDelay !== undefined) diagProcDelay = report.totalProcessingDelay;
+                                            if (report.totalAssemblyTime !== undefined) diagAssemblyTime = report.totalAssemblyTime;
+                                            if (report.framesAssembledFromMultiplePackets !== undefined) diagAssembledFrames = report.framesAssembledFromMultiplePackets;
+                                            if (report.decoderImplementation) diagDecoderImpl = String(report.decoderImplementation);
+                                            if (report.codecId) diagCodecId = String(report.codecId);
+                                            if (report.nackCount !== undefined) diagNack = report.nackCount;
+                                            if (report.pliCount !== undefined) diagPli = report.pliCount;
+                                            if (report.keyFramesDecoded !== undefined) diagKeyFrames = report.keyFramesDecoded;
+                                            if (report.framesReceived !== undefined) diagFramesReceived = report.framesReceived;
+                                        }
+                                    } else if (report.type === 'inbound-rtp' && (report.kind === 'audio' || report.mediaType === 'audio')) {
+                                        const aBytes = report.bytesReceived || 0;
+                                        if (aBytes >= diagAudioBytes) {
+                                            diagAudioBytes = aBytes;
+                                            if (report.jitterBufferDelay !== undefined) diagAudioJbDelay = report.jitterBufferDelay;
+                                            if (report.jitterBufferEmittedCount !== undefined) diagAudioJbEmitted = report.jitterBufferEmittedCount;
                                         }
                                     } else if (report.type === 'candidate-pair' && (report.state === 'succeeded' || report.nominated || (selectedPairId && report.id === selectedPairId))) {
                                         const isActivePair = (selectedPairId && report.id === selectedPairId) || report.nominated === true;
@@ -1240,6 +1312,126 @@ class XboxBridge(
                                         window.__lastSentTelemetrySnapshot = payloadObj;
                                         notify('onStreamTelemetry', JSON.stringify(payloadObj));
                                     }
+
+                                    // Ghi log chẩn đoán nội bộ theo chuỗi thời gian (không hiện UI, không đổi hành vi)
+                                    try {
+                                        if (vEl && !vEl.paused && typeof vEl.requestVideoFrameCallback === 'function' && !diagRvfcPending) {
+                                            diagRvfcPending = true;
+                                            vEl.requestVideoFrameCallback(function(cbNow, meta) {
+                                                diagRvfcPending = false;
+                                                if (meta) {
+                                                    const recvToPres = (typeof meta.receiveTime === 'number' && typeof meta.presentationTime === 'number')
+                                                        ? parseFloat((meta.presentationTime - meta.receiveTime).toFixed(1)) : -1;
+                                                    const presToExp = (typeof meta.expectedDisplayTime === 'number' && typeof meta.presentationTime === 'number')
+                                                        ? parseFloat((meta.expectedDisplayTime - meta.presentationTime).toFixed(1)) : -1;
+                                                    const procDur = (typeof meta.processingDuration === 'number')
+                                                        ? parseFloat((meta.processingDuration * 1000.0).toFixed(1)) : -1;
+                                                    diagLastRvfc = { r2p: recvToPres, p2e: presToExp, pd: procDur };
+                                                }
+                                            });
+                                        }
+
+                                        let jbTargetMs = 0.0;
+                                        let jbMinMs = 0.0;
+                                        let procMs = 0.0;
+                                        let asmMs = 0.0;
+                                        let rawDecUnclampedMs = 0.0;
+                                        const dJbEmit = rawJitterBufferEmitted - diagLastJbEmitted;
+                                        if (dJbEmit > 0 && diagLastJbEmitted > 0) {
+                                            if (diagJbTarget >= diagLastJbTarget) jbTargetMs = parseFloat((((diagJbTarget - diagLastJbTarget) / dJbEmit) * 1000.0).toFixed(1));
+                                            if (diagJbMin >= diagLastJbMin) jbMinMs = parseFloat((((diagJbMin - diagLastJbMin) / dJbEmit) * 1000.0).toFixed(1));
+                                        }
+                                        const dDecF = framesDecoded - diagLastDecodeFrames;
+                                        if (dDecF > 0 && currentTotalDecodeTime >= diagLastDecodeTime && diagLastDecodeFrames > 0) {
+                                            rawDecUnclampedMs = parseFloat((((currentTotalDecodeTime - diagLastDecodeTime) / dDecF) * 1000.0).toFixed(1));
+                                            if (diagProcDelay >= diagLastProcDelay) procMs = parseFloat((((diagProcDelay - diagLastProcDelay) / dDecF) * 1000.0).toFixed(1));
+                                        }
+                                        const dAsmF = diagAssembledFrames - diagLastAssembledFrames;
+                                        if (dAsmF > 0 && diagAssemblyTime >= diagLastAssemblyTime && diagLastAssembledFrames > 0) {
+                                            asmMs = parseFloat((((diagAssemblyTime - diagLastAssemblyTime) / dAsmF) * 1000.0).toFixed(1));
+                                        }
+                                        let audioJbMs = 0.0;
+                                        const dAudE = diagAudioJbEmitted - diagLastAudioJbEmitted;
+                                        if (dAudE > 0 && diagAudioJbDelay >= diagLastAudioJbDelay && diagLastAudioJbEmitted > 0) {
+                                            audioJbMs = parseFloat((((diagAudioJbDelay - diagLastAudioJbDelay) / dAudE) * 1000.0).toFixed(1));
+                                        }
+                                        const dNack = Math.max(0, diagNack - diagLastNack);
+                                        const dPli = Math.max(0, diagPli - diagLastPli);
+                                        const dKf = Math.max(0, diagKeyFrames - diagLastKeyFrames);
+                                        const dFrz = Math.max(0, freezeCount - diagLastFreezes);
+                                        const dDrp = Math.max(0, framesDropped - diagLastDropped);
+
+                                        diagLastDecodeTime = currentTotalDecodeTime;
+                                        diagLastDecodeFrames = framesDecoded;
+                                        diagLastJbTarget = diagJbTarget;
+                                        diagLastJbMin = diagJbMin;
+                                        diagLastJbEmitted = rawJitterBufferEmitted;
+                                        diagLastProcDelay = diagProcDelay;
+                                        diagLastAssemblyTime = diagAssemblyTime;
+                                        diagLastAssembledFrames = diagAssembledFrames;
+                                        diagLastAudioJbDelay = diagAudioJbDelay;
+                                        diagLastAudioJbEmitted = diagAudioJbEmitted;
+                                        diagLastNack = diagNack;
+                                        diagLastPli = diagPli;
+                                        diagLastKeyFrames = diagKeyFrames;
+                                        diagLastFreezes = freezeCount;
+                                        diagLastDropped = framesDropped;
+
+                                        const shouldEmitDiag = (now - diagLastSentAt >= 5000) ||
+                                            Math.abs(jitterBufferDelayMs - diagLastJbMs) >= 50.0 ||
+                                            dFrz > 0;
+                                        if (shouldEmitDiag && framesDecoded > 0) {
+                                            diagLastSentAt = now;
+                                            diagLastJbMs = jitterBufferDelayMs;
+                                            const codecInfo = diagCodecsById[diagCodecId] || null;
+                                            let rxPlayout = null;
+                                            let rxTarget = null;
+                                            if (typeof pc.getReceivers === 'function') {
+                                                const recs = pc.getReceivers();
+                                                for (let ri = 0; ri < recs.length; ri++) {
+                                                    if (recs[ri] && recs[ri].track && recs[ri].track.kind === 'video') {
+                                                        if ('playoutDelayHint' in recs[ri]) rxPlayout = recs[ri].playoutDelayHint;
+                                                        if ('jitterBufferTarget' in recs[ri]) rxTarget = recs[ri].jitterBufferTarget;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                            let cssFilter = '';
+                                            try {
+                                                if (vEl && window.getComputedStyle) {
+                                                    const f = window.getComputedStyle(vEl).filter;
+                                                    if (f && f !== 'none') cssFilter = f;
+                                                }
+                                            } catch(_) {}
+                                            const clearedHint = window.__cpDiagClearedHint || null;
+                                            if (clearedHint) window.__cpDiagClearedHint = null;
+                                            notify('onLatencyDiagnostic', JSON.stringify({
+                                                jbMs: jitterBufferDelayMs,
+                                                jbTgtMs: jbTargetMs,
+                                                jbMinMs: jbMinMs,
+                                                audJbMs: audioJbMs,
+                                                decRawMs: rawDecUnclampedMs,
+                                                procMs: procMs,
+                                                asmMs: asmMs,
+                                                rttMs: rtt,
+                                                jitMs: jitter,
+                                                fps: fps,
+                                                decImpl: diagDecoderImpl,
+                                                codec: codecInfo ? (codecInfo.mime + (codecInfo.fmtp ? ';' + codecInfo.fmtp.slice(0, 48) : '')) : '',
+                                                dNack: dNack,
+                                                dPli: dPli,
+                                                dKf: dKf,
+                                                dFrz: dFrz,
+                                                dDrp: dDrp,
+                                                inFlight: Math.max(0, diagFramesReceived - framesDecoded - framesDropped),
+                                                rxHint: rxPlayout,
+                                                rxTgt: rxTarget,
+                                                clrHint: clearedHint,
+                                                rvfc: diagLastRvfc,
+                                                cssFlt: cssFilter ? 1 : 0
+                                            }));
+                                        }
+                                    } catch(_) {}
                                 }
                             } catch(err) {}
                         }, 2500);
@@ -3650,6 +3842,33 @@ class XboxBridge(
     fun onStreamTelemetry(telemetryJson: String?) {
         if (!isCallerTrusted()) return
         NetworkOptimizer.onTelemetryReceived(telemetryJson)
+    }
+
+    @JavascriptInterface
+    fun onLatencyDiagnostic(diagJson: String?) {
+        if (!isCallerTrusted() || diagJson.isNullOrBlank()) return
+        try {
+            val j = JSONObject(diagJson)
+            val rvfc = j.optJSONObject("rvfc")
+            val rvfcStr = if (rvfc != null) {
+                "r2p=${rvfc.optDouble("r2p", -1.0)} p2e=${rvfc.optDouble("p2e", -1.0)} pd=${rvfc.optDouble("pd", -1.0)}"
+            } else {
+                "none"
+            }
+            val clr = j.optJSONObject("clrHint")
+            val clrStr = if (clr != null) {
+                " cleared(${clr.optString("kind")}:p=${clr.opt("prevPlayout")},t=${clr.opt("prevTarget")})"
+            } else {
+                ""
+            }
+            val msg = "LATENCY_DIAG jb=${j.optDouble("jbMs")}ms tgt=${j.optDouble("jbTgtMs")}ms min=${j.optDouble("jbMinMs")}ms " +
+                "audJb=${j.optDouble("audJbMs")}ms decRaw=${j.optDouble("decRawMs")}ms proc=${j.optDouble("procMs")}ms asm=${j.optDouble("asmMs")}ms " +
+                "rtt=${j.optInt("rttMs")}ms jit=${j.optInt("jitMs")}ms fps=${j.optInt("fps")} " +
+                "dec=${j.optString("decImpl").ifBlank { "?" }} codec=${j.optString("codec").ifBlank { "?" }} " +
+                "dNack=${j.optInt("dNack")} dPli=${j.optInt("dPli")} dKf=${j.optInt("dKf")} dFrz=${j.optInt("dFrz")} dDrp=${j.optInt("dDrp")} " +
+                "inFlight=${j.optInt("inFlight")} rxHint=${j.opt("rxHint")} rxTgt=${j.opt("rxTgt")} cssFlt=${j.optInt("cssFlt")} rvfc=[$rvfcStr]$clrStr"
+            com.example.data.AppLogger.info("PERF", msg)
+        } catch (_: Exception) {}
     }
 
     @JavascriptInterface

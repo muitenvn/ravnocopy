@@ -1153,6 +1153,9 @@ fun CloudBrowserScreen(
                     private var lastHeaderTouchLogElapsedMs = 0L
 
                     override fun dispatchTouchEvent(event: android.view.MotionEvent?): Boolean {
+                        if (event != null && com.example.cloudplay.KeyboardMousePrototype.handleUnCapturedMouseTouch(event)) {
+                            return true
+                        }
                         val handled = super.dispatchTouchEvent(event)
                         if (event != null &&
                             event.actionMasked == android.view.MotionEvent.ACTION_UP &&
@@ -1240,18 +1243,27 @@ fun CloudBrowserScreen(
                     }
 
                     override fun onGenericMotionEvent(event: android.view.MotionEvent?): Boolean {
-                        if (event != null &&
-                            ((event.source and android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK ||
-                                (event.source and android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD)
-                        ) {
-                            if (event.deviceId != lastUnbufferedMotionDeviceId) {
-                                lastUnbufferedMotionDeviceId = event.deviceId
-                                try {
-                                    requestUnbufferedDispatch(event)
-                                } catch (_: Exception) {}
+                        if (event != null) {
+                            if (com.example.cloudplay.KeyboardMousePrototype.handleUnCapturedMouseTouch(event)) {
+                                return true
+                            }
+                            if ((event.source and android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK ||
+                                (event.source and android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD
+                            ) {
+                                if (event.deviceId != lastUnbufferedMotionDeviceId) {
+                                    lastUnbufferedMotionDeviceId = event.deviceId
+                                    try {
+                                        requestUnbufferedDispatch(event)
+                                    } catch (_: Exception) {}
+                                }
                             }
                         }
                         return super.onGenericMotionEvent(event)
+                    }
+
+                    override fun onPointerCaptureChange(hasCapture: Boolean) {
+                        super.onPointerCaptureChange(hasCapture)
+                        com.example.cloudplay.KeyboardMousePrototype.onPointerCaptureChanged(hasCapture)
                     }
                 }.apply {
                     layoutParams = ViewGroup.LayoutParams(
@@ -1264,6 +1276,9 @@ fun CloudBrowserScreen(
                     keepScreenOn = true
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                         setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
+                        setOnCapturedPointerListener { _, ev ->
+                            com.example.cloudplay.KeyboardMousePrototype.handleCapturedPointerEvent(ev)
+                        }
                     }
 
                     settings.apply {
@@ -1725,10 +1740,22 @@ fun CloudBrowserScreen(
         var isHudOpen by remember { mutableStateOf(false) }
         val shouldRouteGamepadToAppUi = isHudOpen || showQuickSettingsDialog || showTranslatorDialog || isLoadingOverlayVisible
 
-        LaunchedEffect(shouldRouteGamepadToAppUi, webViewInstance) {
+        LaunchedEffect(shouldRouteGamepadToAppUi, webViewInstance, isInActiveGameStream) {
             com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi = shouldRouteGamepadToAppUi
+            com.example.cloudplay.KeyboardMousePrototype.attachWebView(webViewInstance)
+            com.example.cloudplay.KeyboardMousePrototype.updateRoutingContext(
+                inGameStream = isInActiveGameStream,
+                routeToAppUi = shouldRouteGamepadToAppUi
+            )
             if (!shouldRouteGamepadToAppUi) {
                 webViewInstance?.requestFocus()
+            }
+        }
+
+        DisposableEffect(Unit) {
+            onDispose {
+                com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("browser_disposed")
+                com.example.cloudplay.KeyboardMousePrototype.attachWebView(null)
             }
         }
 
@@ -2181,6 +2208,164 @@ fun CloudBrowserScreen(
                     webViewInstance?.evaluateJavascript("if (window.__forceTranslateEntirePage) window.__forceTranslateEntirePage();", null)
                 }
             )
+        }
+
+        // Thanh nút chỉnh nhanh thử nghiệm Phím + Chuột (Bản A: Giả tay cầm / Bản B: Gốc)
+        if (!isHudOpen && !showQuickSettingsDialog && !showTranslatorDialog && !isLoadingOverlayVisible && isInActiveGameStream) {
+            IsolatedKbmQuickTestBar(
+                config = config,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 6.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun IsolatedKbmQuickTestBar(
+    config: com.example.data.AppConfig,
+    modifier: Modifier = Modifier
+) {
+    val kbmState by com.example.cloudplay.KeyboardMousePrototype.state.collectAsState()
+    val isActive = kbmState.mode != com.example.cloudplay.KbmTestMode.OFF
+    val borderColor = when (kbmState.mode) {
+        com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD -> Color(0xFF27D884)
+        com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH -> Color(0xFF3FD8EE)
+        com.example.cloudplay.KbmTestMode.OFF -> Color(0x40FFFFFF)
+    }
+
+    Surface(
+        modifier = modifier.testTag("kbm_quick_test_bar"),
+        shape = RoundedCornerShape(10.dp),
+        color = Color(0xCC0D1511),
+        border = BorderStroke(1.dp, borderColor),
+        shadowElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .defaultMinSize(minHeight = 32.dp)
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(if (isActive) Color(0xFF16352A) else Color(0xFF142019))
+                    .clickable { com.example.cloudplay.KeyboardMousePrototype.cycleMode() }
+                    .padding(horizontal = 8.dp, vertical = 5.dp)
+                    .testTag("kbm_quick_mode_btn"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = com.example.cloudplay.KbmPrototypeStrings.pillModeShort(config, kbmState.mode),
+                    color = if (isActive) borderColor else Color(0xFFD8E4DE),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+
+            if (kbmState.mode == com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD) {
+                val captureLabel = if (kbmState.isPointerCaptured && !kbmState.isPausedByEsc) {
+                    com.example.cloudplay.KbmPrototypeStrings.releaseEscLabel(config)
+                } else {
+                    com.example.cloudplay.KbmPrototypeStrings.captureMouseLabel(config)
+                }
+                Box(
+                    modifier = Modifier
+                        .defaultMinSize(minHeight = 32.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(if (kbmState.isPointerCaptured) Color(0xFF16352A) else Color(0xFF142019))
+                        .clickable {
+                            if (kbmState.isPointerCaptured && !kbmState.isPausedByEsc) {
+                                com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("quick_bar_release")
+                            } else {
+                                com.example.cloudplay.KeyboardMousePrototype.requestPointerCaptureNow()
+                            }
+                        }
+                        .padding(horizontal = 8.dp, vertical = 5.dp)
+                        .testTag("kbm_quick_capture_btn"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = captureLabel,
+                        color = if (kbmState.isPointerCaptured) Color(0xFF27D884) else Color(0xFFE3B341),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 30.dp, minHeight = 32.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(Color(0xFF142019))
+                        .clickable { com.example.cloudplay.KeyboardMousePrototype.adjustMouseSensitivity(-0.2f) }
+                        .padding(horizontal = 7.dp, vertical = 5.dp)
+                        .testTag("kbm_quick_sens_minus"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("-", color = Color(0xFFE6EFEA), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+                Text(
+                    text = String.format(java.util.Locale.US, "%.1fx", kbmState.mouseSensitivity),
+                    color = Color(0xFF9EB3A7),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+                Box(
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 30.dp, minHeight = 32.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(Color(0xFF142019))
+                        .clickable { com.example.cloudplay.KeyboardMousePrototype.adjustMouseSensitivity(+0.2f) }
+                        .padding(horizontal = 7.dp, vertical = 5.dp)
+                        .testTag("kbm_quick_sens_plus"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("+", color = Color(0xFFE6EFEA), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+                if (kbmState.lastKeyHint.isNotBlank()) {
+                    Text(
+                        text = kbmState.lastKeyHint,
+                        color = Color(0xFF3FD8EE),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
+            } else if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) {
+                Box(
+                    modifier = Modifier
+                        .defaultMinSize(minHeight = 32.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(Color(0xFF16352A))
+                        .clickable { com.example.cloudplay.KeyboardMousePrototype.probeAndRequestNativePointerLock() }
+                        .padding(horizontal = 8.dp, vertical = 5.dp)
+                        .testTag("kbm_quick_weblock_btn"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = com.example.cloudplay.KbmPrototypeStrings.testWebLockLabel(config),
+                        color = Color(0xFF3FD8EE),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
+                if (kbmState.nativePointerLockStatus.isNotBlank()) {
+                    Text(
+                        text = kbmState.nativePointerLockStatus,
+                        color = Color(0xFFE3B341),
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
+            }
         }
     }
 }

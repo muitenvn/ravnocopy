@@ -205,6 +205,126 @@ private fun QuickSettingsColControls(
         onCheckedChange = onToggleVirtualController
     )
 
+    val kbmState by com.example.cloudplay.KeyboardMousePrototype.state.collectAsState()
+    HudSectionLabel(com.example.cloudplay.KbmPrototypeStrings.sectionTitle(config))
+    HudSegmentedControl(
+        options = listOf(
+            com.example.cloudplay.KbmPrototypeStrings.offLabel(config),
+            com.example.cloudplay.KbmPrototypeStrings.modeALabel(config),
+            com.example.cloudplay.KbmPrototypeStrings.modeBLabel(config)
+        ),
+        selectedIndex = when (kbmState.mode) {
+            com.example.cloudplay.KbmTestMode.OFF -> 0
+            com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD -> 1
+            com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH -> 2
+        },
+        onSelect = { idx ->
+            val target = when (idx) {
+                1 -> com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD
+                2 -> com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH
+                else -> com.example.cloudplay.KbmTestMode.OFF
+            }
+            com.example.cloudplay.KeyboardMousePrototype.setMode(target)
+        },
+        fontSize = 11.5.sp
+    )
+    if (kbmState.mode == com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${com.example.cloudplay.KbmPrototypeStrings.mouseSensitivityLabel(config)}: ${String.format(java.util.Locale.US, "%.1fx", kbmState.mouseSensitivity)}",
+                color = HudMuted,
+                fontSize = 11.5.sp,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(HudSurface)
+                    .gamepadClickable(cornerRadius = 8.dp) {
+                        com.example.cloudplay.KeyboardMousePrototype.adjustMouseSensitivity(-0.2f)
+                    }
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .testTag("kbm_sheet_sens_minus"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("-", color = HudInk, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(HudSurface)
+                    .gamepadClickable(cornerRadius = 8.dp) {
+                        com.example.cloudplay.KeyboardMousePrototype.adjustMouseSensitivity(+0.2f)
+                    }
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .testTag("kbm_sheet_sens_plus"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("+", color = HudInk, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        Text(
+            text = com.example.cloudplay.KbmPrototypeStrings.modeAHint(config),
+            color = HudFaint,
+            fontSize = 11.sp,
+            lineHeight = 14.5.sp
+        )
+    } else if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(HudSelBg)
+                    .gamepadClickable(cornerRadius = 8.dp) {
+                        com.example.cloudplay.KeyboardMousePrototype.probeAndRequestNativePointerLock()
+                    }
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .testTag("kbm_sheet_test_weblock"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = com.example.cloudplay.KbmPrototypeStrings.testWebLockLabel(config),
+                    color = HudAccent,
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            if (kbmState.nativePointerLockStatus.isNotBlank()) {
+                Text(
+                    text = kbmState.nativePointerLockStatus,
+                    color = HudInk,
+                    fontSize = 11.sp,
+                    fontFamily = JetBrainsMonoFontFamily,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        Text(
+            text = com.example.cloudplay.KbmPrototypeStrings.modeBHint(config),
+            color = HudFaint,
+            fontSize = 11.sp,
+            lineHeight = 14.5.sp
+        )
+    }
+
     HudSwitchRow(
         title = config.tr("Dịch tiếng Việt", "Translate interface"),
         checked = config.xcloudTranslateEnabled,

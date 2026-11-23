@@ -172,6 +172,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("activity_stop")
         com.example.data.AppLogger.info("SYSTEM", "Ứng dụng vào nền (Background)")
         com.example.data.PerformanceMonitor.onAppStop()
         super.onStop()
@@ -188,6 +189,11 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         com.example.ui.components.GamepadUiNavigation.observeKeyEventPassively(event)
+        if (isBrowserScreenActive && !com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi) {
+            if (com.example.cloudplay.KeyboardMousePrototype.handleKeyEvent(event)) {
+                return true
+            }
+        }
         val handled = super.dispatchKeyEvent(event)
         if (!handled && (!isBrowserScreenActive || com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi)) {
             if (com.example.ui.components.GamepadUiNavigation.handleActivityKeyEvent(event)) {
@@ -217,13 +223,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus && isBrowserScreenActive) {
+        if (!hasFocus) {
+            com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("window_focus_lost")
+        } else if (isBrowserScreenActive) {
             applyImmersiveFullscreen(true)
         }
     }
 
     fun applyImmersiveFullscreen(enable: Boolean) {
         if (!enable) {
+            com.example.cloudplay.KeyboardMousePrototype.releaseAllAndUncapture("exit_browser")
             com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi = true
         }
         if (!enable && !isBrowserScreenActive) return
