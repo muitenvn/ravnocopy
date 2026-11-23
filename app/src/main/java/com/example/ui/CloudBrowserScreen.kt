@@ -1070,7 +1070,7 @@ fun CloudBrowserScreen(
             remapObj.put(src.toString(), dst)
         }
         webViewInstance?.evaluateJavascript(
-            "if (window.__updatePhysicalControllerConfig) window.__updatePhysicalControllerConfig({ remap: ${remapObj}, lInner: ${config.physLeftStickInnerDeadzone}, lOuter: ${config.physLeftStickOuterDeadzone}, rInner: ${config.physRightStickInnerDeadzone}, rOuter: ${config.physRightStickOuterDeadzone}, shortcutsEnabled: ${config.controllerShortcutsEnabled}, shortcutStats: ${config.shortcutToggleStatsButton}, shortcutVirtualPad: ${config.shortcutToggleVirtualPadButton}, shortcutRecord: ${config.shortcutToggleRecordingButton} });",
+            "if (window.__updatePhysicalControllerConfig) window.__updatePhysicalControllerConfig({ buttonMap: ${remapObj}, leftInner: ${config.physLeftStickInnerDeadzone}, leftOuter: ${config.physLeftStickOuterDeadzone}, rightInner: ${config.physRightStickInnerDeadzone}, rightOuter: ${config.physRightStickOuterDeadzone}, shortcutsEnabled: ${config.controllerShortcutsEnabled}, shortcutStatsBtn: ${config.shortcutToggleStatsButton}, shortcutVpadBtn: ${config.shortcutToggleVirtualPadButton}, shortcutRecBtn: ${config.shortcutToggleRecordingButton} });",
             null
         )
     }

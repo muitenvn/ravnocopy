@@ -438,7 +438,16 @@ class XboxBridge(
                     window.__physControllerConfig = $initPhysConfJson;
                     window.__updatePhysicalControllerConfig = function(conf) {
                         if (!conf) return;
-                        window.__physControllerConfig = Object.assign(window.__physControllerConfig || {}, conf);
+                        const norm = Object.assign({}, conf);
+                        if (norm.remap && !norm.buttonMap) norm.buttonMap = norm.remap;
+                        if (typeof norm.lInner === 'number' && typeof norm.leftInner !== 'number') norm.leftInner = norm.lInner;
+                        if (typeof norm.lOuter === 'number' && typeof norm.leftOuter !== 'number') norm.leftOuter = norm.lOuter;
+                        if (typeof norm.rInner === 'number' && typeof norm.rightInner !== 'number') norm.rightInner = norm.rInner;
+                        if (typeof norm.rOuter === 'number' && typeof norm.rightOuter !== 'number') norm.rightOuter = norm.rOuter;
+                        if (typeof norm.shortcutStats === 'number' && typeof norm.shortcutStatsBtn !== 'number') norm.shortcutStatsBtn = norm.shortcutStats;
+                        if (typeof norm.shortcutVirtualPad === 'number' && typeof norm.shortcutVpadBtn !== 'number') norm.shortcutVpadBtn = norm.shortcutVirtualPad;
+                        if (typeof norm.shortcutRecord === 'number' && typeof norm.shortcutRecBtn !== 'number') norm.shortcutRecBtn = norm.shortcutRecord;
+                        window.__physControllerConfig = Object.assign(window.__physControllerConfig || {}, norm);
                     };
 
                     window.__cpExitPreviewStage = window.__cpExitPreviewStage || 'IDLE';
@@ -2685,6 +2694,16 @@ class XboxBridge(
                             for (let s = 0; s < 17; s++) {
                                 remappedPhysButtons[s] = { pressed: false, touched: false, value: 0 };
                             }
+                            const outHalfAxes = [0, 0, 0, 0, 0, 0, 0, 0];
+
+                            const pAxes = physPad.axes;
+                            const rawAx0 = (pAxes && typeof pAxes[0] === 'number') ? pAxes[0] : 0;
+                            const rawAx1 = (pAxes && typeof pAxes[1] === 'number') ? pAxes[1] : 0;
+                            const rawAx2 = (pAxes && typeof pAxes[2] === 'number') ? pAxes[2] : 0;
+                            const rawAx3 = (pAxes && typeof pAxes[3] === 'number') ? pAxes[3] : 0;
+                            const leftPair = applyPhysStickDeadzone(rawAx0, rawAx1, pCfg.leftInner, pCfg.leftOuter);
+                            const rightPair = applyPhysStickDeadzone(rawAx2, rawAx3, pCfg.rightInner, pCfg.rightOuter);
+
                             const rawBtns = physPad.buttons || [];
                             for (let s = 0; s < 17; s++) {
                                 const sb = rawBtns[s];
@@ -2692,15 +2711,53 @@ class XboxBridge(
                                 let dst = s;
                                 if (bMap) {
                                     const mapped = bMap[s];
-                                    if (typeof mapped === 'number' && mapped >= 0 && mapped < 17) {
+                                    if (typeof mapped === 'number' && mapped >= 0 && mapped <= 24) {
                                         dst = mapped;
                                     }
                                 }
-                                const targetSlot = remappedPhysButtons[dst];
-                                if (sb.pressed) targetSlot.pressed = true;
-                                if (sb.touched) targetSlot.touched = true;
-                                const val = sb.value || 0;
-                                if (val > targetSlot.value) targetSlot.value = val;
+                                if (dst < 17) {
+                                    const targetSlot = remappedPhysButtons[dst];
+                                    if (sb.pressed) targetSlot.pressed = true;
+                                    if (sb.touched) targetSlot.touched = true;
+                                    const val = sb.value || 0;
+                                    if (val > targetSlot.value) targetSlot.value = val;
+                                } else {
+                                    const axisVal = Math.max(sb.value || 0, sb.pressed ? 1 : 0);
+                                    const hIdx = dst - 17;
+                                    if (axisVal > outHalfAxes[hIdx]) outHalfAxes[hIdx] = axisVal;
+                                }
+                            }
+
+                            const rawHalfAxes = [
+                                leftPair[1] < 0 ? -leftPair[1] : 0,   // 17: L Up
+                                leftPair[1] > 0 ?  leftPair[1] : 0,   // 18: L Down
+                                leftPair[0] < 0 ? -leftPair[0] : 0,   // 19: L Left
+                                leftPair[0] > 0 ?  leftPair[0] : 0,   // 20: L Right
+                                rightPair[1] < 0 ? -rightPair[1] : 0, // 21: R Up
+                                rightPair[1] > 0 ?  rightPair[1] : 0, // 22: R Down
+                                rightPair[0] < 0 ? -rightPair[0] : 0, // 23: R Left
+                                rightPair[0] > 0 ?  rightPair[0] : 0  // 24: R Right
+                            ];
+                            for (let h = 0; h < 8; h++) {
+                                const mag = rawHalfAxes[h];
+                                if (mag <= 0) continue;
+                                const srcCode = 17 + h;
+                                let dst = srcCode;
+                                if (bMap) {
+                                    const mapped = bMap[srcCode];
+                                    if (typeof mapped === 'number' && mapped >= 0 && mapped <= 24) {
+                                        dst = mapped;
+                                    }
+                                }
+                                if (dst < 17) {
+                                    const targetSlot = remappedPhysButtons[dst];
+                                    if (mag > targetSlot.value) targetSlot.value = mag;
+                                    if (mag >= 0.45) targetSlot.pressed = true;
+                                    if (mag >= 0.15) targetSlot.touched = true;
+                                } else {
+                                    const dIdx = dst - 17;
+                                    if (mag > outHalfAxes[dIdx]) outHalfAxes[dIdx] = mag;
+                                }
                             }
 
                             // Non-blocking View (button 8) combo shortcut detection:
@@ -2737,14 +2794,12 @@ class XboxBridge(
                                 }
                             }
 
-                            const pAxes = physPad.axes;
-                            const rawAx0 = (pAxes && typeof pAxes[0] === 'number') ? pAxes[0] : 0;
-                            const rawAx1 = (pAxes && typeof pAxes[1] === 'number') ? pAxes[1] : 0;
-                            const rawAx2 = (pAxes && typeof pAxes[2] === 'number') ? pAxes[2] : 0;
-                            const rawAx3 = (pAxes && typeof pAxes[3] === 'number') ? pAxes[3] : 0;
-                            const leftPair = applyPhysStickDeadzone(rawAx0, rawAx1, pCfg.leftInner, pCfg.leftOuter);
-                            const rightPair = applyPhysStickDeadzone(rawAx2, rawAx3, pCfg.rightInner, pCfg.rightOuter);
-                            const physProcessedAxes = [leftPair[0], leftPair[1], rightPair[0], rightPair[1]];
+                            const physProcessedAxes = [
+                                Math.max(-1, Math.min(1, outHalfAxes[3] - outHalfAxes[2])),
+                                Math.max(-1, Math.min(1, outHalfAxes[1] - outHalfAxes[0])),
+                                Math.max(-1, Math.min(1, outHalfAxes[7] - outHalfAxes[6])),
+                                Math.max(-1, Math.min(1, outHalfAxes[5] - outHalfAxes[4]))
+                            ];
 
                             const padIdx = physPad.index || 0;
                             let outAxes = physProcessedAxes;

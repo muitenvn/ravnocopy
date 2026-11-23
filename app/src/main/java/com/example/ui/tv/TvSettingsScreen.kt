@@ -133,6 +133,7 @@ internal fun TvSettingsScreen(
     var showClearCookiesConfirmDialog by remember { mutableStateOf(false) }
     var showRemotePadDialog by rememberSaveable { mutableStateOf(false) }
     var activeRemapSourceBtn by remember { mutableStateOf<Int?>(null) }
+    var showVisualControllerMapper by remember { mutableStateOf(false) }
     var activeShortcutTargetAction by remember { mutableStateOf<String?>(null) }
 
     val gamepadDetector = remember(context) { GamepadDetector(context) }
@@ -575,6 +576,35 @@ internal fun TvSettingsScreen(
                                     triggerControllerTestRumble()
                                 },
                                 testTag = "tv_setting_test_rumble_row"
+                            )
+                        }
+
+                        item(key = "tv_set_visual_controller_mapper") {
+                            val remappedCount = remember(config.physicalGamepadButtonMap) {
+                                SettingsRepository.parsePhysicalButtonMap(config.physicalGamepadButtonMap).size
+                            }
+                            TvSettingActionRow(
+                                title = config.tr("Sơ đồ chỉnh nút tay cầm", "Controller Button Mapper"),
+                                subtitle = if (remappedCount > 0) {
+                                    config.tr(
+                                        "Đã đổi $remappedCount nút/hướng cần · Bấm A để mở hình tay cầm và gán lại hoặc đảo trục.",
+                                        "$remappedCount bindings active · Press A to open visual controller diagram."
+                                    )
+                                } else {
+                                    config.tr(
+                                        "Mở hình tay cầm đầy đủ nút & 4 hướng cần L/R, bấm trực tiếp trên tay cầm thật để gán hoặc đảo ngược trục.",
+                                        "Open full controller diagram (buttons & L/R sticks), press physical buttons to bind or invert axes."
+                                    )
+                                },
+                                actionLabel = if (remappedCount > 0) {
+                                    "${config.tr("Chỉnh", "Edit")} ($remappedCount)"
+                                } else {
+                                    config.tr("Mở sơ đồ", "Open Map")
+                                },
+                                scale = scale,
+                                onMoveLeftToCategory = moveFocusToCategory,
+                                onClick = { showVisualControllerMapper = true },
+                                testTag = "tv_setting_visual_controller_mapper_row"
                             )
                         }
 
@@ -1574,6 +1604,15 @@ internal fun TvSettingsScreen(
             },
             onDismiss = { showClearCookiesConfirmDialog = false },
             testTagPrefix = "tv_clear_cookies_dialog"
+        )
+    }
+
+    if (showVisualControllerMapper) {
+        com.example.ui.components.VisualControllerMapperDialog(
+            config = config,
+            controllerName = gamepadStatus.controllerName,
+            hasPhysicalController = gamepadStatus.hasPhysicalController,
+            onDismiss = { showVisualControllerMapper = false }
         )
     }
 

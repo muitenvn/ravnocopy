@@ -187,6 +187,9 @@ class MainActivity : ComponentActivity() {
     private var isBrowserScreenActive = false
 
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (!isBrowserScreenActive && com.example.cloudplay.PhysicalGamepadCaptureBus.handleKeyEvent(event)) {
+            return true
+        }
         com.example.ui.components.GamepadUiNavigation.observeKeyEventPassively(event)
         val handled = super.dispatchKeyEvent(event)
         if (!handled && (!isBrowserScreenActive || com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi)) {
@@ -205,6 +208,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun dispatchGenericMotionEvent(ev: android.view.MotionEvent?): Boolean {
+        if (ev != null && !isBrowserScreenActive && com.example.cloudplay.PhysicalGamepadCaptureBus.handleGenericMotionEvent(ev)) {
+            return true
+        }
         if (ev != null && (!isBrowserScreenActive || com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi)) {
             if (com.example.ui.components.GamepadUiNavigation.handleGenericMotionEvent(ev)) {
                 return true

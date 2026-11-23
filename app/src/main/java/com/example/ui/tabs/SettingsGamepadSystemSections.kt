@@ -80,6 +80,7 @@ internal fun SettingsGamepadTouchSection(
         onDispose { gamepadDetector.release() }
     }
     val gamepadStatus by gamepadDetector.status.collectAsState()
+    var showVisualControllerMapper by remember { mutableStateOf(false) }
 
     fun triggerControllerTestRumble() {
         try {
@@ -230,6 +231,46 @@ internal fun SettingsGamepadTouchSection(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                     )
                 }
+            }
+
+            // Nút mở Sơ đồ chỉnh nút tay cầm trực quan ngay trong Cài đặt chính (hỗ trợ bấm trực tiếp trên tay cầm thật & đảo chiều cần L/R)
+            val remappedCount = remember(config.physicalGamepadButtonMap) {
+                SettingsRepository.parsePhysicalButtonMap(config.physicalGamepadButtonMap).size
+            }
+            OutlinedButton(
+                onClick = { showVisualControllerMapper = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .gamepadActionButton(cornerRadius = 10.dp) {
+                        showVisualControllerMapper = true
+                    }
+                    .semantics {
+                        contentDescription = config.tr(
+                            "Mở sơ đồ chỉnh nút và hướng cần tay cầm thật",
+                            "Open visual controller button and stick mapper"
+                        )
+                    }
+                    .testTag("settings_open_visual_controller_mapper_btn"),
+                shape = RoundedCornerShape(10.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.2.dp,
+                    if (remappedCount > 0) XboxNeonGreen else DirectCyan
+                ),
+                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                    containerColor = if (remappedCount > 0) Color(0xFF16352A) else Color(0xFF10313A)
+                )
+            ) {
+                Text(
+                    text = if (remappedCount > 0) {
+                        "${config.tr("Sơ đồ chỉnh nút tay cầm", "Controller Button Mapper")} ($remappedCount)"
+                    } else {
+                        config.tr("Sơ đồ chỉnh nút tay cầm (Nút & Cần L/R)", "Controller Button Mapper (Buttons & L/R Sticks)")
+                    },
+                    color = if (remappedCount > 0) XboxNeonGreen else DirectCyan,
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center
+                )
             }
         }
 
@@ -758,6 +799,15 @@ internal fun SettingsGamepadTouchSection(
                 }
             }
         }
+    }
+
+    if (showVisualControllerMapper) {
+        com.example.ui.components.VisualControllerMapperDialog(
+            config = config,
+            controllerName = gamepadStatus.controllerName,
+            hasPhysicalController = gamepadStatus.hasPhysicalController,
+            onDismiss = { showVisualControllerMapper = false }
+        )
     }
 }
 

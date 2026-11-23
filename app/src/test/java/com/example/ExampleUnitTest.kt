@@ -140,5 +140,69 @@ class ExampleUnitTest {
       )
     )
   }
+
+  @Test
+  fun physicalControllerMap_supports25InputsAndAxisInversion() {
+    val repo = com.example.data.SettingsRepository
+    val raw = "${repo.PHYS_STICK_L_UP}:${repo.PHYS_STICK_L_DOWN},${repo.PHYS_STICK_L_DOWN}:${repo.PHYS_STICK_L_UP},0:1,1:0,99:2"
+    val parsed = repo.parsePhysicalButtonMap(raw)
+
+    // Valid codes 0..24 are kept; out-of-range code 99 is dropped
+    assertEquals(4, parsed.size)
+    assertEquals(repo.PHYS_STICK_L_DOWN, parsed[repo.PHYS_STICK_L_UP])
+    assertEquals(repo.PHYS_STICK_L_UP, parsed[repo.PHYS_STICK_L_DOWN])
+    assertEquals(1, parsed[0])
+    assertEquals(0, parsed[1])
+    assertNull(parsed[99])
+
+    // Inversion detection for Left Stick Y
+    assertTrue(repo.isPhysicalAxisInverted(parsed, repo.PHYS_STICK_L_UP, repo.PHYS_STICK_L_DOWN))
+    assertFalse(repo.isPhysicalAxisInverted(parsed, repo.PHYS_STICK_L_LEFT, repo.PHYS_STICK_L_RIGHT))
+    assertFalse(repo.arePhysicalSticksSwapped(parsed))
+
+    // Round-trip serialization preserves sorted entries
+    val serialized = repo.serializePhysicalButtonMap(parsed)
+    assertEquals(parsed, repo.parsePhysicalButtonMap(serialized))
+
+    // Full Left <-> Right stick swap detection
+    val swappedSticks = mapOf(
+      repo.PHYS_STICK_L_UP to repo.PHYS_STICK_R_UP,
+      repo.PHYS_STICK_L_DOWN to repo.PHYS_STICK_R_DOWN,
+      repo.PHYS_STICK_L_LEFT to repo.PHYS_STICK_R_LEFT,
+      repo.PHYS_STICK_L_RIGHT to repo.PHYS_STICK_R_RIGHT,
+      repo.PHYS_STICK_R_UP to repo.PHYS_STICK_L_UP,
+      repo.PHYS_STICK_R_DOWN to repo.PHYS_STICK_L_DOWN,
+      repo.PHYS_STICK_R_LEFT to repo.PHYS_STICK_L_LEFT,
+      repo.PHYS_STICK_R_RIGHT to repo.PHYS_STICK_L_RIGHT
+    )
+    assertTrue(repo.arePhysicalSticksSwapped(swappedSticks))
+
+    // Short labels cover all 25 codes
+    for (code in 0..repo.PHYS_INPUT_MAX_CODE) {
+      assertTrue(repo.getGamepadButtonShortLabel(code).isNotBlank())
+    }
+  }
+
+  @Test
+  fun visualControllerMapper_translationsCoverAll12Languages() {
+    val langs = listOf("vi", "en", "zh", "ja", "ko", "es", "pt", "fr", "de", "ru", "th", "id")
+    val enTitle = "Controller Button Mapper"
+    val viTitle = "Sơ đồ chỉnh nút tay cầm"
+    for (lang in langs) {
+      val translated = com.example.data.AppUiTranslator.translateUi(viTitle, enTitle, lang)
+      assertTrue("Empty translation for $lang", translated.isNotBlank())
+      if (lang != "en") {
+        assertNotEquals("Language $lang fell back to English", enTitle, translated)
+      }
+    }
+    val dynamicJa = com.example.data.AppUiTranslator.translateUi(
+      "Đã đổi 3 nút/hướng cần",
+      "3 bindings active · Press A to open visual controller diagram.",
+      "ja"
+    )
+    assertTrue(dynamicJa.contains("3"))
+    assertNotEquals("3 bindings active · Press A to open visual controller diagram.", dynamicJa)
+  }
 }
+
 

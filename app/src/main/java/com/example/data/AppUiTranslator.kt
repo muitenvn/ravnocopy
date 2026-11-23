@@ -1270,6 +1270,22 @@ object AppUiTranslator {
                 else -> en
             }
         }
+        if (en.endsWith(" bindings active · Press A to open visual controller diagram.")) {
+            val num = en.removeSuffix(" bindings active · Press A to open visual controller diagram.")
+            return when (lang) {
+                "zh" -> "已修改 $num 项映射 · 按 A 打开手柄映射图。"
+                "ja" -> "$num 件の割り当てが有効 · A を押してコントローラー図を開く。"
+                "ko" -> "${num}개 매핑 적용 중 · A를 눌러 컨트롤러 매핑 화면을 엽니다."
+                "es" -> "$num asignaciones activas · Pulsa A para abrir el mapa visual."
+                "pt" -> "$num mapeamentos ativos · Pressione A para abrir o mapa visual."
+                "fr" -> "$num assignations actives · Appuyez sur A pour ouvrir le plan."
+                "de" -> "$num Belegungen aktiv · A drücken für die Controller-Ansicht."
+                "ru" -> "Активно изменений: $num · Нажмите A для схемы геймпада."
+                "th" -> "ปรับแต่งแล้ว $num ปุ่ม · กด A เพื่อเปิดผังจอย"
+                "id" -> "$num pemetaan aktif · Tekan A untuk membuka peta kontroler."
+                else -> en
+            }
+        }
         when (en) {
             "Home" -> return when (lang) {
                 "zh" -> "主页"; "ja" -> "ホーム"; "ko" -> "홈"; "es" -> "Inicio"; "pt" -> "Início"
@@ -1898,6 +1914,196 @@ object AppUiTranslator {
             "Auto-switched to measured server:" -> return when (lang) {
                 "zh" -> "已自动切换到实测节点:"; "ja" -> "測定済みサーバーに自動切替しました:"; "ko" -> "실측 서버로 자동 전환됨:"; "es" -> "Cambiado automáticamente al servidor medido:"; "pt" -> "Alternado automaticamente para servidor medido:"
                 "fr" -> "Bascule auto vers le serveur mesuré :"; "de" -> "Automatisch zu gemessenem Server gewechselt:"; "ru" -> "Автопереключение на проверенный сервер:"; "th" -> "สลับไปเซิร์ฟเวอร์ที่วัดจริงอัตโนมัติ:"; "id" -> "Beralih otomatis ke server terukur:"
+                else -> en
+            }
+            "Controller Button Mapper" -> return when (lang) {
+                "zh" -> "手柄按键映射图"; "ja" -> "コントローラーボタン配置"; "ko" -> "컨트롤러 버튼 매핑"; "es" -> "Mapa de botones del mando"; "pt" -> "Mapa de botões do controle"
+                "fr" -> "Configuration des boutons"; "de" -> "Controller-Tastenbelegung"; "ru" -> "Настройка кнопок геймпада"; "th" -> "ผังตั้งค่าปุ่มจอย"; "id" -> "Pemetaan Tombol Kontroler"
+                else -> en
+            }
+            "Controller Button Mapper (Buttons & L/R Sticks)" -> return when (lang) {
+                "zh" -> "手柄按键映射图 (按键与左/右摇杆)"; "ja" -> "コントローラー配置 (ボタン＆左右スティック)"; "ko" -> "컨트롤러 매핑 (버튼 & L/R 스틱)"; "es" -> "Mapa del mando (Botones y Sticks L/R)"; "pt" -> "Mapa do controle (Botões e Analógicos L/R)"
+                "fr" -> "Plan de manette (Boutons & Sticks L/R)"; "de" -> "Controller-Plan (Tasten & L/R-Sticks)"; "ru" -> "Схема геймпада (Кнопки и стики L/R)"; "th" -> "ผังตั้งค่าจอย (ปุ่มและแกน L/R)"; "id" -> "Peta Kontroler (Tombol & Stik L/R)"
+                else -> en
+            }
+            "Open Map" -> return when (lang) {
+                "zh" -> "打开映射"; "ja" -> "配置を開く"; "ko" -> "매핑 열기"; "es" -> "Abrir mapa"; "pt" -> "Abrir mapa"
+                "fr" -> "Ouvrir"; "de" -> "Öffnen"; "ru" -> "Открыть"; "th" -> "เปิดผัง"; "id" -> "Buka Peta"
+                else -> en
+            }
+            "Edit" -> return when (lang) {
+                "zh" -> "编辑"; "ja" -> "編集"; "ko" -> "편집"; "es" -> "Editar"; "pt" -> "Editar"
+                "fr" -> "Modifier"; "de" -> "Bearbeiten"; "ru" -> "Изменить"; "th" -> "แก้ไข"; "id" -> "Ubah"
+                else -> en
+            }
+            "Left Stick (L)" -> return when (lang) {
+                "zh" -> "左摇杆 (L)"; "ja" -> "左スティック (L)"; "ko" -> "왼쪽 스틱 (L)"; "es" -> "Stick Izq. (L)"; "pt" -> "Analógico Esq. (L)"
+                "fr" -> "Stick Gauche (L)"; "de" -> "Linker Stick (L)"; "ru" -> "Левый стик (L)"; "th" -> "แกนซ้าย (L)"; "id" -> "Stik Kiri (L)"
+                else -> en
+            }
+            "Right Stick (R)" -> return when (lang) {
+                "zh" -> "右摇杆 (R)"; "ja" -> "右スティック (R)"; "ko" -> "오른쪽 스틱 (R)"; "es" -> "Stick Der. (R)"; "pt" -> "Analógico Dir. (R)"
+                "fr" -> "Stick Droit (R)"; "de" -> "Rechter Stick (R)"; "ru" -> "Правый стик (R)"; "th" -> "แกนขวา (R)"; "id" -> "Stik Kanan (R)"
+                else -> en
+            }
+            "No controller connected — pre-configure anytime" -> return when (lang) {
+                "zh" -> "未连接手柄 — 仍可提前设置"; "ja" -> "未接続 — 事前設定が可能"; "ko" -> "컨트롤러 미연결 — 미리 설정 가능"; "es" -> "Sin mando — puedes preconfigurar"; "pt" -> "Sem controle — pré-configure agora"
+                "fr" -> "Aucune manette — préconfig. possible"; "de" -> "Kein Controller — Vorab-Belegung möglich"; "ru" -> "Геймпад не подключен — можно настроить заранее"; "th" -> "ยังไม่ต่อจอย — ตั้งค่าล่วงหน้าได้"; "id" -> "Belum ada kontroler — tetap bisa diatur"
+                else -> en
+            }
+            "Tap any button or stick direction, then press on your controller to bind." -> return when (lang) {
+                "zh" -> "点击任意按键或摇杆方向，然后按手柄实体键即可绑定。"; "ja" -> "ボタンやスティック方向を選び、実機コントローラーを押して割り当てます。"; "ko" -> "버튼이나 스틱 방향을 선택한 뒤 실제 컨트롤러를 눌러 지정하세요."; "es" -> "Toca un botón o dirección del stick y pulsa en tu mando para asignar."; "pt" -> "Toque em um botão ou direção e pressione no controle para mapear."
+                "fr" -> "Touchez un bouton ou une direction, puis appuyez sur votre manette."; "de" -> "Taste oder Stick-Richtung wählen, dann am Controller drücken."; "ru" -> "Выберите кнопку или направление стика, затем нажмите на геймпаде."; "th" -> "แตะปุ่มหรือทิศทางแกน แล้วกดปุ่มจริงบนจอยเพื่อกำหนด"; "id" -> "Ketuk tombol atau arah stik, lalu tekan pada kontroler Anda."
+                else -> en
+            }
+            "Quick Stick Inversion & Swap" -> return when (lang) {
+                "zh" -> "快速反转摇杆 / 互换左右摇杆"; "ja" -> "スティック反転・左右入替"; "ko" -> "스틱 반전 및 좌우 교체"; "es" -> "Invertir / Intercambiar Sticks"; "pt" -> "Inverter / Trocar Analógicos"
+                "fr" -> "Inversion rapide / Échange Sticks"; "de" -> "Stick-Umkehr & Tausch"; "ru" -> "Быстрая инверсия и обмен стиков"; "th" -> "กลับทิศทางแกน / สลับซ้าย-ขวา"; "id" -> "Balik Arah & Tukar Stik Cepat"
+                else -> en
+            }
+            "↕ Invert L-Y" -> return when (lang) {
+                "zh" -> "↕ 反转左Y"; "ja" -> "↕ 左Y反転"; "ko" -> "↕ L상하 반전"; "es" -> "↕ Inv. L-Y"; "pt" -> "↕ Inv. L-Y"
+                "fr" -> "↕ Inv. L-Y"; "de" -> "↕ L-Y umk."; "ru" -> "↕ Инв. L-Y"; "th" -> "↕ กลับ L บน-ล่าง"; "id" -> "↕ Balik L-Y"
+                else -> en
+            }
+            "↔ Invert L-X" -> return when (lang) {
+                "zh" -> "↔ 反转左X"; "ja" -> "↔ 左X反転"; "ko" -> "↔ L좌우 반전"; "es" -> "↔ Inv. L-X"; "pt" -> "↔ Inv. L-X"
+                "fr" -> "↔ Inv. L-X"; "de" -> "↔ L-X umk."; "ru" -> "↔ Инв. L-X"; "th" -> "↔ กลับ L ซ้าย-ขวา"; "id" -> "↔ Balik L-X"
+                else -> en
+            }
+            "↕ Invert R-Y" -> return when (lang) {
+                "zh" -> "↕ 反转右Y"; "ja" -> "↕ 右Y反転"; "ko" -> "↕ R상하 반전"; "es" -> "↕ Inv. R-Y"; "pt" -> "↕ Inv. R-Y"
+                "fr" -> "↕ Inv. R-Y"; "de" -> "↕ R-Y umk."; "ru" -> "↕ Инв. R-Y"; "th" -> "↕ กลับ R บน-ล่าง"; "id" -> "↕ Balik R-Y"
+                else -> en
+            }
+            "↔ Invert R-X" -> return when (lang) {
+                "zh" -> "↔ 反转右X"; "ja" -> "↔ 右X反転"; "ko" -> "↔ R좌우 반전"; "es" -> "↔ Inv. R-X"; "pt" -> "↔ Inv. R-X"
+                "fr" -> "↔ Inv. R-X"; "de" -> "↔ R-X umk."; "ru" -> "↔ Инв. R-X"; "th" -> "↔ กลับ R ซ้าย-ขวา"; "id" -> "↔ Balik R-X"
+                else -> en
+            }
+            "⇄ Swap L ↔ R" -> return when (lang) {
+                "zh" -> "⇄ 互换 L ↔ R"; "ja" -> "⇄ L ↔ R 入替"; "ko" -> "⇄ L ↔ R 교체"; "es" -> "⇄ L ↔ R"; "pt" -> "⇄ Trocar L ↔ R"
+                "fr" -> "⇄ Échanger L ↔ R"; "de" -> "⇄ L ↔ R tauschen"; "ru" -> "⇄ Обмен L ↔ R"; "th" -> "⇄ สลับ L ↔ R"; "id" -> "⇄ Tukar L ↔ R"
+                else -> en
+            }
+            "Remapped" -> return when (lang) {
+                "zh" -> "已修改"; "ja" -> "変更済み"; "ko" -> "변경됨"; "es" -> "Cambiados"; "pt" -> "Alterados"
+                "fr" -> "Modifiés"; "de" -> "Geändert"; "ru" -> "Изменено"; "th" -> "แก้ไขแล้ว"; "id" -> "Diubah"
+                else -> en
+            }
+            "Reset all controller bindings to default?" -> return when (lang) {
+                "zh" -> "将所有手柄映射恢复默认？"; "ja" -> "すべてのボタン設定を初期化しますか？"; "ko" -> "모든 버튼 설정을 초기화할까요?"; "es" -> "¿Restablecer toda la configuración del mando?"; "pt" -> "Restaurar todos os botões para o padrão?"
+                "fr" -> "Réinitialiser toute la configuration ?"; "de" -> "Alle Tastenbelegungen zurücksetzen?"; "ru" -> "Сбросить все настройки кнопок?"; "th" -> "รีเซ็ตการตั้งค่าปุ่มทั้งหมดเป็นค่าเริ่มต้น?"; "id" -> "Reset semua pemetaan kontroler ke default?"
+                else -> en
+            }
+            "Controller bindings reset" -> return when (lang) {
+                "zh" -> "已重置手柄按键映射"; "ja" -> "コントローラー配置をリセットしました"; "ko" -> "컨트롤러 설정이 초기화되었습니다"; "es" -> "Mapa del mando restablecido"; "pt" -> "Mapeamento do controle redefinido"
+                "fr" -> "Configuration réinitialisée"; "de" -> "Controller-Belegung zurückgesetzt"; "ru" -> "Настройки кнопок сброшены"; "th" -> "รีเซ็ตผังปุ่มจอยแล้ว"; "id" -> "Pemetaan kontroler direset"
+                else -> en
+            }
+            "Bind Physical Input" -> return when (lang) {
+                "zh" -> "绑定手柄输入"; "ja" -> "物理入力の割り当て"; "ko" -> "컨트롤러 입력 지정"; "es" -> "Asignar entrada física"; "pt" -> "Mapear entrada física"
+                "fr" -> "Assigner une entrée"; "de" -> "Eingabe zuweisen"; "ru" -> "Назначить ввод"; "th" -> "กำหนดปุ่มจอยจริง"; "id" -> "Atur Input Kontroler"
+                else -> en
+            }
+            "Current" -> return when (lang) {
+                "zh" -> "当前"; "ja" -> "現在"; "ko" -> "현재"; "es" -> "Actual"; "pt" -> "Atual"
+                "fr" -> "Actuel"; "de" -> "Aktuell"; "ru" -> "Текущее"; "th" -> "ปัจจุบัน"; "id" -> "Saat ini"
+                else -> en
+            }
+            "Default" -> return when (lang) {
+                "zh" -> "默认"; "ja" -> "既定"; "ko" -> "기본값"; "es" -> "Por defecto"; "pt" -> "Padrão"
+                "fr" -> "Par défaut"; "de" -> "Standard"; "ru" -> "По умолчанию"; "th" -> "ค่าเริ่มต้น"; "id" -> "Default"
+                else -> en
+            }
+            "Press a button or push a stick on your controller..." -> return when (lang) {
+                "zh" -> "请按下手柄按键或推动摇杆..."; "ja" -> "コントローラーのボタンを押すかスティックを倒してください..."; "ko" -> "컨트롤러 버튼을 누르거나 스틱을 움직이세요..."; "es" -> "Pulsa un botón o mueve un stick en tu mando..."; "pt" -> "Pressione um botão ou mova um analógico no controle..."
+                "fr" -> "Appuyez sur un bouton ou poussez un stick..."; "de" -> "Taste drücken oder Stick bewegen..."; "ru" -> "Нажмите кнопку или отклоните стик на геймпаде..."; "th" -> "กดปุ่มหรือดันแกนอนาล็อกบนจอยจริง..."; "id" -> "Tekan tombol atau dorong stik di kontroler Anda..."
+                else -> en
+            }
+            "Press below, then press any button or push a stick on your physical controller." -> return when (lang) {
+                "zh" -> "点击下方按钮，再按手柄实体按键或推动摇杆即可立即绑定。"; "ja" -> "下を押してから実機コントローラーのボタンやスティックを入力してください。"; "ko" -> "아래를 누른 후 실제 컨트롤러의 버튼이나 스틱을 입력하세요."; "es" -> "Pulsa abajo y luego presiona un botón o stick en tu mando."; "pt" -> "Clique abaixo e pressione um botão ou analógico no controle."
+                "fr" -> "Appuyez ci-dessous puis actionnez un bouton ou stick de la manette."; "de" -> "Unten klicken, dann Taste oder Stick am Controller betätigen."; "ru" -> "Нажмите ниже, затем нажмите кнопку или стик на геймпаде."; "th" -> "กดปุ่มด้านล่าง แล้วกดปุ่มหรือดันแกนบนจอยจริงเพื่อกำหนดทันที"; "id" -> "Tekan di bawah, lalu tekan tombol atau stik pada kontroler Anda."
+                else -> en
+            }
+            "Cancel Capture (Back)" -> return when (lang) {
+                "zh" -> "取消等待 (返回)"; "ja" -> "待機をキャンセル (戻る)"; "ko" -> "입력 대기 취소 (뒤로)"; "es" -> "Cancelar espera (Atrás)"; "pt" -> "Cancelar captura (Voltar)"
+                "fr" -> "Annuler l'attente (Retour)"; "de" -> "Aufnahme abbrechen (Zurück)"; "ru" -> "Отмена ожидания (Назад)"; "th" -> "ยกเลิกการรอ (ย้อนกลับ)"; "id" -> "Batalkan Tangkap (Kembali)"
+                else -> en
+            }
+            "Press Button / Stick on Controller" -> return when (lang) {
+                "zh" -> "按手柄按键 / 推摇杆绑定"; "ja" -> "コントローラーを押して割り当て"; "ko" -> "컨트롤러 버튼/스틱으로 지정"; "es" -> "Pulsar botón / stick en mando"; "pt" -> "Pressionar botão / stick no controle"
+                "fr" -> "Appuyer sur la manette"; "de" -> "Taste / Stick am Controller drücken"; "ru" -> "Нажать кнопку / стик на геймпаде"; "th" -> "กดปุ่ม / ดันแกนบนจอยจริง"; "id" -> "Tekan Tombol / Stik di Kontroler"
+                else -> en
+            }
+            "Auto Swap Pair (A ↔ B)" -> return when (lang) {
+                "zh" -> "自动双向互换 (A ↔ B)"; "ja" -> "自動でペア入替 (A ↔ B)"; "ko" -> "자동 양방향 교체 (A ↔ B)"; "es" -> "Intercambio automático (A ↔ B)"; "pt" -> "Troca automática (A ↔ B)"
+                "fr" -> "Échange auto (A ↔ B)"; "de" -> "Automatischer Tausch (A ↔ B)"; "ru" -> "Авто-обмен пары (A ↔ B)"; "th" -> "สลับคู่สองทางอัตโนมัติ (A ↔ B)"; "id" -> "Tukar Pasangan Otomatis (A ↔ B)"
+                else -> en
+            }
+            "On: cleanly swaps opposite direction/button. Off: allows mapping multiple inputs freely." -> return when (lang) {
+                "zh" -> "开启：自动互换相反方向/按键，反转摇杆更顺畅。关闭：自由多对一映射。"; "ja" -> "オン：反対方向やボタンを自動入替して反転がスムーズ。オフ：自由に重複割当。"; "ko" -> "켜기: 반대 방향/버튼 자동 교체(축 반전에 최적). 끄기: 자유롭게 중복 지정."; "es" -> "Sí: invierte pares suavemente. No: permite mapear libremente sin intercambiar."; "pt" -> "Sim: inverte pares perfeitamente. Não: mapeamento livre sem troca."
+                "fr" -> "Activé : échange proprement les paires. Désactivé : assignation libre."; "de" -> "Ein: tauscht Gegenrichtung sauber. Aus: freie Mehrfachbelegung."; "ru" -> "Вкл.: плавный обмен пар (удобно для инверсии). Выкл.: свободное назначение."; "th" -> "เปิด: สลับคู่ทิศทางตรงข้ามอัตโนมัติ ปิด: กำหนดซ้ำได้อย่างอิสระ"; "id" -> "Aktif: tukar arah/tombol berlawanan otomatis. Mati: bebas memetakan."
+                else -> en
+            }
+            "Or pick Stick Direction (Analog L / R)" -> return when (lang) {
+                "zh" -> "或手动选择摇杆方向 (L / R)"; "ja" -> "またはスティック方向を選択 (L / R)"; "ko" -> "또는 스틱 방향 직접 선택 (L / R)"; "es" -> "O elige dirección del Stick (L / R)"; "pt" -> "Ou escolha direção do Analógico (L / R)"
+                "fr" -> "Ou choisir une direction Stick (L / R)"; "de" -> "Oder Stick-Richtung wählen (L / R)"; "ru" -> "Или выберите направление стика (L / R)"; "th" -> "หรือเลือกทิศทางแกนอนาล็อก (L / R)"; "id" -> "Atau pilih Arah Stik (Analog L / R)"
+                else -> en
+            }
+            "Or pick Standard Button (17 buttons)" -> return when (lang) {
+                "zh" -> "或手动选择按键 (17 个按键)"; "ja" -> "またはボタンを選択 (17ボタン)"; "ko" -> "또는 일반 버튼 선택 (17개)"; "es" -> "O elige un botón estándar (17 botones)"; "pt" -> "Ou escolha um botão padrão (17 botões)"
+                "fr" -> "Ou choisir un bouton (17 boutons)"; "de" -> "Oder Standard-Taste wählen (17 Tasten)"; "ru" -> "Или выберите кнопку (17 кнопок)"; "th" -> "หรือเลือกปุ่มมาตรฐาน (17 ปุ่ม)"; "id" -> "Atau pilih Tombol Standar (17 tombol)"
+                else -> en
+            }
+            "Confirm" -> return when (lang) {
+                "zh" -> "确认"; "ja" -> "確認"; "ko" -> "확인"; "es" -> "Confirmar"; "pt" -> "Confirmar"
+                "fr" -> "Confirmer"; "de" -> "Bestätigen"; "ru" -> "Подтвердить"; "th" -> "ยืนยัน"; "id" -> "Konfirmasi"
+                else -> en
+            }
+            "Cancel" -> return when (lang) {
+                "zh" -> "取消"; "ja" -> "キャンセル"; "ko" -> "취소"; "es" -> "Cancelar"; "pt" -> "Cancelar"
+                "fr" -> "Annuler"; "de" -> "Abbrechen"; "ru" -> "Отмена"; "th" -> "ยกเลิก"; "id" -> "Batal"
+                else -> en
+            }
+            "Done" -> return when (lang) {
+                "zh" -> "完成"; "ja" -> "完了"; "ko" -> "완료"; "es" -> "Listo"; "pt" -> "Concluir"
+                "fr" -> "Terminé"; "de" -> "Fertig"; "ru" -> "Готово"; "th" -> "เสร็จสิ้น"; "id" -> "Selesai"
+                else -> en
+            }
+            "ON" -> return when (lang) {
+                "zh" -> "开"; "ja" -> "ON"; "ko" -> "켜짐"; "es" -> "SÍ"; "pt" -> "ON"
+                "fr" -> "OUI"; "de" -> "EIN"; "ru" -> "ВКЛ"; "th" -> "เปิด"; "id" -> "ON"
+                else -> en
+            }
+            "OFF" -> return when (lang) {
+                "zh" -> "关"; "ja" -> "OFF"; "ko" -> "꺼짐"; "es" -> "NO"; "pt" -> "OFF"
+                "fr" -> "NON"; "de" -> "AUS"; "ru" -> "ВЫКЛ"; "th" -> "ปิด"; "id" -> "OFF"
+                else -> en
+            }
+            "Open visual controller button and stick mapper" -> return when (lang) {
+                "zh" -> "打开手柄按键与摇杆可视化映射"; "ja" -> "コントローラーのボタンとスティック配置を開く"; "ko" -> "컨트롤러 버튼 및 스틱 매핑 열기"; "es" -> "Abrir mapa visual de botones y sticks"; "pt" -> "Abrir mapa visual de botões e analógicos"
+                "fr" -> "Ouvrir le plan visuel des boutons et sticks"; "de" -> "Visuelle Tasten- und Stick-Belegung öffnen"; "ru" -> "Открыть схему настройки кнопок и стиков"; "th" -> "เปิดผังตั้งค่าปุ่มและแกนจอย"; "id" -> "Buka peta tombol dan stik kontroler"
+                else -> en
+            }
+            "Open full controller diagram (buttons & L/R sticks), press physical buttons to bind or invert axes." -> return when (lang) {
+                "zh" -> "打开完整手柄图示（按键与 L/R 摇杆），直接按实体手柄绑定或反转摇杆轴。"; "ja" -> "ボタン＆L/Rスティックの全体図を開き、実機コントローラーを押して割り当てや軸反転を設定します。"; "ko" -> "전체 컨트롤러 도면(버튼 및 L/R 스틱)을 열어 실제 컨트롤러를 눌러 지정하거나 축을 반전합니다."; "es" -> "Abre el diagrama completo del mando (botones y sticks L/R) para asignar o invertir ejes."; "pt" -> "Abra o diagrama completo do controle (botões e L/R) para mapear ou inverter eixos."
+                "fr" -> "Ouvrir le schéma complet (boutons et sticks L/R) pour assigner ou inverser les axes."; "de" -> "Vollständige Controller-Ansicht (Tasten & L/R-Sticks) zum Belegen oder Umkehren öffnen."; "ru" -> "Открыть полную схему геймпада (кнопки и стики L/R) для назначения или инверсии осей."; "th" -> "เปิดผังจอยเต็มรูปแบบ (ปุ่มและแกน L/R) กดปุ่มจริงเพื่อกำหนดหรือกลับทิศแกน"; "id" -> "Buka diagram kontroler lengkap (tombol & stik L/R), tekan tombol fisik untuk atur atau balik sumbu."
+                else -> en
+            }
+            "Cancel controller capture" -> return when (lang) {
+                "zh" -> "取消手柄输入捕获"; "ja" -> "コントローラー入力待機をキャンセル"; "ko" -> "컨트롤러 입력 대기 취소"; "es" -> "Cancelar captura del mando"; "pt" -> "Cancelar captura do controle"
+                "fr" -> "Annuler la capture manette"; "de" -> "Controller-Aufnahme abbrechen"; "ru" -> "Отменить захват с геймпада"; "th" -> "ยกเลิกการจับสัญญาณจอย"; "id" -> "Batalkan tangkap kontroler"
+                else -> en
+            }
+            "Capture from physical controller" -> return when (lang) {
+                "zh" -> "从实体手柄捕获按键或摇杆"; "ja" -> "実機コントローラーから入力を取得"; "ko" -> "실제 컨트롤러에서 입력 받기"; "es" -> "Capturar desde el mando físico"; "pt" -> "Capturar do controle físico"
+                "fr" -> "Capturer depuis la manette physique"; "de" -> "Vom physischen Controller erfassen"; "ru" -> "Захватить ввод с геймпада"; "th" -> "จับปุ่มหรือแกนจากจอยจริง"; "id" -> "Tangkap dari kontroler fisik"
+                else -> en
+            }
+            "Auto swap pair when binding" -> return when (lang) {
+                "zh" -> "绑定时自动双向互换"; "ja" -> "割り当て時に自動でペア入替"; "ko" -> "지정 시 자동으로 양방향 교체"; "es" -> "Intercambiar par automáticamente al asignar"; "pt" -> "Trocar par automaticamente ao mapear"
+                "fr" -> "Échanger automatiquement la paire"; "de" -> "Paar beim Zuweisen automatisch tauschen"; "ru" -> "Автоматически менять пару при назначении"; "th" -> "สลับคู่อัตโนมัติเมื่อกำหนดปุ่ม"; "id" -> "Tukar pasangan otomatis saat memetakan"
                 else -> en
             }
         }

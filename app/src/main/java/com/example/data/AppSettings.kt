@@ -2257,6 +2257,16 @@ object SettingsRepository {
         AppLogger.info("UI", "Khôi phục mặc định: Xóa toàn bộ bố cục tay cầm riêng từng game")
     }
 
+    const val PHYS_STICK_L_UP = 17
+    const val PHYS_STICK_L_DOWN = 18
+    const val PHYS_STICK_L_LEFT = 19
+    const val PHYS_STICK_L_RIGHT = 20
+    const val PHYS_STICK_R_UP = 21
+    const val PHYS_STICK_R_DOWN = 22
+    const val PHYS_STICK_R_LEFT = 23
+    const val PHYS_STICK_R_RIGHT = 24
+    const val PHYS_INPUT_MAX_CODE = 24
+
     fun parsePhysicalButtonMap(raw: String = _config.value.physicalGamepadButtonMap): Map<Int, Int> {
         if (raw.isBlank()) return emptyMap()
         val map = mutableMapOf<Int, Int>()
@@ -2265,7 +2275,7 @@ object SettingsRepository {
             if (parts.size == 2) {
                 val src = parts[0].toIntOrNull()
                 val dst = parts[1].toIntOrNull()
-                if (src != null && dst != null && src in 0..16 && dst in 0..16 && src != dst) {
+                if (src != null && dst != null && src in 0..PHYS_INPUT_MAX_CODE && dst in 0..PHYS_INPUT_MAX_CODE && src != dst) {
                     map[src] = dst
                 }
             }
@@ -2275,28 +2285,115 @@ object SettingsRepository {
 
     fun serializePhysicalButtonMap(map: Map<Int, Int>): String {
         return map.entries
-            .filter { it.key in 0..16 && it.value in 0..16 && it.key != it.value }
+            .filter { it.key in 0..PHYS_INPUT_MAX_CODE && it.value in 0..PHYS_INPUT_MAX_CODE && it.key != it.value }
             .sortedBy { it.key }
             .joinToString(",") { "${it.key}:${it.value}" }
     }
 
     fun updatePhysicalButtonMapping(sourceButton: Int, targetButton: Int) {
-        if (sourceButton !in 0..16 || targetButton !in 0..16) return
+        updatePhysicalInputMapping(sourceButton, targetButton, swapWithExisting = false)
+    }
+
+    fun updatePhysicalInputMapping(
+        sourceCode: Int,
+        targetCode: Int,
+        swapWithExisting: Boolean = false
+    ) {
+        if (sourceCode !in 0..PHYS_INPUT_MAX_CODE || targetCode !in 0..PHYS_INPUT_MAX_CODE) return
         val current = parsePhysicalButtonMap().toMutableMap()
-        val prevTarget = current[sourceButton] ?: sourceButton
-        if (sourceButton == targetButton) {
-            current.remove(sourceButton)
+        val prevTarget = current[sourceCode] ?: sourceCode
+        if (swapWithExisting && targetCode != prevTarget) {
+            val existingOwner = (0..PHYS_INPUT_MAX_CODE).firstOrNull { k ->
+                k != sourceCode && (current[k] ?: k) == targetCode
+            }
+            if (sourceCode == targetCode) {
+                current.remove(sourceCode)
+            } else {
+                current[sourceCode] = targetCode
+            }
+            if (existingOwner != null) {
+                if (existingOwner == prevTarget) {
+                    current.remove(existingOwner)
+                } else {
+                    current[existingOwner] = prevTarget
+                }
+            }
         } else {
-            current[sourceButton] = targetButton
+            if (sourceCode == targetCode) {
+                current.remove(sourceCode)
+            } else {
+                current[sourceCode] = targetCode
+            }
         }
         val serialized = serializePhysicalButtonMap(current)
         _config.update { it.copy(physicalGamepadButtonMap = serialized) }
         persist(_config.value)
         logSettingChange(
-            "Gán lại nút tay cầm thật (${getGamepadButtonShortLabel(sourceButton)})",
+            "Gán lại đầu vào tay cầm thật (${getGamepadButtonShortLabel(sourceCode)})",
             getGamepadButtonShortLabel(prevTarget),
-            getGamepadButtonShortLabel(targetButton)
+            getGamepadButtonShortLabel(targetCode)
         )
+    }
+
+    fun isPhysicalAxisInverted(map: Map<Int, Int>, negCode: Int, posCode: Int): Boolean {
+        return (map[negCode] ?: negCode) == posCode && (map[posCode] ?: posCode) == negCode
+    }
+
+    fun togglePhysicalAxisInvert(negCode: Int, posCode: Int) {
+        if (negCode !in 0..PHYS_INPUT_MAX_CODE || posCode !in 0..PHYS_INPUT_MAX_CODE) return
+        val current = parsePhysicalButtonMap().toMutableMap()
+        val inverted = isPhysicalAxisInverted(current, negCode, posCode)
+        if (inverted) {
+            current.remove(negCode)
+            current.remove(posCode)
+        } else {
+            current[negCode] = posCode
+            current[posCode] = negCode
+        }
+        val serialized = serializePhysicalButtonMap(current)
+        _config.update { it.copy(physicalGamepadButtonMap = serialized) }
+        persist(_config.value)
+        AppLogger.info(
+            "UI",
+            "Đảo trục tay cầm thật (${getGamepadButtonShortLabel(negCode)} ↔ ${getGamepadButtonShortLabel(posCode)}): ${!inverted}"
+        )
+    }
+
+    fun arePhysicalSticksSwapped(map: Map<Int, Int>): Boolean {
+        return (map[PHYS_STICK_L_UP] ?: PHYS_STICK_L_UP) == PHYS_STICK_R_UP &&
+            (map[PHYS_STICK_L_DOWN] ?: PHYS_STICK_L_DOWN) == PHYS_STICK_R_DOWN &&
+            (map[PHYS_STICK_L_LEFT] ?: PHYS_STICK_L_LEFT) == PHYS_STICK_R_LEFT &&
+            (map[PHYS_STICK_L_RIGHT] ?: PHYS_STICK_L_RIGHT) == PHYS_STICK_R_RIGHT &&
+            (map[PHYS_STICK_R_UP] ?: PHYS_STICK_R_UP) == PHYS_STICK_L_UP &&
+            (map[PHYS_STICK_R_DOWN] ?: PHYS_STICK_R_DOWN) == PHYS_STICK_L_DOWN &&
+            (map[PHYS_STICK_R_LEFT] ?: PHYS_STICK_R_LEFT) == PHYS_STICK_L_LEFT &&
+            (map[PHYS_STICK_R_RIGHT] ?: PHYS_STICK_R_RIGHT) == PHYS_STICK_L_RIGHT
+    }
+
+    fun togglePhysicalSticksSwap() {
+        val current = parsePhysicalButtonMap().toMutableMap()
+        val swapped = arePhysicalSticksSwapped(current)
+        val pairs = listOf(
+            PHYS_STICK_L_UP to PHYS_STICK_R_UP,
+            PHYS_STICK_L_DOWN to PHYS_STICK_R_DOWN,
+            PHYS_STICK_L_LEFT to PHYS_STICK_R_LEFT,
+            PHYS_STICK_L_RIGHT to PHYS_STICK_R_RIGHT
+        )
+        if (swapped) {
+            pairs.forEach { (l, r) ->
+                current.remove(l)
+                current.remove(r)
+            }
+        } else {
+            pairs.forEach { (l, r) ->
+                current[l] = r
+                current[r] = l
+            }
+        }
+        val serialized = serializePhysicalButtonMap(current)
+        _config.update { it.copy(physicalGamepadButtonMap = serialized) }
+        persist(_config.value)
+        AppLogger.info("UI", "Hoán đổi Cần Trái ↔ Cần Phải (tay cầm thật): ${!swapped}")
     }
 
     fun resetPhysicalButtonMap() {
@@ -2356,12 +2453,40 @@ object SettingsRepository {
         Triple(16, "Nexus", "Xbox Guide")
     )
 
+    val PHYSICAL_GAMEPAD_STICK_DIRECTIONS: List<Triple<Int, String, String>> = listOf(
+        Triple(PHYS_STICK_L_UP, "L↑", "Left Stick Up"),
+        Triple(PHYS_STICK_L_DOWN, "L↓", "Left Stick Down"),
+        Triple(PHYS_STICK_L_LEFT, "L←", "Left Stick Left"),
+        Triple(PHYS_STICK_L_RIGHT, "L→", "Left Stick Right"),
+        Triple(PHYS_STICK_R_UP, "R↑", "Right Stick Up"),
+        Triple(PHYS_STICK_R_DOWN, "R↓", "Right Stick Down"),
+        Triple(PHYS_STICK_R_LEFT, "R←", "Right Stick Left"),
+        Triple(PHYS_STICK_R_RIGHT, "R→", "Right Stick Right")
+    )
+
+    val PHYSICAL_GAMEPAD_ALL_INPUTS: List<Triple<Int, String, String>> =
+        STANDARD_GAMEPAD_BUTTONS + PHYSICAL_GAMEPAD_STICK_DIRECTIONS
+
     fun getGamepadButtonShortLabel(btnIndex: Int): String {
-        return STANDARD_GAMEPAD_BUTTONS.firstOrNull { it.first == btnIndex }?.second ?: "Btn $btnIndex"
+        return PHYSICAL_GAMEPAD_ALL_INPUTS.firstOrNull { it.first == btnIndex }?.second ?: "Btn $btnIndex"
     }
 
     fun getGamepadButtonLabel(btnIndex: Int, isEn: Boolean): String {
-        return STANDARD_GAMEPAD_BUTTONS.firstOrNull { it.first == btnIndex }?.third ?: if (isEn) "Button $btnIndex" else "Nút $btnIndex"
+        if (!isEn) {
+            return when (btnIndex) {
+                PHYS_STICK_L_UP -> "Cần trái Lên (L↑)"
+                PHYS_STICK_L_DOWN -> "Cần trái Xuống (L↓)"
+                PHYS_STICK_L_LEFT -> "Cần trái Trái (L←)"
+                PHYS_STICK_L_RIGHT -> "Cần trái Phải (L→)"
+                PHYS_STICK_R_UP -> "Cần phải Lên (R↑)"
+                PHYS_STICK_R_DOWN -> "Cần phải Xuống (R↓)"
+                PHYS_STICK_R_LEFT -> "Cần phải Trái (R←)"
+                PHYS_STICK_R_RIGHT -> "Cần phải Phải (R→)"
+                16 -> "Guide (Nút giữa)"
+                else -> STANDARD_GAMEPAD_BUTTONS.firstOrNull { it.first == btnIndex }?.third ?: "Nút $btnIndex"
+            }
+        }
+        return PHYSICAL_GAMEPAD_ALL_INPUTS.firstOrNull { it.first == btnIndex }?.third ?: "Button $btnIndex"
     }
 
     fun updateLeftStickInnerDeadzone(value: Float) {
