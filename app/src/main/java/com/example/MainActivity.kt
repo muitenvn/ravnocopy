@@ -172,6 +172,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        com.example.cloudplay.PhysicalGamepadCaptureBus.releaseAllInGameKeys()
         com.example.data.AppLogger.info("SYSTEM", "Ứng dụng vào nền (Background)")
         com.example.data.PerformanceMonitor.onAppStop()
         super.onStop()
@@ -189,6 +190,11 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         if (!isBrowserScreenActive && com.example.cloudplay.PhysicalGamepadCaptureBus.handleKeyEvent(event)) {
             return true
+        }
+        if (isBrowserScreenActive && !com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi) {
+            if (com.example.cloudplay.PhysicalGamepadCaptureBus.handleInGameKeyEvent(event)) {
+                return true
+            }
         }
         com.example.ui.components.GamepadUiNavigation.observeKeyEventPassively(event)
         val handled = super.dispatchKeyEvent(event)

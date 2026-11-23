@@ -1,8 +1,6 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.cloudplay.CapturedPhysicalInput
 import com.example.cloudplay.PhysicalGamepadCaptureBus
 import com.example.data.AppConfig
 import com.example.data.SettingsRepository
@@ -54,16 +53,20 @@ import kotlinx.coroutines.delay
 /**
  * Hộp thoại con khi người dùng chọn 1 nút hoặc 1 hướng cần (L↑/L↓/L←/L→, R↑/R↓/R←/R→, A/B/X/Y, ...)
  * trên sơ đồ tay cầm trực quan:
- * - Hỗ trợ bấm trực tiếp nút hoặc gạt cần trên tay cầm thật để gán ngay (có đếm ngược tự hủy 8s tránh kẹt).
- * - Hỗ trợ công tắc "Hoán đổi 2 chiều" (mặc định BẬT để đảo hướng cần L↑ ↔ L↓ chỉ bằng 1 lần gạt).
- * - Hỗ trợ chọn thủ công cả 25 tín hiệu (8 hướng cần + 17 nút) khi không cầm tay cầm.
+ * - Bắt BẤT KỲ phím vật lý nào: nút tay cầm, gạt cần analog, bàn phím Bluetooth/USB,
+ *   điều khiển TV, phím âm lượng hoặc tay cầm phụ.
+ * - Hỗ trợ công tắc "Hoán đổi 2 chiều" cho nút/cần tay cầm (giúp đảo hướng cần L↑ ↔ L↓ tức thì).
+ * - Hỗ trợ chọn thủ công cả 25 tín hiệu Xbox (8 hướng cần + 17 nút).
  */
 @Composable
 internal fun VisualControllerSlotBindDialog(
     sourceCode: Int,
     config: AppConfig,
     currentMap: Map<Int, Int>,
-    onApplyMapping: (targetCode: Int, swapWithExisting: Boolean) -> Unit,
+    customKeyMap: Map<Int, Int>,
+    onApplyStandardMapping: (targetCode: Int, swapWithExisting: Boolean) -> Unit,
+    onBindCustomHardwareKey: (androidKeyCode: Int) -> Unit,
+    onClearCustomKeysForSlot: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val isEn = config.isSettingsEnglishUI()
@@ -71,6 +74,12 @@ internal fun VisualControllerSlotBindDialog(
     val srcShortLabel = SettingsRepository.getGamepadButtonShortLabel(sourceCode)
     val currentDest = currentMap[sourceCode] ?: sourceCode
     val currentDestShort = SettingsRepository.getGamepadButtonShortLabel(currentDest)
+    val boundCustomKeys = remember(customKeyMap, sourceCode) {
+        customKeyMap.entries
+            .filter { it.value == sourceCode }
+            .map { it.key }
+            .sorted()
+    }
 
     var swapPairEnabled by remember(sourceCode) { mutableStateOf(true) }
     val isCapturing by PhysicalGamepadCaptureBus.isCapturing.collectAsState()
@@ -80,9 +89,16 @@ internal fun VisualControllerSlotBindDialog(
     fun startCapture() {
         countdownSec = 8
         PhysicalGamepadCaptureBus.armCapture(
-            onCaptured = { capturedCode ->
+            onCaptured = { captured ->
                 countdownSec = 0
-                onApplyMapping(capturedCode, swapPairEnabled)
+                when (captured) {
+                    is CapturedPhysicalInput.StandardGamepad -> {
+                        onApplyStandardMapping(captured.code, swapPairEnabled)
+                    }
+                    is CapturedPhysicalInput.CustomHardwareKey -> {
+                        onBindCustomHardwareKey(captured.androidKeyCode)
+                    }
+                }
                 onDismiss()
             },
             onCancel = {
@@ -96,7 +112,7 @@ internal fun VisualControllerSlotBindDialog(
         PhysicalGamepadCaptureBus.disarmCapture()
     }
 
-    // Nếu mở bằng cảm ứng -> tự động chờ bắt phím tay cầm thật ngay; nếu mở bằng D-Pad/TV -> bấm A vào nút "Bắt phím" để tránh tự bắt nút A
+    // Nếu mở bằng cảm ứng -> tự động chờ bắt bất kỳ phím vật lý nào ngay; nếu mở bằng D-Pad/TV -> bấm A vào nút "Bắt phím" để tránh tự bắt nút A
     LaunchedEffect(sourceCode) {
         if (!GamepadUiNavigation.isGamepadModeActive && !GamepadUiNavigation.keepFocusVisibleInTvMode) {
             startCapture()
@@ -140,32 +156,42 @@ internal fun VisualControllerSlotBindDialog(
         portraitWidthFraction = 0.94f
     ) {
         val gridScroll = rememberScrollState()
-        val columnsPerRow = if (useTwoColumnLayout) 4 else 4
+        val columnsPerRow = 4
 
         @Composable
         fun HeaderAndCaptureControls() {
             Column(verticalArrangement = Arrangement.spacedBy(gapSmall)) {
                 Text(
-                    text = "${config.tr("Gán nút tay cầm thật", "Bind Physical Input")}: $srcFullLabel",
+                    text = "${config.tr("Gán nút hoặc phím bất kỳ", "Bind Any Key or Button")}: $srcFullLabel",
                     color = TextPrimary,
                     fontFamily = SpaceGroteskFontFamily,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = rSp(14.5f)
                 )
 
-                Text(
-                    text = if (currentDest == sourceCode) {
-                        "${config.tr("Hiện tại", "Current")}: $srcShortLabel (${config.tr("Mặc định", "Default")})"
+                val statusText = buildString {
+                    append("${config.tr("Hiện tại", "Current")}: ")
+                    if (currentDest == sourceCode) {
+                        append("$srcShortLabel (${config.tr("Mặc định", "Default")})")
                     } else {
-                        "${config.tr("Hiện tại", "Current")}: $srcShortLabel → $currentDestShort"
-                    },
-                    color = if (currentDest == sourceCode) TextSecondary else XboxNeonGreen,
+                        append("$srcShortLabel → $currentDestShort")
+                    }
+                    if (boundCustomKeys.isNotEmpty()) {
+                        val keysText = boundCustomKeys.joinToString(", ") {
+                            SettingsRepository.getHardwareKeyShortLabel(it)
+                        }
+                        append(" · ${config.tr("Phím ngoài", "Ext Key")}: $keysText")
+                    }
+                }
+                Text(
+                    text = statusText,
+                    color = if (currentDest == sourceCode && boundCustomKeys.isEmpty()) TextSecondary else XboxNeonGreen,
                     fontFamily = JetBrainsMonoFontFamily,
                     fontWeight = FontWeight.Bold,
-                    fontSize = rSp(11.5f)
+                    fontSize = rSp(11f)
                 )
 
-                // Khung chờ bắt phím/cần trực tiếp trên tay cầm thật
+                // Khung chờ bắt BẤT KỲ phím cứng / nút tay cầm / cần gạt nào
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = if (isCapturing) Color(0xFF10313A) else XboxSurface,
@@ -181,17 +207,17 @@ internal fun VisualControllerSlotBindDialog(
                     ) {
                         Text(
                             text = if (isCapturing) {
-                                "${config.tr("Hãy bấm nút hoặc gạt cần trên tay cầm thật...", "Press a button or push a stick on your controller...")} (${countdownSec}s)"
+                                "${config.tr("Hãy bấm bất kỳ phím nào (tay cầm, bàn phím, điều khiển TV, phím âm lượng...) hoặc gạt cần...", "Press any button/key (gamepad, keyboard, remote, volume...) or push a stick...")} (${countdownSec}s)"
                             } else {
                                 config.tr(
-                                    "Bấm nút bên dưới rồi nhấn nút hoặc gạt cần trên tay cầm thật để gán ngay.",
-                                    "Press below, then press any button or push a stick on your physical controller."
+                                    "Nhấn nút bên dưới rồi bấm bất kỳ phím cứng nào (tay cầm, bàn phím, điều khiển, phím âm lượng) hoặc gạt cần để gán ngay.",
+                                    "Press below, then press any physical key (gamepad, keyboard, remote, volume) or push a stick."
                                 )
                             },
                             color = if (isCapturing) DirectCyan else TextSecondary,
-                            fontSize = rSp(11f),
+                            fontSize = rSp(10.8f),
                             fontWeight = if (isCapturing) FontWeight.Bold else FontWeight.Medium,
-                            lineHeight = rSp(15f)
+                            lineHeight = rSp(14.5f)
                         )
 
                         AdaptiveFlatActionButton(
@@ -209,7 +235,7 @@ internal fun VisualControllerSlotBindDialog(
                                     contentDescription = if (isCapturing) {
                                         config.tr("Hủy chờ bắt phím tay cầm", "Cancel controller capture")
                                     } else {
-                                        config.tr("Bắt nút hoặc hướng cần từ tay cầm thật", "Capture from physical controller")
+                                        config.tr("Bắt bất kỳ phím cứng hoặc hướng cần nào", "Capture any physical key or stick")
                                     }
                                 }
                                 .testTag("visual_bind_capture_toggle_btn")
@@ -218,18 +244,18 @@ internal fun VisualControllerSlotBindDialog(
                                 text = if (isCapturing) {
                                     config.tr("Hủy chờ bấm (Back)", "Cancel Capture (Back)")
                                 } else {
-                                    config.tr("Bấm nút / gạt cần trên tay cầm thật", "Press Button / Stick on Controller")
+                                    config.tr("Bấm bất kỳ phím / nút / gạt cần nào", "Press Any Key / Button / Stick")
                                 },
                                 color = if (isCapturing) Color(0xFFF0706B) else XboxNeonGreen,
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = rSp(11.5f),
+                                fontSize = rSp(11.3f),
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
 
-                // Công tắc Hoán đổi 2 chiều (giúp đảo hướng cần L↑ ↔ L↓ chỉ bằng 1 lần chọn)
+                // Công tắc Hoán đổi 2 chiều (cho tay cầm: gán L↑ → L↓ sẽ tự đổi L↓ → L↑)
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = if (swapPairEnabled) Color(0xFF16352A) else XboxSurface,
@@ -255,7 +281,7 @@ internal fun VisualControllerSlotBindDialog(
                                 text = config.tr("Tự hoán đổi 2 chiều (A ↔ B)", "Auto Swap Pair (A ↔ B)"),
                                 color = if (swapPairEnabled) XboxNeonGreen else TextPrimary,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = rSp(11.5f)
+                                fontSize = rSp(11.3f)
                             )
                             Text(
                                 text = config.tr(
@@ -263,8 +289,8 @@ internal fun VisualControllerSlotBindDialog(
                                     "On: cleanly swaps opposite direction/button. Off: allows mapping multiple inputs freely."
                                 ),
                                 color = TextSecondary,
-                                fontSize = rSp(10f),
-                                lineHeight = rSp(13.5f)
+                                fontSize = rSp(9.8f),
+                                lineHeight = rSp(13.2f)
                             )
                         }
                         Text(
@@ -284,7 +310,8 @@ internal fun VisualControllerSlotBindDialog(
                     AdaptiveFlatActionButton(
                         onClick = {
                             stopCapture()
-                            onApplyMapping(sourceCode, swapPairEnabled)
+                            onClearCustomKeysForSlot()
+                            onApplyStandardMapping(sourceCode, swapPairEnabled)
                             onDismiss()
                         },
                         isPrimary = false,
@@ -350,7 +377,7 @@ internal fun VisualControllerSlotBindDialog(
                             AdaptiveFlatActionButton(
                                 onClick = {
                                     stopCapture()
-                                    onApplyMapping(dstCode, swapPairEnabled)
+                                    onApplyStandardMapping(dstCode, swapPairEnabled)
                                     onDismiss()
                                 },
                                 isPrimary = selected,
@@ -394,7 +421,7 @@ internal fun VisualControllerSlotBindDialog(
                             AdaptiveFlatActionButton(
                                 onClick = {
                                     stopCapture()
-                                    onApplyMapping(dstCode, swapPairEnabled)
+                                    onApplyStandardMapping(dstCode, swapPairEnabled)
                                     onDismiss()
                                 },
                                 isPrimary = selected,

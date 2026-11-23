@@ -1732,9 +1732,18 @@ fun CloudBrowserScreen(
         }
         val shouldRouteGamepadToAppUi = isHudOpen || isVirtualPadModalOpen || showQuickSettingsDialog || showTranslatorDialog || isLoadingOverlayVisible
 
+        DisposableEffect(webViewInstance) {
+            com.example.cloudplay.PhysicalGamepadCaptureBus.attachInGameWebView(webViewInstance)
+            onDispose {
+                com.example.cloudplay.PhysicalGamepadCaptureBus.attachInGameWebView(null)
+            }
+        }
+
         LaunchedEffect(shouldRouteGamepadToAppUi, webViewInstance) {
             com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi = shouldRouteGamepadToAppUi
-            if (!shouldRouteGamepadToAppUi) {
+            if (shouldRouteGamepadToAppUi) {
+                com.example.cloudplay.PhysicalGamepadCaptureBus.releaseAllInGameKeys()
+            } else {
                 webViewInstance?.requestFocus()
             }
         }

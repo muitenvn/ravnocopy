@@ -580,8 +580,9 @@ internal fun TvSettingsScreen(
                         }
 
                         item(key = "tv_set_visual_controller_mapper") {
-                            val remappedCount = remember(config.physicalGamepadButtonMap) {
-                                SettingsRepository.parsePhysicalButtonMap(config.physicalGamepadButtonMap).size
+                            val remappedCount = remember(config.physicalGamepadButtonMap, config.physicalCustomKeyMap) {
+                                SettingsRepository.parsePhysicalButtonMap(config.physicalGamepadButtonMap).size +
+                                    SettingsRepository.parsePhysicalCustomKeyMap(config.physicalCustomKeyMap).size
                             }
                             TvSettingActionRow(
                                 title = config.tr("Sơ đồ chỉnh nút tay cầm", "Controller Button Mapper"),

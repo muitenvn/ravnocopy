@@ -203,6 +203,22 @@ class ExampleUnitTest {
     assertTrue(dynamicJa.contains("3"))
     assertNotEquals("3 bindings active · Press A to open visual controller diagram.", dynamicJa)
   }
+
+  @Test
+  fun physicalCustomKeyMap_parsesSerializesAndLabelsAnyHardwareKey() {
+    val repo = com.example.data.SettingsRepository
+    val raw = "${android.view.KeyEvent.KEYCODE_W}:${repo.PHYS_STICK_L_UP},${android.view.KeyEvent.KEYCODE_SPACE}:0,-5:2,66:99"
+    val parsed = repo.parsePhysicalCustomKeyMap(raw)
+    assertEquals(2, parsed.size)
+    assertEquals(repo.PHYS_STICK_L_UP, parsed[android.view.KeyEvent.KEYCODE_W])
+    assertEquals(0, parsed[android.view.KeyEvent.KEYCODE_SPACE])
+    assertEquals(parsed, repo.parsePhysicalCustomKeyMap(repo.serializePhysicalCustomKeyMap(parsed)))
+
+    assertEquals("W", repo.getHardwareKeyShortLabel(android.view.KeyEvent.KEYCODE_W))
+    assertEquals("SPC", repo.getHardwareKeyShortLabel(android.view.KeyEvent.KEYCODE_SPACE))
+    assertEquals("VOL+", repo.getHardwareKeyShortLabel(android.view.KeyEvent.KEYCODE_VOLUME_UP))
+    assertEquals("F1", repo.getHardwareKeyShortLabel(android.view.KeyEvent.KEYCODE_F1))
+  }
 }
 
 

@@ -2106,6 +2106,46 @@ object AppUiTranslator {
                 "fr" -> "Échanger automatiquement la paire"; "de" -> "Paar beim Zuweisen automatisch tauschen"; "ru" -> "Автоматически менять пару при назначении"; "th" -> "สลับคู่อัตโนมัติเมื่อกำหนดปุ่ม"; "id" -> "Tukar pasangan otomatis saat memetakan"
                 else -> en
             }
+            "Works with gamepads & any hardware key" -> return when (lang) {
+                "zh" -> "支持手柄及任意物理按键"; "ja" -> "コントローラー・各種物理キーに対応"; "ko" -> "게임패드 및 모든 물리 키 지원"; "es" -> "Compatible con mandos y cualquier tecla física"; "pt" -> "Funciona com controles e qualquer tecla física"
+                "fr" -> "Compatible manettes et toute touche physique"; "de" -> "Für Controller & beliebige physische Tasten"; "ru" -> "Поддержка геймпадов и любых физических клавиш"; "th" -> "รองรับทั้งจอยและปุ่มกดภายนอกทุกชนิด"; "id" -> "Mendukung kontroler & tombol fisik apa pun"
+                else -> en
+            }
+            "Tap any button or L/R stick direction, then press any key or controller input to bind." -> return when (lang) {
+                "zh" -> "点击任意按键或 L/R 摇杆方向，再按手柄、键盘、遥控器等任意键即可绑定。"; "ja" -> "ボタンや L/R スティック方向を選び、コントローラー・キーボード等の任意のキーを押して設定。"; "ko" -> "버튼 또는 L/R 스틱 방향을 누른 뒤 게임패드·키보드·리모컨의 아무 키나 눌러 지정하세요."; "es" -> "Toca un botón o dirección L/R y pulsa cualquier tecla o botón físico para asignar."; "pt" -> "Toque em um botão ou direção L/R e pressione qualquer tecla ou botão físico."
+                "fr" -> "Touchez un bouton ou une direction L/R puis appuyez sur n'importe quelle touche physique."; "de" -> "Taste oder L/R-Richtung wählen, dann beliebige physische Taste oder Stick drücken."; "ru" -> "Нажмите на кнопку или направление L/R, затем нажмите любую клавишу или кнопку геймпада."; "th" -> "แตะปุ่มหรือทิศทาง L/R แล้วกดปุ่มจริงใดก็ได้ (จอย คีย์บอร์ด รีโมต) เพื่อกำหนด"; "id" -> "Ketuk tombol atau arah L/R, lalu tekan tombol fisik atau kontroler mana pun."
+                else -> en
+            }
+            "Bind Any Key or Button" -> return when (lang) {
+                "zh" -> "绑定任意按键或手柄键"; "ja" -> "任意のキー・ボタンを割り当て"; "ko" -> "아무 키 또는 버튼 지정"; "es" -> "Asignar cualquier tecla o botón"; "pt" -> "Mapear qualquer tecla ou botão"
+                "fr" -> "Assigner une touche ou un bouton"; "de" -> "Beliebige Taste zuweisen"; "ru" -> "Назначить любую клавишу"; "th" -> "กำหนดปุ่มหรือคีย์ใดก็ได้"; "id" -> "Atur Tombol atau Kunci Apa Pun"
+                else -> en
+            }
+            "Ext Key" -> return when (lang) {
+                "zh" -> "外部按键"; "ja" -> "外部キー"; "ko" -> "외부 키"; "es" -> "Tecla ext."; "pt" -> "Tecla ext."
+                "fr" -> "Touche ext."; "de" -> "Ext. Taste"; "ru" -> "Внеш. клавиша"; "th" -> "ปุ่มนอก"; "id" -> "Tombol Eks."
+                else -> en
+            }
+            "Press any button/key (gamepad, keyboard, remote, volume...) or push a stick..." -> return when (lang) {
+                "zh" -> "请按任意按键（手柄、键盘、遥控器、音量键…）或推动摇杆…"; "ja" -> "任意のキー（ゲームパッド、キーボード、リモコン、音量等）またはスティックを入力…"; "ko" -> "아무 키(게임패드, 키보드, 리모컨, 볼륨 등)를 누르거나 스틱을 움직이세요..."; "es" -> "Pulsa cualquier tecla o botón (mando, teclado, control, volumen...) o mueve un stick..."; "pt" -> "Pressione qualquer botão/tecla (controle, teclado, volume...) ou mova um analógico..."
+                "fr" -> "Appuyez sur n'importe quelle touche (manette, clavier, télécommande, volume...) ou stick..."; "de" -> "Beliebige Taste (Controller, Tastatur, Fernbedienung, Lautstärke...) oder Stick betätigen..."; "ru" -> "Нажмите любую кнопку/клавишу (геймпад, клавиатура, пульт, громкость...) или стик..."; "th" -> "กดปุ่มใดก็ได้ (จอย คีย์บอร์ด รีโมต ปุ่มเสียง...) หรือดันแกน..."; "id" -> "Tekan tombol apa pun (kontroler, keyboard, remote, volume...) atau dorong stik..."
+                else -> en
+            }
+            "Press below, then press any physical key (gamepad, keyboard, remote, volume) or push a stick." -> return when (lang) {
+                "zh" -> "点击下方按钮，然后按手柄、键盘、遥控器或音量键等任意物理键，或推动摇杆即可绑定。"; "ja" -> "下を押してから、ゲームパッド・キーボード・リモコン・音量キー等またはスティックを入力してください。"; "ko" -> "아래를 누른 뒤 게임패드, 키보드, 리모컨, 볼륨 키 등 아무 물리 키나 스틱을 입력하세요."; "es" -> "Pulsa abajo y luego presiona cualquier tecla física (mando, teclado, control, volumen) o stick."; "pt" -> "Clique abaixo e pressione qualquer tecla física (controle, teclado, volume) ou analógico."
+                "fr" -> "Cliquez ci-dessous puis appuyez sur n'importe quelle touche physique ou poussez un stick."; "de" -> "Unten klicken, dann beliebige physische Taste (Controller, Tastatur, Fernbedienung) oder Stick betätigen."; "ru" -> "Нажмите ниже, затем нажмите любую клавишу (геймпад, клавиатура, пульт, громкость) или стик."; "th" -> "กดปุ่มด้านล่าง แล้วกดปุ่มจริงใดก็ได้ (จอย คีย์บอร์ด รีโมต ปุ่มเสียง) หรือดันแกนเพื่อกำหนด"; "id" -> "Tekan di bawah, lalu tekan tombol fisik apa pun (kontroler, keyboard, remote, volume) atau stik."
+                else -> en
+            }
+            "Capture any physical key or stick" -> return when (lang) {
+                "zh" -> "捕获任意物理按键或摇杆"; "ja" -> "任意の物理キーまたはスティックを取得"; "ko" -> "아무 물리 키 또는 스틱 입력 받기"; "es" -> "Capturar cualquier tecla física o stick"; "pt" -> "Capturar qualquer tecla física ou analógico"
+                "fr" -> "Capturer toute touche physique ou stick"; "de" -> "Beliebige Taste oder Stick erfassen"; "ru" -> "Захватить любую клавишу или стик"; "th" -> "จับปุ่มจริงหรือแกนใดก็ได้"; "id" -> "Tangkap tombol fisik atau stik apa pun"
+                else -> en
+            }
+            "Press Any Key / Button / Stick" -> return when (lang) {
+                "zh" -> "按任意键 / 手柄键 / 摇杆绑定"; "ja" -> "任意のキー / ボタン / スティックを押す"; "ko" -> "아무 키 / 버튼 / 스틱 눌러 지정"; "es" -> "Pulsar cualquier tecla / botón / stick"; "pt" -> "Pressionar qualquer tecla / botão / stick"
+                "fr" -> "Appuyer sur une touche / bouton / stick"; "de" -> "Beliebige Taste / Stick drücken"; "ru" -> "Нажать любую клавишу / кнопку / стик"; "th" -> "กดปุ่ม / คีย์ / ดันแกนใดก็ได้"; "id" -> "Tekan Tombol / Kunci / Stik Apa Pun"
+                else -> en
+            }
         }
         return en
     }

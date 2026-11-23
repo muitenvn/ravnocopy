@@ -2550,9 +2550,63 @@ class XboxBridge(
                         return out;
                     }
 
+                    const customKeySlots = new Array(25).fill(false);
+                    let customKeyActiveCount = 0;
+                    let customKeyTimestamp = 0;
+
+                    window.__cpCustomKey = function(slot, pressed) {
+                        const s = Number(slot);
+                        if (isNaN(s) || s < 0 || s > 24) return;
+                        const next = !!pressed;
+                        if (customKeySlots[s] === next) return;
+                        customKeySlots[s] = next;
+                        let count = 0;
+                        for (let i = 0; i < 25; i++) {
+                            if (customKeySlots[i]) count++;
+                        }
+                        customKeyActiveCount = count;
+                        const ts = nowTs();
+                        customKeyTimestamp = ts;
+                        virtualGamepadState.timestamp = ts;
+                        if (next && !window.__hasPhysicalGamepadConnected) {
+                            ensureGamepadConnectedEvent();
+                        }
+                    };
+
+                    window.__cpCustomKeyReleaseAll = function() {
+                        if (customKeyActiveCount === 0) return;
+                        for (let i = 0; i < 25; i++) customKeySlots[i] = false;
+                        customKeyActiveCount = 0;
+                        const ts = nowTs();
+                        customKeyTimestamp = ts;
+                        virtualGamepadState.timestamp = ts;
+                    };
+
+                    function mixCustomKeysIntoSnapshot(btnsArr, axesArr) {
+                        if (customKeyActiveCount <= 0) return axesArr;
+                        for (let b = 0; b < 17; b++) {
+                            if (customKeySlots[b] && btnsArr[b]) {
+                                btnsArr[b].pressed = true;
+                                btnsArr[b].touched = true;
+                                btnsArr[b].value = 1;
+                            }
+                        }
+                        const out = [axesArr[0] || 0, axesArr[1] || 0, axesArr[2] || 0, axesArr[3] || 0];
+                        const lx = (customKeySlots[20] ? 1 : 0) - (customKeySlots[19] ? 1 : 0);
+                        const ly = (customKeySlots[18] ? 1 : 0) - (customKeySlots[17] ? 1 : 0);
+                        const rx = (customKeySlots[24] ? 1 : 0) - (customKeySlots[23] ? 1 : 0);
+                        const ry = (customKeySlots[22] ? 1 : 0) - (customKeySlots[21] ? 1 : 0);
+                        if (lx !== 0) out[0] = Math.max(-1, Math.min(1, out[0] + lx));
+                        if (ly !== 0) out[1] = Math.max(-1, Math.min(1, out[1] + ly));
+                        if (rx !== 0) out[2] = Math.max(-1, Math.min(1, out[2] + rx));
+                        if (ry !== 0) out[3] = Math.max(-1, Math.min(1, out[3] + ry));
+                        return out;
+                    }
+
                     window.__cpReleaseAll = function() {
                         virtViewDownAt = 0;
                         virtShortcutLatched = {};
+                        window.__cpCustomKeyReleaseAll();
                         for (let i = 0; i < 4; i++) virtualGamepadState.axes[i] = 0;
                         for (let b = 0; b < 17; b++) {
                             virtualGamepadState.buttons[b].pressed = false;
@@ -2652,13 +2706,14 @@ class XboxBridge(
                             }
                             const srcAxes = virtualGamepadState.axes;
                             const baseAxes = [srcAxes[0] || 0, srcAxes[1] || 0, srcAxes[2] || 0, srcAxes[3] || 0];
+                            const withCustomAxes = mixCustomKeysIntoSnapshot(btns, baseAxes);
                             return {
                                 id: virtualGamepadState.id,
                                 index: 0,
                                 connected: virtualGamepadState.connected,
-                                timestamp: virtualGamepadState.timestamp,
+                                timestamp: Math.max(virtualGamepadState.timestamp, customKeyTimestamp),
                                 mapping: "standard",
-                                axes: mixGyroIntoAxesAndButtons(baseAxes, btns),
+                                axes: mixGyroIntoAxesAndButtons(withCustomAxes, btns),
                                 buttons: btns,
                                 vibrationActuator: virtualVibrationActuator
                             };
@@ -2679,7 +2734,7 @@ class XboxBridge(
                                 }
                             }
                             window.__hasPhysicalGamepadConnected = !!physPad;
-                            const shouldExposeVirtual = ((!!window.__virtualGamepadEnabled || virtualGamepadActive || gyroInputState.active) && virtualGamepadState.connected);
+                            const shouldExposeVirtual = ((!!window.__virtualGamepadEnabled || virtualGamepadActive || gyroInputState.active || customKeyActiveCount > 0) && virtualGamepadState.connected);
                             if (!physPad) {
                                 physViewDownAt = 0;
                                 if (shouldExposeVirtual) {
@@ -2830,6 +2885,12 @@ class XboxBridge(
                                 outTimestamp = Math.max(physPad.timestamp || 0, virtualGamepadState.timestamp);
                                 outAxes = mergedAxes;
                                 outButtons = mergedButtons;
+                            }
+                            if (customKeyActiveCount > 0) {
+                                outAxes = mixCustomKeysIntoSnapshot(outButtons, outAxes);
+                                if (customKeyTimestamp > outTimestamp) {
+                                    outTimestamp = customKeyTimestamp;
+                                }
                             }
                             outAxes = mixGyroIntoAxesAndButtons(outAxes, outButtons);
                             if (gyroInputState.timestamp > outTimestamp) {

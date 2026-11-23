@@ -813,6 +813,7 @@ data class AppConfig(
     val usePerGameGamepadLayout: Boolean = true,
     val perGameLayoutsJson: String = "{}",
     val physicalGamepadButtonMap: String = "",
+    val physicalCustomKeyMap: String = "",
     val controllerShortcutsEnabled: Boolean = true,
     val shortcutToggleStatsButton: Int = 3, // Y
     val shortcutToggleVirtualPadButton: Int = 1, // B
@@ -1078,6 +1079,7 @@ object SettingsRepository {
             usePerGameGamepadLayout = sp.getBoolean("use_per_game_gamepad_layout", true),
             perGameLayoutsJson = sp.getString("per_game_layouts_json", "{}") ?: "{}",
             physicalGamepadButtonMap = sp.getString("physical_gamepad_button_map", "") ?: "",
+            physicalCustomKeyMap = sp.getString("physical_custom_key_map", "") ?: "",
             controllerShortcutsEnabled = sp.getBoolean("controller_shortcuts_enabled", true),
             shortcutToggleStatsButton = sp.getInt("shortcut_toggle_stats_btn", 3).coerceIn(-1, 16),
             shortcutToggleVirtualPadButton = sp.getInt("shortcut_toggle_vpad_btn", 1).coerceIn(-1, 16),
@@ -1243,6 +1245,7 @@ object SettingsRepository {
             putBoolean("use_per_game_gamepad_layout", c.usePerGameGamepadLayout)
             putString("per_game_layouts_json", c.perGameLayoutsJson)
             putString("physical_gamepad_button_map", c.physicalGamepadButtonMap)
+            putString("physical_custom_key_map", c.physicalCustomKeyMap)
             putBoolean("controller_shortcuts_enabled", c.controllerShortcutsEnabled)
             putInt("shortcut_toggle_stats_btn", c.shortcutToggleStatsButton)
             putInt("shortcut_toggle_vpad_btn", c.shortcutToggleVirtualPadButton)
@@ -2396,10 +2399,94 @@ object SettingsRepository {
         AppLogger.info("UI", "Hoán đổi Cần Trái ↔ Cần Phải (tay cầm thật): ${!swapped}")
     }
 
-    fun resetPhysicalButtonMap() {
-        _config.update { it.copy(physicalGamepadButtonMap = "") }
+    fun parsePhysicalCustomKeyMap(raw: String = _config.value.physicalCustomKeyMap): Map<Int, Int> {
+        if (raw.isBlank()) return emptyMap()
+        val map = mutableMapOf<Int, Int>()
+        raw.split(",").forEach { pair ->
+            val parts = pair.trim().split(":")
+            if (parts.size == 2) {
+                val keyCode = parts[0].toIntOrNull()
+                val slot = parts[1].toIntOrNull()
+                if (keyCode != null && keyCode > 0 && slot != null && slot in 0..PHYS_INPUT_MAX_CODE) {
+                    map[keyCode] = slot
+                }
+            }
+        }
+        return map
+    }
+
+    fun serializePhysicalCustomKeyMap(map: Map<Int, Int>): String {
+        return map.entries
+            .filter { it.key > 0 && it.value in 0..PHYS_INPUT_MAX_CODE }
+            .sortedBy { it.key }
+            .joinToString(",") { "${it.key}:${it.value}" }
+    }
+
+    fun bindPhysicalCustomKey(androidKeyCode: Int, targetSlot: Int) {
+        if (androidKeyCode <= 0 || targetSlot !in 0..PHYS_INPUT_MAX_CODE) return
+        val current = parsePhysicalCustomKeyMap().toMutableMap()
+        current[androidKeyCode] = targetSlot
+        val serialized = serializePhysicalCustomKeyMap(current)
+        _config.update { it.copy(physicalCustomKeyMap = serialized) }
         persist(_config.value)
-        AppLogger.info("UI", "Khôi phục mặc định: Sơ đồ nút tay cầm vật lý")
+        AppLogger.info(
+            "UI",
+            "Gán phím cứng ngoài (${getHardwareKeyShortLabel(androidKeyCode)}) → ${getGamepadButtonShortLabel(targetSlot)}"
+        )
+    }
+
+    fun clearPhysicalCustomKeysForSlot(targetSlot: Int) {
+        val current = parsePhysicalCustomKeyMap().toMutableMap()
+        val removed = current.entries.removeAll { it.value == targetSlot }
+        if (!removed) return
+        val serialized = serializePhysicalCustomKeyMap(current)
+        _config.update { it.copy(physicalCustomKeyMap = serialized) }
+        persist(_config.value)
+    }
+
+    fun getHardwareKeyShortLabel(androidKeyCode: Int): String = when (androidKeyCode) {
+        android.view.KeyEvent.KEYCODE_SPACE -> "SPC"
+        android.view.KeyEvent.KEYCODE_ENTER, android.view.KeyEvent.KEYCODE_NUMPAD_ENTER -> "ENT"
+        android.view.KeyEvent.KEYCODE_TAB -> "TAB"
+        android.view.KeyEvent.KEYCODE_SHIFT_LEFT -> "LSH"
+        android.view.KeyEvent.KEYCODE_SHIFT_RIGHT -> "RSH"
+        android.view.KeyEvent.KEYCODE_CTRL_LEFT -> "LCT"
+        android.view.KeyEvent.KEYCODE_CTRL_RIGHT -> "RCT"
+        android.view.KeyEvent.KEYCODE_ALT_LEFT -> "LAL"
+        android.view.KeyEvent.KEYCODE_ALT_RIGHT -> "RAL"
+        android.view.KeyEvent.KEYCODE_VOLUME_UP -> "VOL+"
+        android.view.KeyEvent.KEYCODE_VOLUME_DOWN -> "VOL-"
+        android.view.KeyEvent.KEYCODE_DEL -> "BSP"
+        android.view.KeyEvent.KEYCODE_FORWARD_DEL -> "DEL"
+        android.view.KeyEvent.KEYCODE_DPAD_CENTER -> "OK"
+        android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> "PLAY"
+        android.view.KeyEvent.KEYCODE_CHANNEL_UP -> "CH+"
+        android.view.KeyEvent.KEYCODE_CHANNEL_DOWN -> "CH-"
+        in android.view.KeyEvent.KEYCODE_A..android.view.KeyEvent.KEYCODE_Z -> {
+            ('A'.code + (androidKeyCode - android.view.KeyEvent.KEYCODE_A)).toChar().toString()
+        }
+        in android.view.KeyEvent.KEYCODE_0..android.view.KeyEvent.KEYCODE_9 -> {
+            ('0'.code + (androidKeyCode - android.view.KeyEvent.KEYCODE_0)).toChar().toString()
+        }
+        in android.view.KeyEvent.KEYCODE_F1..android.view.KeyEvent.KEYCODE_F12 -> {
+            "F${androidKeyCode - android.view.KeyEvent.KEYCODE_F1 + 1}"
+        }
+        else -> {
+            val rawName = runCatching { android.view.KeyEvent.keyCodeToString(androidKeyCode) }
+                .getOrNull()
+                ?.removePrefix("KEYCODE_")
+                ?.removePrefix("BUTTON_")
+                ?.replace("_", "")
+                ?.take(5)
+                .orEmpty()
+            rawName.ifBlank { "K$androidKeyCode" }
+        }
+    }
+
+    fun resetPhysicalButtonMap() {
+        _config.update { it.copy(physicalGamepadButtonMap = "", physicalCustomKeyMap = "") }
+        persist(_config.value)
+        AppLogger.info("UI", "Khôi phục mặc định: Sơ đồ nút tay cầm & phím cứng ngoài")
     }
 
     fun updateControllerShortcutsEnabled(enabled: Boolean) {
@@ -2733,6 +2820,7 @@ object SettingsRepository {
                 physRightStickOuterDeadzone = 1.0f,
                 gamepadLayoutPreset = GamepadLayoutPreset.STANDARD,
                 physicalGamepadButtonMap = "",
+                physicalCustomKeyMap = "",
                 controllerShortcutsEnabled = true,
                 shortcutToggleStatsButton = 3, // Y
                 shortcutToggleVirtualPadButton = 1, // B
