@@ -269,7 +269,8 @@ private fun QuickSettingsColControls(
                     color = if (selected) HudAccent else HudMuted,
                     fontSize = 11.5.sp,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -435,7 +436,8 @@ private fun QuickSettingsSegOption(
             color = if (selected) HudAccent else HudMuted,
             fontSize = 12.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

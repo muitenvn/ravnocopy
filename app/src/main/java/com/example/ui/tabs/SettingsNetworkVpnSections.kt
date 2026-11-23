@@ -488,7 +488,8 @@ internal fun SettingsAdvancedSection(
                                     color = if (isSelected) XboxNeonGreen else TextPrimary,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.sp,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }

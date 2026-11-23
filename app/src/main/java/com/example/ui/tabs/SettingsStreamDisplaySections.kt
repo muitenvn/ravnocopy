@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AppConfig
@@ -61,7 +62,7 @@ internal fun SettingsGraphicsFpsSection(
         CellularOptimizationMode.MAX_SPEED_UNCAPPED -> "1080p+"
     }
     CollapsibleSettingsGroup(
-        title = if (isEn) "Resolution & FPS" else "Độ phân giải và FPS",
+        title = config.tr("Độ phân giải và FPS", "Resolution & FPS"),
         subtitle = "$resShortLabel · ${config.streamFpsCap.fps} FPS",
         icon = Icons.Default.Speed,
         expanded = expandGraphics,
@@ -108,15 +109,17 @@ internal fun SettingsGraphicsFpsSection(
                         color = if (isSelected) Color(0xFF0F2C1D) else Color(0xFF132019)
                     ) {
                         androidx.compose.foundation.layout.Box(
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = label,
                                 color = if (isSelected) XboxNeonGreen else TextSecondary,
-                                fontSize = 12.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                maxLines = 1
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -182,7 +185,7 @@ internal fun SettingsGraphicsFpsSection(
             }
 
             SettingToggleRow(
-                title = if (isEn) "Sharpen Image" else "Tăng độ nét",
+                title = config.tr("Tăng độ nét", "Sharpen Image"),
                 subtitle = "",
                 checked = config.clarityBoostEnabled,
                 onCheckedChange = { SettingsRepository.updateClarityBoost(it) },
@@ -190,7 +193,7 @@ internal fun SettingsGraphicsFpsSection(
             )
 
             SettingToggleRow(
-                title = if (isEn) "Prioritize Smooth Response" else "Ưu tiên phản hồi mượt",
+                title = config.tr("Ưu tiên phản hồi mượt", "Prioritize Smooth Response"),
                 subtitle = "",
                 checked = config.wifiSpeedFirstPriority,
                 onCheckedChange = { SettingsRepository.updateWifiSpeedFirstPriority(it) },
@@ -198,7 +201,7 @@ internal fun SettingsGraphicsFpsSection(
             )
 
             SettingToggleRow(
-                title = if (isEn) "Reduce GPU Load" else "Giảm tải GPU",
+                title = config.tr("Giảm tải GPU", "Reduce GPU Load"),
                 subtitle = "",
                 checked = config.gpuLoadReductionEnabled,
                 onCheckedChange = { SettingsRepository.updateGpuLoadReductionEnabled(it) },
@@ -206,7 +209,7 @@ internal fun SettingsGraphicsFpsSection(
             )
 
             Text(
-                text = if (isEn) "Xbox Web Interface" else "Giao diện web Xbox",
+                text = config.tr("Giao diện web Xbox", "Xbox Web Interface"),
                 color = TextSecondary,
                 fontSize = 12.5.sp,
                 fontWeight = FontWeight.Bold,
@@ -244,12 +247,13 @@ internal fun SettingsGraphicsFpsSection(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = uiMode.localizedTitle(isEn),
+                                    text = config.tr(uiMode.shortVi, uiMode.shortEn),
                                     color = if (isSelected) Color(0xFF03140B) else TextSecondary,
                                     fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -257,8 +261,14 @@ internal fun SettingsGraphicsFpsSection(
                 }
             }
 
+            Text(
+                text = config.tr(config.xboxWebUiMode.descVi, config.xboxWebUiMode.descEn),
+                color = TextSecondary,
+                fontSize = 11.5.sp
+            )
+
             SettingToggleRow(
-                title = if (isEn) "Auto-Exit New UI Handler" else "Tự động xử lý thoát Giao diện mới",
+                title = config.tr("Tự động xử lý thoát Giao diện mới", "Auto-Exit New UI Handler"),
                 subtitle = "",
                 checked = config.autoExitPreviewHandlerEnabled,
                 onCheckedChange = { SettingsRepository.updateAutoExitPreviewHandlerEnabled(it) },
@@ -278,7 +288,9 @@ internal fun SettingsAdvancedVideoColorsAndPerfCard(
     isEn: Boolean
 ) {
     val context = LocalContext.current
-    SettingsCard(title = if (isEn) "Image Colors & Low-End Performance" else "Màu sắc hình ảnh & Hiệu năng máy yếu") {
+    val resetColorsToast = config.tr("Đã đặt lại màu sắc mặc định", "Reset colors to default")
+    val resetColorsBtnLabel = config.tr("Đặt lại màu sắc mặc định", "Reset Colors to Default")
+    SettingsCard(title = config.tr("Màu sắc hình ảnh & Hiệu năng máy yếu", "Image Colors & Low-End Performance")) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -288,7 +300,7 @@ internal fun SettingsAdvancedVideoColorsAndPerfCard(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             LabeledSlider(
-                label = if (isEn) "Contrast" else "Độ tương phản",
+                label = config.tr("Độ tương phản", "Contrast"),
                 valueText = "${config.videoContrast}%",
                 value = config.videoContrast.toFloat(),
                 onValueChange = { SettingsRepository.updateVideoContrast(it.toInt()) },
@@ -296,7 +308,7 @@ internal fun SettingsAdvancedVideoColorsAndPerfCard(
                 accentColor = XboxNeonGreen
             )
             LabeledSlider(
-                label = if (isEn) "Color Saturation" else "Độ tươi màu",
+                label = config.tr("Độ tươi màu", "Color Saturation"),
                 valueText = "${config.videoSaturation}%",
                 value = config.videoSaturation.toFloat(),
                 onValueChange = { SettingsRepository.updateVideoSaturation(it.toInt()) },
@@ -304,7 +316,7 @@ internal fun SettingsAdvancedVideoColorsAndPerfCard(
                 accentColor = DirectCyan
             )
             LabeledSlider(
-                label = if (isEn) "Brightness" else "Độ sáng",
+                label = config.tr("Độ sáng", "Brightness"),
                 valueText = "${config.videoBrightness}%",
                 value = config.videoBrightness.toFloat(),
                 onValueChange = { SettingsRepository.updateVideoBrightness(it.toInt()) },
@@ -316,39 +328,36 @@ internal fun SettingsAdvancedVideoColorsAndPerfCard(
         OutlinedButton(
             onClick = {
                 SettingsRepository.resetVideoDisplayDefaults()
-                Toast.makeText(
-                    context,
-                    if (isEn) "Reset colors to default" else "Đã đặt lại màu sắc mặc định",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(context, resetColorsToast, Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .gamepadActionButton(cornerRadius = 10.dp) {
                     SettingsRepository.resetVideoDisplayDefaults()
-                    Toast.makeText(
-                        context,
-                        if (isEn) "Reset colors to default" else "Đã đặt lại màu sắc mặc định",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(context, resetColorsToast, Toast.LENGTH_SHORT).show()
                 }
                 .semantics {
-                    contentDescription = if (isEn) "Reset Colors to Default" else "Đặt lại màu sắc mặc định"
+                    contentDescription = resetColorsBtnLabel
                 }
                 .testTag("advanced_reset_video_defaults_btn"),
             shape = RoundedCornerShape(10.dp)
         ) {
             Text(
-                text = config.tr("Đặt lại màu sắc mặc định", "Reset Colors to Default"),
+                text = resetColorsBtnLabel,
                 color = DirectCyan,
                 fontSize = 11.5.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
         SettingToggleRow(
-            title = if (isEn) "Low-End & Battery Saver Mode" else "Chế độ máy yếu & Tiết kiệm pin",
-            subtitle = if (isEn) "Light 720p stream & reduced effects to keep phone cool" else "Dùng mức 720p nhẹ và tắt hiệu ứng thừa giúp máy mát, đỡ hao pin",
+            title = config.tr("Chế độ máy yếu & Tiết kiệm pin", "Low-End & Battery Saver Mode"),
+            subtitle = config.tr(
+                "Dùng mức 720p nhẹ và tắt hiệu ứng thừa giúp máy mát, đỡ hao pin",
+                "Light 720p stream & reduced effects to keep phone cool"
+            ),
             checked = config.lowEndDeviceMode && config.gpuLoadReductionEnabled,
             onCheckedChange = { enabled ->
                 SettingsRepository.updateLowEndDeviceMode(enabled)
@@ -367,14 +376,14 @@ internal fun SettingsScreenRecordingSection(
     onToggleExpand: () -> Unit
 ) {
     CollapsibleSettingsGroup(
-        title = if (isEn) "Screen Recording" else "Quay màn hình",
+        title = config.tr("Quay màn hình", "Screen Recording"),
         subtitle = config.screenRecordQuality.localizedShort(isEn),
         icon = Icons.Default.Videocam,
         expanded = expandRecording,
         onToggle = onToggleExpand,
         testTag = "settings_group_recording"
     ) {
-        SettingsCard(title = if (isEn) "Video Quality (.MP4)" else "Độ nét video (.MP4)") {
+        SettingsCard(title = config.tr("Độ nét video (.MP4)", "Video Quality (.MP4)")) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -406,14 +415,17 @@ internal fun SettingsScreenRecordingSection(
                                 color = if (isSelected) DirectCyan else TextPrimary,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = recQuality.localizedDesc(isEn),
+                                text = config.tr(recQuality.descVi, recQuality.descEn),
                                 color = TextSecondary,
-                                fontSize = 9.sp,
+                                fontSize = 9.5.sp,
                                 textAlign = TextAlign.Center,
-                                maxLines = 2
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -421,11 +433,10 @@ internal fun SettingsScreenRecordingSection(
             }
 
             Text(
-                text = if (isEn) {
+                text = config.tr(
+                    "Tạm giảm hiệu ứng chuyển động nền khi đang quay để đỡ nặng máy.",
                     "Reduces background animations while recording to save battery."
-                } else {
-                    "Tạm giảm hiệu ứng chuyển động nền khi đang quay để đỡ nặng máy."
-                },
+                ),
                 color = TextSecondary,
                 fontSize = 10.5.sp
             )

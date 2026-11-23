@@ -458,7 +458,7 @@ internal fun TvSettingsScreen(
                                     "Chọn giao diện Cũ (xbox.com/play) hoặc Mới (play.xbox.com).",
                                     "Choose between Classic (xbox.com/play) or New (play.xbox.com)."
                                 ),
-                                options = uiModes.map { it.localizedTitle(isEn) },
+                                options = uiModes.map { config.tr(it.shortVi, it.shortEn) },
                                 selectedIndex = curIdx,
                                 onSelect = { idx ->
                                     uiModes.getOrNull(idx)?.let { SettingsRepository.updateXboxWebUiMode(it) }

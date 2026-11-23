@@ -2603,7 +2603,8 @@ private fun SheetChoiceChip(
             color = if (selected) SheetAccent else SheetText,
             fontSize = 11.sp,
             fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold,
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -2646,7 +2647,8 @@ private fun SheetPillButton(
             color = textColor,
             fontSize = 11.sp,
             fontWeight = FontWeight.ExtraBold,
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

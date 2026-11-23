@@ -2131,6 +2131,81 @@ object AppUiTranslator {
                 "fr" -> "Appuyez sur n'importe quelle touche (manette, clavier, télécommande, volume...) ou stick..."; "de" -> "Beliebige Taste (Controller, Tastatur, Fernbedienung, Lautstärke...) oder Stick betätigen..."; "ru" -> "Нажмите любую кнопку/клавишу (геймпад, клавиатура, пульт, громкость...) или стик..."; "th" -> "กดปุ่มใดก็ได้ (จอย คีย์บอร์ด รีโมต ปุ่มเสียง...) หรือดันแกน..."; "id" -> "Tekan tombol apa pun (kontroler, keyboard, remote, volume...) atau dorong stik..."
                 else -> en
             }
+            "Resolution & FPS" -> return when (lang) {
+                "zh" -> "分辨率与帧率 (FPS)"; "ja" -> "解像度と FPS"; "ko" -> "해상도 및 FPS"; "es" -> "Resolución y FPS"; "pt" -> "Resolução e FPS"
+                "fr" -> "Résolution et FPS"; "de" -> "Auflösung & FPS"; "ru" -> "Разрешение и FPS"; "th" -> "ความละเอียดและ FPS"; "id" -> "Resolusi & FPS"
+                else -> en
+            }
+            "Prioritize Smooth Response" -> return when (lang) {
+                "zh" -> "优先流畅响应"; "ja" -> "応答速度を優先"; "ko" -> "부드러운 반응 우선"; "es" -> "Priorizar respuesta fluida"; "pt" -> "Priorizar resposta rápida"
+                "fr" -> "Prioriser la réactivité"; "de" -> "Schnelle Reaktion bevorzugen"; "ru" -> "Приоритет плавного отклика"; "th" -> "เน้นการตอบสนองลื่นไหล"; "id" -> "Prioritaskan respons cepat"
+                else -> en
+            }
+            "Reduce GPU Load" -> return when (lang) {
+                "zh" -> "降低 GPU 负载"; "ja" -> "GPU 負荷を軽減"; "ko" -> "GPU 부하 줄이기"; "es" -> "Reducir carga de GPU"; "pt" -> "Reduzir uso da GPU"
+                "fr" -> "Réduire la charge GPU"; "de" -> "GPU-Last reduzieren"; "ru" -> "Снизить нагрузку на GPU"; "th" -> "ลดภาระ GPU"; "id" -> "Kurangi beban GPU"
+                else -> en
+            }
+            "Xbox Web Interface" -> return when (lang) {
+                "zh" -> "Xbox 网页界面"; "ja" -> "Xbox ウェブ画面"; "ko" -> "Xbox 웹 인터페이스"; "es" -> "Interfaz web de Xbox"; "pt" -> "Interface web do Xbox"
+                "fr" -> "Interface web Xbox"; "de" -> "Xbox-Weboberfläche"; "ru" -> "Веб-интерфейс Xbox"; "th" -> "หน้าเว็บ Xbox"; "id" -> "Antarmuka Web Xbox"
+                else -> en
+            }
+            "Classic UI" -> return when (lang) {
+                "zh" -> "经典界面"; "ja" -> "クラシック UI"; "ko" -> "클래식 UI"; "es" -> "UI Clásica"; "pt" -> "UI Clássica"
+                "fr" -> "UI Classique"; "de" -> "Klassische UI"; "ru" -> "Классическая UI"; "th" -> "หน้าเว็บแบบเก่า"; "id" -> "UI Klasik"
+                else -> en
+            }
+            "New UI" -> return when (lang) {
+                "zh" -> "新版界面"; "ja" -> "新しい UI"; "ko" -> "새 UI"; "es" -> "Nueva UI"; "pt" -> "Nova UI"
+                "fr" -> "Nouvelle UI"; "de" -> "Neue UI"; "ru" -> "Новая UI"; "th" -> "หน้าเว็บแบบใหม่"; "id" -> "UI Baru"
+                else -> en
+            }
+            "Uses classic xbox.com/play layout, responsive touch & best compatibility with Smart Region Unlock" -> return when (lang) {
+                "zh" -> "使用经典 xbox.com/play 布局，触控灵敏，与智能地区解锁兼容性最佳。"; "ja" -> "従来の xbox.com/play 画面を使用し、地域解除との互換性と操作性に優れます。"; "ko" -> "기존 xbox.com/play 화면을 사용하며 터치 반응과 지역 잠금 해제 호환성이 가장 좋습니다."; "es" -> "Usa xbox.com/play clásico: tacto ágil y mejor compatibilidad con desbloqueo regional."; "pt" -> "Usa o xbox.com/play clássico, com toque ágil e melhor compatibilidade de desbloqueio."
+                "fr" -> "Utilise xbox.com/play classique, réactif et idéal avec le déblocage régional."; "de" -> "Nutzt das klassische xbox.com/play mit bester Kompatibilität für Regions-Entsperrung."; "ru" -> "Классический xbox.com/play: быстрый отклик и лучшая совместимость с обходом региона."; "th" -> "ใช้หน้า xbox.com/play แบบเก่า ตอบสนองไวและเข้ากันได้ดีที่สุดกับระบบปลดล็อกภูมิภาค"; "id" -> "Menggunakan xbox.com/play klasik, sentuhan responsif & paling kompatibel dengan buka kunci wilayah."
+                else -> en
+            }
+            "Uses new play.xbox.com dashboard when you are in a supported country or using a full external VPN" -> return when (lang) {
+                "zh" -> "使用新版 play.xbox.com 界面，适合处于支持地区或已开启外部完整 VPN 的用户。"; "ja" -> "対応地域または外部 VPN 使用時に新しい play.xbox.com 画面を使用します。"; "ko" -> "지원 국가에 있거나 외부 VPN을 사용할 때 새 play.xbox.com 화면을 사용합니다."; "es" -> "Usa el nuevo play.xbox.com si estás en un país compatible o usas VPN externa."; "pt" -> "Usa o novo play.xbox.com em países suportados ou com VPN externa."
+                "fr" -> "Utilise le nouveau play.xbox.com en pays pris en charge ou avec un VPN externe."; "de" -> "Nutzt das neue play.xbox.com in unterstützten Regionen oder mit externem VPN."; "ru" -> "Новый play.xbox.com для поддерживаемых стран или при использовании внешнего VPN."; "th" -> "ใช้หน้า play.xbox.com แบบใหม่เมื่ออยู่ในประเทศที่รองรับหรือใช้ VPN ภายนอก"; "id" -> "Menggunakan play.xbox.com baru saat berada di negara didukung atau memakai VPN eksternal."
+                else -> en
+            }
+            "Auto-Exit New UI Handler" -> return when (lang) {
+                "zh" -> "自动处理退出新版界面"; "ja" -> "新 UI 終了の自動処理"; "ko" -> "새 UI 종료 자동 처리"; "es" -> "Salida automática de Nueva UI"; "pt" -> "Saída automática da Nova UI"
+                "fr" -> "Sortie auto de la Nouvelle UI"; "de" -> "Auto-Ausstieg aus Neuer UI"; "ru" -> "Автовыход из Новой UI"; "th" -> "จัดการออกจากหน้าเว็บใหม่อัตโนมัติ"; "id" -> "Keluar Otomatis dari UI Baru"
+                else -> en
+            }
+            "Image Colors & Low-End Performance" -> return when (lang) {
+                "zh" -> "画面色彩与低配机性能"; "ja" -> "画質カラーと軽量パフォーマンス"; "ko" -> "화면 색상 및 저사양 성능"; "es" -> "Colores e impacto en rendimiento"; "pt" -> "Cores e desempenho em aparelhos simples"
+                "fr" -> "Couleurs et mode appareil modeste"; "de" -> "Bildfarben & Leistung (Sparmodus)"; "ru" -> "Цвета и режим для слабых устройств"; "th" -> "สีภาพและประสิทธิภาพเครื่องสเปกต่ำ"; "id" -> "Warna Gambar & Performa Perangkat Ringan"
+                else -> en
+            }
+            "Reset colors to default" -> return when (lang) {
+                "zh" -> "已重置为默认色彩"; "ja" -> "色を初期設定に戻しました"; "ko" -> "색상을 기본값으로 초기화했습니다"; "es" -> "Colores restablecidos"; "pt" -> "Cores redefinidas para o padrão"
+                "fr" -> "Couleurs réinitialisées"; "de" -> "Farben zurückgesetzt"; "ru" -> "Цвета сброшены по умолчанию"; "th" -> "รีเซ็ตสีเป็นค่าเริ่มต้นแล้ว"; "id" -> "Warna dikembalikan ke bawaan"
+                else -> en
+            }
+            "Light & compact" -> return when (lang) {
+                "zh" -> "轻巧省空间"; "ja" -> "軽量・省容量"; "ko" -> "가볍고 저용량"; "es" -> "Ligero y compacto"; "pt" -> "Leve e compacto"
+                "fr" -> "Léger et compact"; "de" -> "Leicht & kompakt"; "ru" -> "Лёгкий и компактный"; "th" -> "เบาเครื่อง ประหยัดพื้นที่"; "id" -> "Ringan & hemat ruang"
+                else -> en
+            }
+            "Smooth, cool & compact" -> return when (lang) {
+                "zh" -> "流畅低发热、省空间"; "ja" -> "滑らか・低発熱・省容量"; "ko" -> "부드럽고 저발열·저용량"; "es" -> "Fluido, fresco y compacto"; "pt" -> "Fluido, leve e sem aquecer"
+                "fr" -> "Fluide, frais et compact"; "de" -> "Flüssig, kühl & kompakt"; "ru" -> "Плавно, без нагрева и компактно"; "th" -> "ลื่น ไม่ร้อน ไฟล์เล็ก"; "id" -> "Lancar, dingin & hemat ruang"
+                else -> en
+            }
+            "60 FPS for fast devices" -> return when (lang) {
+                "zh" -> "60 FPS 适合中高配机型"; "ja" -> "高性能端末向け 60 FPS"; "ko" -> "고사양 기기용 60 FPS"; "es" -> "60 FPS para equipos rápidos"; "pt" -> "60 FPS para aparelhos rápidos"
+                "fr" -> "60 FPS pour appareils rapides"; "de" -> "60 FPS für schnelle Geräte"; "ru" -> "60 FPS для мощных устройств"; "th" -> "60 FPS สำหรับเครื่องแรง"; "id" -> "60 FPS untuk perangkat kencang"
+                else -> en
+            }
+            "Reduces background animations while recording to save battery." -> return when (lang) {
+                "zh" -> "录制期间暂时减少后台动画以节省电量并防卡顿。"; "ja" -> "録画中は背景アニメーションを抑えて発熱と電池消費を減らします。"; "ko" -> "녹화 중 배경 애니메이션을 줄여 배터리와 발열을 절약합니다."; "es" -> "Reduce animaciones en segundo plano al grabar para ahorrar batería."; "pt" -> "Reduz animações em segundo plano durante a gravação para poupar bateria."
+                "fr" -> "Réduit les animations en arrière-plan pendant l'enregistrement pour économiser la batterie."; "de" -> "Reduziert Hintergrundanimationen beim Aufnehmen, um Akku zu sparen."; "ru" -> "Уменьшает фоновые анимации во время записи для экономии батареи."; "th" -> "ลดแอนิเมชันพื้นหลังชั่วคราวขณะบันทึกเพื่อประหยัดแบตและลดภาระเครื่อง"; "id" -> "Mengurangi animasi latar saat merekam agar lebih hemat baterai."
+                else -> en
+            }
             "Press below, then press any physical key (gamepad, keyboard, remote, volume) or push a stick." -> return when (lang) {
                 "zh" -> "点击下方按钮，然后按手柄、键盘、遥控器或音量键等任意物理键，或推动摇杆即可绑定。"; "ja" -> "下を押してから、ゲームパッド・キーボード・リモコン・音量キー等またはスティックを入力してください。"; "ko" -> "아래를 누른 뒤 게임패드, 키보드, 리모컨, 볼륨 키 등 아무 물리 키나 스틱을 입력하세요."; "es" -> "Pulsa abajo y luego presiona cualquier tecla física (mando, teclado, control, volumen) o stick."; "pt" -> "Clique abaixo e pressione qualquer tecla física (controle, teclado, volume) ou analógico."
                 "fr" -> "Cliquez ci-dessous puis appuyez sur n'importe quelle touche physique ou poussez un stick."; "de" -> "Unten klicken, dann beliebige physische Taste (Controller, Tastatur, Fernbedienung) oder Stick betätigen."; "ru" -> "Нажмите ниже, затем нажмите любую клавишу (геймпад, клавиатура, пульт, громкость) или стик."; "th" -> "กดปุ่มด้านล่าง แล้วกดปุ่มจริงใดก็ได้ (จอย คีย์บอร์ด รีโมต ปุ่มเสียง) หรือดันแกนเพื่อกำหนด"; "id" -> "Tekan di bawah, lalu tekan tombol fisik apa pun (kontroler, keyboard, remote, volume) atau stik."

@@ -264,7 +264,8 @@ internal fun HudControlsTabContent(
                         text = config.tr("Đã dịch $translatedCount mục", "$translatedCount items"),
                         color = HudFaint,
                         fontSize = 11.5.sp,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -323,7 +324,8 @@ internal fun HudControlsTabContent(
                 color = HudInk,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             HudPanelIconButton(
                 icon = Icons.Default.ScreenRotation,
@@ -351,7 +353,9 @@ internal fun HudControlsTabContent(
                 color = HudCyan,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
             Text(
                 text = "⇄",

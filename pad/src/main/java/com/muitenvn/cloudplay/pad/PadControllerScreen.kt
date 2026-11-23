@@ -2079,7 +2079,8 @@ private fun PadTopBarButton(
             color = textColor,
             fontSize = fontSize,
             fontWeight = FontWeight.Bold,
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
