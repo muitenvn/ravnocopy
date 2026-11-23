@@ -63,6 +63,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -781,9 +783,19 @@ fun CloudBrowserScreen(
 
     val remotePadServerState by com.example.cloudplay.RemotePadTvServer.state.collectAsState()
     val isRemotePadConnected = remotePadServerState.status == com.muitenvn.cloudplay.protocol.TvServiceStatus.HAS_CONTROLLER
-    val effectiveShowVirtualController = !isTvMode && config.showVirtualController &&
+    val isPcModeActive by remember {
+        com.example.cloudplay.KeyboardMousePrototype.state
+            .map { it.isPcModeActive }
+            .distinctUntilChanged()
+    }.collectAsState(initial = com.example.cloudplay.KeyboardMousePrototype.state.value.isPcModeActive)
+    val isPcVirtualGamepadEngine by remember {
+        com.example.cloudplay.KeyboardMousePrototype.state
+            .map { it.mode == com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD }
+            .distinctUntilChanged()
+    }.collectAsState(initial = com.example.cloudplay.KeyboardMousePrototype.state.value.mode == com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD)
+    val effectiveShowVirtualController = !isTvMode && !isPcModeActive && config.showVirtualController &&
         (!config.autoHideVirtualOnPhysicalController || !gamepadStatus.hasPhysicalController || manualVirtualPadOverrideWithPhys)
-    val effectiveSyntheticGamepadEnabled = effectiveShowVirtualController || isRemotePadConnected
+    val effectiveSyntheticGamepadEnabled = effectiveShowVirtualController || isRemotePadConnected || isPcVirtualGamepadEngine
 
     // Dynamically recompute injectionScript only when structural settings change (bitrate updates go through __updateNetworkProfile)
     val injectionScript = remember(
@@ -1987,12 +1999,18 @@ fun CloudBrowserScreen(
             )
         }
 
-        // Virtual Gamepad Overlay (if toggled on and not auto-hidden by physical controller)
+        // Virtual Gamepad Overlay (ẩn khi đang ở chế độ Bàn phím & Chuột PC)
         if (effectiveShowVirtualController) {
             VirtualGamepadOverlay(
                 webView = webViewInstance,
                 gameKey = activeGameKey,
                 gameDisplayName = activeGameDisplayName,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else if (isPcModeActive && isInActiveGameStream && !isLoadingOverlayVisible) {
+            // Hybrid PC Mode (Cách 3): tự hiện bộ phím & chuột ảo PC khi chưa cắm phím/chuột rời
+            IsolatedPcKeyboardMouseOverlay(
+                config = config,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -2038,17 +2056,42 @@ fun CloudBrowserScreen(
                 }
             },
             onToggleVirtualController = {
-                if (gamepadStatus.hasPhysicalController && config.autoHideVirtualOnPhysicalController) {
-                    if (!effectiveShowVirtualController) {
-                        manualVirtualPadOverrideWithPhys = true
-                        if (!config.showVirtualController) {
-                            SettingsRepository.updateShowVirtualController(true)
-                        }
-                    } else {
+                // Giữ nguyên nút biểu tượng tay cầm: bấm để xoay vòng Tay cầm ảo -> Bàn phím & Chuột PC -> Ẩn -> Tay cầm ảo
+                val curPcActive = com.example.cloudplay.KeyboardMousePrototype.state.value.isPcModeActive
+                when {
+                    effectiveShowVirtualController && !curPcActive -> {
                         manualVirtualPadOverrideWithPhys = false
+                        SettingsRepository.updateShowVirtualController(false)
+                        com.example.cloudplay.KeyboardMousePrototype.refreshPhysicalPeripherals()
+                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(true)
+                        android.widget.Toast.makeText(
+                            context,
+                            com.example.cloudplay.KbmPrototypeStrings.toastSwitchedToPc(config),
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
                     }
-                } else {
-                    SettingsRepository.updateShowVirtualController(!config.showVirtualController)
+                    curPcActive -> {
+                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
+                        manualVirtualPadOverrideWithPhys = false
+                        SettingsRepository.updateShowVirtualController(false)
+                        android.widget.Toast.makeText(
+                            context,
+                            com.example.cloudplay.KbmPrototypeStrings.toastSwitchedToHidden(config),
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    else -> {
+                        com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
+                        if (gamepadStatus.hasPhysicalController && config.autoHideVirtualOnPhysicalController) {
+                            manualVirtualPadOverrideWithPhys = true
+                        }
+                        SettingsRepository.updateShowVirtualController(true)
+                        android.widget.Toast.makeText(
+                            context,
+                            com.example.cloudplay.KbmPrototypeStrings.toastSwitchedToGamepad(config),
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             },
             onOpenSettings = {
@@ -2210,8 +2253,8 @@ fun CloudBrowserScreen(
             )
         }
 
-        // Thanh nút chỉnh nhanh thử nghiệm Phím + Chuột (Bản A: Giả tay cầm / Bản B: Gốc)
-        if (!isHudOpen && !showQuickSettingsDialog && !showTranslatorDialog && !isLoadingOverlayVisible && isInActiveGameStream) {
+        // Thanh nút chỉnh nhanh PC (chỉ hiện khi đang bật chế độ Bàn phím & Chuột PC)
+        if (isPcModeActive && !isHudOpen && !showQuickSettingsDialog && !showTranslatorDialog && !isLoadingOverlayVisible && isInActiveGameStream) {
             IsolatedKbmQuickTestBar(
                 config = config,
                 modifier = Modifier
@@ -2223,12 +2266,30 @@ fun CloudBrowserScreen(
 }
 
 @Composable
+private fun IsolatedPcKeyboardMouseOverlay(
+    config: com.example.data.AppConfig,
+    modifier: Modifier = Modifier
+) {
+    val showTouchPc by remember {
+        com.example.cloudplay.KeyboardMousePrototype.state
+            .map { it.shouldShowTouchPcOverlay }
+            .distinctUntilChanged()
+    }.collectAsState(initial = com.example.cloudplay.KeyboardMousePrototype.state.value.shouldShowTouchPcOverlay)
+    if (showTouchPc) {
+        com.example.ui.components.PcKeyboardMouseOverlay(
+            config = config,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
 private fun IsolatedKbmQuickTestBar(
     config: com.example.data.AppConfig,
     modifier: Modifier = Modifier
 ) {
     val kbmState by com.example.cloudplay.KeyboardMousePrototype.state.collectAsState()
-    val isActive = kbmState.mode != com.example.cloudplay.KbmTestMode.OFF
+    if (!kbmState.isPcModeActive) return
     val borderColor = when (kbmState.mode) {
         com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD -> Color(0xFF27D884)
         com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH -> Color(0xFF3FD8EE)
@@ -2251,15 +2312,22 @@ private fun IsolatedKbmQuickTestBar(
                 modifier = Modifier
                     .defaultMinSize(minHeight = 32.dp)
                     .clip(RoundedCornerShape(7.dp))
-                    .background(if (isActive) Color(0xFF16352A) else Color(0xFF142019))
-                    .clickable { com.example.cloudplay.KeyboardMousePrototype.cycleMode() }
+                    .background(Color(0xFF16352A))
+                    .clickable {
+                        val nextEngine = if (kbmState.mode == com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD) {
+                            com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH
+                        } else {
+                            com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD
+                        }
+                        com.example.cloudplay.KeyboardMousePrototype.setPreferredPcEngine(nextEngine)
+                    }
                     .padding(horizontal = 8.dp, vertical = 5.dp)
                     .testTag("kbm_quick_mode_btn"),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = com.example.cloudplay.KbmPrototypeStrings.pillModeShort(config, kbmState.mode),
-                    color = if (isActive) borderColor else Color(0xFFD8E4DE),
+                    color = borderColor,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1

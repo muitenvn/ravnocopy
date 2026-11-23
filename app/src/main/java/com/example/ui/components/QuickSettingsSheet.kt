@@ -197,42 +197,72 @@ private fun QuickSettingsColControls(
     onSelectXboxWebUiMode: (XboxWebUiMode) -> Unit,
     onToggleRecording: () -> Unit
 ) {
-    HudSectionLabel(config.tr("Điều khiển", "Controls"))
-
-    HudSwitchRow(
-        title = config.tr("Tay cầm ảo", "Virtual gamepad"),
-        checked = config.showVirtualController,
-        onCheckedChange = onToggleVirtualController
-    )
-
     val kbmState by com.example.cloudplay.KeyboardMousePrototype.state.collectAsState()
-    HudSectionLabel(com.example.cloudplay.KbmPrototypeStrings.sectionTitle(config))
+    val activeControlIdx = when {
+        kbmState.isPcModeActive -> 1
+        config.showVirtualController -> 0
+        else -> 2
+    }
+
+    HudSectionLabel(com.example.cloudplay.KbmPrototypeStrings.controllerAndKeyboardTitle(config))
     HudSegmentedControl(
         options = listOf(
-            com.example.cloudplay.KbmPrototypeStrings.offLabel(config),
-            com.example.cloudplay.KbmPrototypeStrings.modeALabel(config),
-            com.example.cloudplay.KbmPrototypeStrings.modeBLabel(config)
+            com.example.cloudplay.KbmPrototypeStrings.gamepadModeLabel(config),
+            com.example.cloudplay.KbmPrototypeStrings.pcKbmModeLabel(config),
+            com.example.cloudplay.KbmPrototypeStrings.hideModeLabel(config)
         ),
-        selectedIndex = when (kbmState.mode) {
-            com.example.cloudplay.KbmTestMode.OFF -> 0
-            com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD -> 1
-            com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH -> 2
-        },
+        selectedIndex = activeControlIdx,
         onSelect = { idx ->
-            val target = when (idx) {
-                1 -> com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD
-                2 -> com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH
-                else -> com.example.cloudplay.KbmTestMode.OFF
+            when (idx) {
+                0 -> {
+                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
+                    onToggleVirtualController(true)
+                }
+                1 -> {
+                    onToggleVirtualController(false)
+                    com.example.cloudplay.KeyboardMousePrototype.refreshPhysicalPeripherals()
+                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(true)
+                }
+                else -> {
+                    com.example.cloudplay.KeyboardMousePrototype.setPcModeEnabled(false)
+                    onToggleVirtualController(false)
+                }
             }
-            com.example.cloudplay.KeyboardMousePrototype.setMode(target)
         },
+        tagPrefix = "quick_sheet_ctrl_mode",
         fontSize = 11.5.sp
     )
-    if (kbmState.mode == com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD) {
+
+    if (kbmState.isPcModeActive) {
+        Text(
+            text = com.example.cloudplay.KbmPrototypeStrings.peripheralStatus(config, kbmState),
+            color = HudCyan,
+            fontSize = 11.sp,
+            lineHeight = 14.5.sp
+        )
+
+        HudSectionLabel(com.example.cloudplay.KbmPrototypeStrings.overlayDisplayTitle(config))
+        val overlayModes = com.example.cloudplay.PcOverlayMode.entries
+        HudSegmentedControl(
+            options = listOf(
+                com.example.cloudplay.KbmPrototypeStrings.overlayAutoLabel(config),
+                com.example.cloudplay.KbmPrototypeStrings.overlayTouchPcLabel(config),
+                com.example.cloudplay.KbmPrototypeStrings.overlayHardwareLabel(config)
+            ),
+            selectedIndex = overlayModes.indexOf(kbmState.pcOverlayMode).coerceAtLeast(0),
+            onSelect = { idx ->
+                overlayModes.getOrNull(idx)?.let {
+                    com.example.cloudplay.KeyboardMousePrototype.setPcOverlayMode(it)
+                }
+            },
+            tagPrefix = "quick_sheet_pc_overlay",
+            fontSize = 11.sp
+        )
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 4.dp),
+                .padding(top = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -273,56 +303,84 @@ private fun QuickSettingsColControls(
                 Text("+", color = HudInk, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
         }
-        Text(
-            text = com.example.cloudplay.KbmPrototypeStrings.modeAHint(config),
-            color = HudFaint,
-            fontSize = 11.sp,
-            lineHeight = 14.5.sp
+
+        HudSwitchRow(
+            title = com.example.cloudplay.KbmPrototypeStrings.invertYLabel(config),
+            checked = kbmState.invertMouseY,
+            onCheckedChange = { com.example.cloudplay.KeyboardMousePrototype.setInvertMouseY(it) }
         )
-    } else if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
+
+        HudSectionLabel(com.example.cloudplay.KbmPrototypeStrings.engineTitle(config))
+        HudSegmentedControl(
+            options = listOf(
+                com.example.cloudplay.KbmPrototypeStrings.engineAllGamesLabel(config),
+                com.example.cloudplay.KbmPrototypeStrings.engineNativeWebLabel(config)
+            ),
+            selectedIndex = if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) 1 else 0,
+            onSelect = { idx ->
+                val target = if (idx == 1) {
+                    com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH
+                } else {
+                    com.example.cloudplay.KbmTestMode.VIRTUAL_GAMEPAD
+                }
+                com.example.cloudplay.KeyboardMousePrototype.setPreferredPcEngine(target)
+            },
+            tagPrefix = "quick_sheet_pc_engine",
+            fontSize = 11.sp
+        )
+
+        if (kbmState.mode == com.example.cloudplay.KbmTestMode.NATIVE_PASSTHROUGH) {
+            Row(
                 modifier = Modifier
-                    .heightIn(min = 36.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(HudSelBg)
-                    .gamepadClickable(cornerRadius = 8.dp) {
-                        com.example.cloudplay.KeyboardMousePrototype.probeAndRequestNativePointerLock()
-                    }
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                    .testTag("kbm_sheet_test_weblock"),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = com.example.cloudplay.KbmPrototypeStrings.testWebLockLabel(config),
-                    color = HudAccent,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = 36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(HudSelBg)
+                        .gamepadClickable(cornerRadius = 8.dp) {
+                            com.example.cloudplay.KeyboardMousePrototype.probeAndRequestNativePointerLock()
+                        }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                        .testTag("kbm_sheet_test_weblock"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = com.example.cloudplay.KbmPrototypeStrings.testWebLockLabel(config),
+                        color = HudAccent,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                if (kbmState.nativePointerLockStatus.isNotBlank()) {
+                    Text(
+                        text = kbmState.nativePointerLockStatus,
+                        color = HudInk,
+                        fontSize = 11.sp,
+                        fontFamily = JetBrainsMonoFontFamily,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
-            if (kbmState.nativePointerLockStatus.isNotBlank()) {
-                Text(
-                    text = kbmState.nativePointerLockStatus,
-                    color = HudInk,
-                    fontSize = 11.sp,
-                    fontFamily = JetBrainsMonoFontFamily,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Text(
+                text = com.example.cloudplay.KbmPrototypeStrings.modeBHint(config),
+                color = HudFaint,
+                fontSize = 11.sp,
+                lineHeight = 14.5.sp
+            )
+        } else {
+            Text(
+                text = com.example.cloudplay.KbmPrototypeStrings.modeAHint(config),
+                color = HudFaint,
+                fontSize = 11.sp,
+                lineHeight = 14.5.sp
+            )
         }
-        Text(
-            text = com.example.cloudplay.KbmPrototypeStrings.modeBHint(config),
-            color = HudFaint,
-            fontSize = 11.sp,
-            lineHeight = 14.5.sp
-        )
     }
 
     HudSwitchRow(

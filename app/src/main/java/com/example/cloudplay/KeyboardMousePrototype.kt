@@ -25,25 +25,50 @@ enum class KbmTestMode {
     NATIVE_PASSTHROUGH
 }
 
+enum class PcOverlayMode {
+    AUTO,           // Tự hiện bàn phím+chuột ảo PC khi chưa cắm phím/chuột thật; tự ẩn khi đã cắm
+    TOUCH_PC,       // Luôn hiện bàn phím+chuột ảo PC trên màn hình
+    HARDWARE_ONLY   // Chỉ dùng bàn phím+chuột thật (ẩn hết nút cảm ứng)
+}
+
 data class KbmRuntimeState(
     val mode: KbmTestMode = KbmTestMode.OFF,
+    val preferredPcEngine: KbmTestMode = KbmTestMode.VIRTUAL_GAMEPAD,
+    val pcOverlayMode: PcOverlayMode = PcOverlayMode.AUTO,
+    val hasPhysicalKeyboard: Boolean = false,
+    val hasPhysicalMouse: Boolean = false,
     val isPointerCaptured: Boolean = false,
     val isPausedByEsc: Boolean = false,
     val mouseSensitivity: Float = 1.0f,
+    val invertMouseY: Boolean = false,
     val nativePointerLockStatus: String = "",
     val lastKeyHint: String = ""
-)
+) {
+    val isPcModeActive: Boolean
+        get() = mode != KbmTestMode.OFF
+
+    val hasAnyPhysicalKbm: Boolean
+        get() = hasPhysicalKeyboard || hasPhysicalMouse
+
+    val shouldShowTouchPcOverlay: Boolean
+        get() = isPcModeActive && when (pcOverlayMode) {
+            PcOverlayMode.TOUCH_PC -> true
+            PcOverlayMode.HARDWARE_ONLY -> false
+            PcOverlayMode.AUTO -> !hasAnyPhysicalKbm
+        }
+}
 
 /**
- * Thử nghiệm nhanh hai phiên bản Bàn phím + Chuột cho Ravno:
- * - Bản A (VIRTUAL_GAMEPAD): Bàn phím OTG/BT + Chuột thật (View.requestPointerCapture API 26+) -> tay cầm ảo (__cpBtn/__cpStick).
- * - Bản B (NATIVE_PASSTHROUGH): Chuyển thẳng phím/chuột vào trang Xbox + kiểm tra Web Pointer Lock thực tế.
+ * Bộ điều khiển Bàn phím & Chuột (Chế độ PC — Hybrid Cách 3):
+ * - Tự nhận phím/chuột vật lý (OTG/Bluetooth); khi chưa cắm sẽ hiện bộ phím & chuột ảo tối ưu cho người chơi PC.
+ * - Hỗ trợ động cơ Mọi game (VIRTUAL_GAMEPAD qua __cpBtn/__cpStick + PointerCapture API 26+) và Gốc Web (NATIVE_PASSTHROUGH).
  */
 object KeyboardMousePrototype {
 
     private const val MOUSE_FLUSH_INTERVAL_MS = 8L
     private const val MOUSE_STOP_WATCHDOG_MS = 45L
     private const val MOUSE_BASE_PIXELS_FOR_FULL_STICK = 26f
+    private const val TOUCHPAD_BASE_PIXELS_FOR_FULL_STICK = 22f
     private const val MOUSE_ANTI_DEADZONE = 0.14f
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -70,6 +95,7 @@ object KeyboardMousePrototype {
     // Gom delta chuột mỗi ~8ms để chuột gaming 1000Hz không làm nghẽn luồng JS
     private var pendingMouseDx: Float = 0f
     private var pendingMouseDy: Float = 0f
+    private var pendingDeltaIsTouchpad: Boolean = false
     private var mouseFlushScheduled: Boolean = false
     private var lastMouseFlushMs: Long = 0L
 
@@ -95,25 +121,93 @@ object KeyboardMousePrototype {
     fun updateRoutingContext(inGameStream: Boolean, routeToAppUi: Boolean) {
         isInGameStream = inGameStream
         isAppUiRouting = routeToAppUi
+        refreshPhysicalPeripherals()
         if (!inGameStream || routeToAppUi) {
             releaseAllAndUncapture(if (routeToAppUi) "app_ui_open" else "left_stream")
         }
     }
 
+    fun refreshPhysicalPeripherals() {
+        var foundKeyboard = false
+        var foundMouse = false
+        try {
+            val ids = InputDevice.getDeviceIds()
+            for (id in ids) {
+                val dev = InputDevice.getDevice(id) ?: continue
+                if (dev.isVirtual) continue
+                val src = dev.sources
+                val isGamepad = (src and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
+                    (src and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
+                if (!isGamepad && dev.keyboardType == InputDevice.KEYBOARD_TYPE_ALPHABETIC) {
+                    val nameLower = (dev.name ?: "").lowercase()
+                    if (!nameLower.contains("gpio") && !nameLower.contains("pwrkey") && !nameLower.contains("headset")) {
+                        foundKeyboard = true
+                    }
+                }
+                if ((src and InputDevice.SOURCE_MOUSE) == InputDevice.SOURCE_MOUSE ||
+                    (src and InputDevice.SOURCE_MOUSE_RELATIVE) == InputDevice.SOURCE_MOUSE_RELATIVE
+                ) {
+                    foundMouse = true
+                }
+            }
+        } catch (_: Exception) {}
+
+        _state.update { cur ->
+            if (cur.hasPhysicalKeyboard == foundKeyboard && cur.hasPhysicalMouse == foundMouse) {
+                cur
+            } else {
+                cur.copy(hasPhysicalKeyboard = foundKeyboard, hasPhysicalMouse = foundMouse)
+            }
+        }
+    }
+
+    fun setPcModeEnabled(enabled: Boolean) {
+        refreshPhysicalPeripherals()
+        if (!enabled) {
+            setMode(KbmTestMode.OFF)
+        } else {
+            val engine = _state.value.preferredPcEngine.takeIf { it != KbmTestMode.OFF }
+                ?: KbmTestMode.VIRTUAL_GAMEPAD
+            setMode(engine)
+        }
+    }
+
+    fun setPreferredPcEngine(engine: KbmTestMode) {
+        val valid = if (engine == KbmTestMode.NATIVE_PASSTHROUGH) {
+            KbmTestMode.NATIVE_PASSTHROUGH
+        } else {
+            KbmTestMode.VIRTUAL_GAMEPAD
+        }
+        _state.update { it.copy(preferredPcEngine = valid) }
+        if (_state.value.isPcModeActive) {
+            setMode(valid)
+        }
+    }
+
+    fun setPcOverlayMode(overlayMode: PcOverlayMode) {
+        refreshPhysicalPeripherals()
+        _state.update { it.copy(pcOverlayMode = overlayMode) }
+        if (_state.value.mode == KbmTestMode.VIRTUAL_GAMEPAD && overlayMode == PcOverlayMode.HARDWARE_ONLY) {
+            requestPointerCaptureNow()
+        }
+    }
+
     fun setMode(newMode: KbmTestMode) {
+        refreshPhysicalPeripherals()
         val prev = _state.value.mode
         if (prev == newMode) return
         releaseAllAndUncapture("mode_switch")
         _state.update {
             it.copy(
                 mode = newMode,
+                preferredPcEngine = if (newMode != KbmTestMode.OFF) newMode else it.preferredPcEngine,
                 isPausedByEsc = false,
                 nativePointerLockStatus = "",
                 lastKeyHint = ""
             )
         }
-        AppLogger.info("KBM", "Đổi chế độ thử nghiệm KBM: $prev -> $newMode")
-        if (newMode == KbmTestMode.VIRTUAL_GAMEPAD) {
+        AppLogger.info("KBM", "Đổi chế độ Bàn phím & Chuột: $prev -> $newMode")
+        if (newMode == KbmTestMode.VIRTUAL_GAMEPAD && _state.value.hasPhysicalMouse) {
             requestPointerCaptureNow()
         } else if (newMode == KbmTestMode.NATIVE_PASSTHROUGH) {
             probeAndRequestNativePointerLock()
@@ -134,6 +228,15 @@ object KeyboardMousePrototype {
             val next = ((cur.mouseSensitivity + delta) * 10f).roundToInt() / 10f
             cur.copy(mouseSensitivity = next.coerceIn(0.4f, 2.5f))
         }
+    }
+
+    fun setMouseSensitivity(value: Float) {
+        val clamped = ((value.coerceIn(0.4f, 2.5f)) * 10f).roundToInt() / 10f
+        _state.update { it.copy(mouseSensitivity = clamped) }
+    }
+
+    fun setInvertMouseY(invert: Boolean) {
+        _state.update { it.copy(invertMouseY = invert) }
     }
 
     fun requestPointerCaptureNow(): Boolean {
@@ -168,7 +271,7 @@ object KeyboardMousePrototype {
     }
 
     /**
-     * Bản B: kiểm tra xem WebView hiện tại có hỗ trợ & cho phép Web Pointer Lock (requestPointerLock) không.
+     * Chế độ Gốc (Web): kiểm tra xem WebView hiện tại có hỗ trợ & cho phép Web Pointer Lock không.
      */
     fun probeAndRequestNativePointerLock() {
         val wv = webViewRef?.get() ?: return
@@ -195,10 +298,45 @@ object KeyboardMousePrototype {
                 wv.evaluateJavascript(js) { raw ->
                     val status = raw?.trim()?.removeSurrounding("\"") ?: "UNKNOWN"
                     _state.update { it.copy(nativePointerLockStatus = status) }
-                    AppLogger.info("KBM", "Bản B (Native) kiểm tra PointerLock: $status")
+                    AppLogger.info("KBM", "Bản Gốc (Web) kiểm tra PointerLock: $status")
                 }
             } catch (_: Exception) {}
         }
+    }
+
+    /**
+     * Dùng chung từ PcKeyboardMouseOverlay (vùng rê chuột cảm ứng nửa phải màn hình).
+     */
+    fun dispatchTouchTrackpadDelta(dx: Float, dy: Float) {
+        if (!_state.value.isPcModeActive || !isInGameStream || isAppUiRouting) return
+        if (dx == 0f && dy == 0f) return
+        queueMouseDelta(dx, dy, isTouchpad = true)
+    }
+
+    fun dispatchTouchTrackpadRelease() {
+        mainHandler.removeCallbacks(mouseFlushRunnable)
+        mainHandler.removeCallbacks(mouseStopWatchdogRunnable)
+        mouseFlushScheduled = false
+        pendingMouseDx = 0f
+        pendingMouseDy = 0f
+        if (lastRightStickX != 0f || lastRightStickY != 0f) {
+            sendStick(2, 0f, 3, 0f)
+        }
+    }
+
+    /**
+     * Dùng chung từ PcKeyboardMouseOverlay cho nút phím ảo PC (có đối xứng ref-count).
+     */
+    fun dispatchVirtualPcButton(btnIdx: Int, pressed: Boolean, hintLabel: String = "") {
+        if (btnIdx !in 0..16) return
+        updateButtonRefCount(btnIdx, pressed)
+        if (pressed && hintLabel.isNotBlank()) {
+            updateLastHint(hintLabel)
+        }
+    }
+
+    fun dispatchVirtualPcLeftStick(x: Float, y: Float) {
+        sendStick(0, x, 1, y)
     }
 
     fun releaseAllAndUncapture(reason: String) {
@@ -225,7 +363,6 @@ object KeyboardMousePrototype {
             lastLeftStickX != 0f || lastLeftStickY != 0f ||
             lastRightStickX != 0f || lastRightStickY != 0f
 
-        // Nhả đối xứng từng nút đang giữ thay vì chỉ xóa ngầm
         val activeButtons = buttonRefCounts.keys.toList()
         heldKeyCodes.clear()
         buttonRefCounts.clear()
@@ -279,8 +416,7 @@ object KeyboardMousePrototype {
     }
 
     /**
-     * Xử lý KeyEvent cho Bản A (VIRTUAL_GAMEPAD).
-     * Trả về false ngay lập tức nếu đang Tắt, đang ở Bản B (Gốc), đang mở popup, ngoài luồng game, hoặc phím từ tay cầm.
+     * Xử lý KeyEvent từ bàn phím thật cho chế độ Mọi game (VIRTUAL_GAMEPAD).
      */
     fun handleKeyEvent(event: KeyEvent): Boolean {
         val cur = _state.value
@@ -288,12 +424,15 @@ object KeyboardMousePrototype {
         if (!isInGameStream || isAppUiRouting) return false
         if (isGamepadOrSystemKey(event)) return false
 
+        if (!cur.hasPhysicalKeyboard) {
+            _state.update { it.copy(hasPhysicalKeyboard = true) }
+        }
+
         val action = event.action
         if (action != KeyEvent.ACTION_DOWN && action != KeyEvent.ACTION_UP) return false
         val pressed = action == KeyEvent.ACTION_DOWN
         val keyCode = event.keyCode
 
-        // Phím Esc: luôn là lối thoát an toàn, nhả chuột & tạm dừng bắt phím
         if (keyCode == KeyEvent.KEYCODE_ESCAPE) {
             if (pressed && event.repeatCount == 0) {
                 releaseAllAndUncapture("escape_key")
@@ -304,12 +443,10 @@ object KeyboardMousePrototype {
 
         if (cur.isPausedByEsc) return false
 
-        // Chặn key-repeat của hệ điều hành để không gửi trùng JS
         if (pressed && event.repeatCount > 0) {
             return isMappedKeyCode(keyCode)
         }
 
-        // WASD -> Cần trái (Left Stick)
         if (keyCode == KeyEvent.KEYCODE_W ||
             keyCode == KeyEvent.KEYCODE_A ||
             keyCode == KeyEvent.KEYCODE_S ||
@@ -333,15 +470,15 @@ object KeyboardMousePrototype {
     }
 
     /**
-     * Xử lý MotionEvent chuột đã bắt (View.OnCapturedPointerListener, API 26+) cho Bản A.
+     * Xử lý MotionEvent chuột đã bắt (View.OnCapturedPointerListener, API 26+).
      */
     fun handleCapturedPointerEvent(event: MotionEvent): Boolean {
         val cur = _state.value
         if (cur.mode != KbmTestMode.VIRTUAL_GAMEPAD) return false
         if (!isInGameStream || isAppUiRouting || cur.isPausedByEsc) return false
 
-        if (!cur.isPointerCaptured) {
-            _state.update { it.copy(isPointerCaptured = true) }
+        if (!cur.isPointerCaptured || !cur.hasPhysicalMouse) {
+            _state.update { it.copy(isPointerCaptured = true, hasPhysicalMouse = true) }
         }
 
         when (event.actionMasked) {
@@ -350,7 +487,7 @@ object KeyboardMousePrototype {
                 val dx = event.x
                 val dy = event.y
                 if (dx != 0f || dy != 0f) {
-                    queueMouseDelta(dx, dy)
+                    queueMouseDelta(dx, dy, isTouchpad = false)
                 }
                 applyMouseButtonMask(event.buttonState)
                 return true
@@ -378,15 +515,15 @@ object KeyboardMousePrototype {
         return true
     }
 
-    /**
-     * Khi ở Bản A nhưng chưa bắt chuột (hoặc đang tạm dừng bởi Esc), chạm/click chuột vào WebView game để bắt chuột lại.
-     */
     fun handleUnCapturedMouseTouch(event: MotionEvent): Boolean {
         if (_state.value.mode != KbmTestMode.VIRTUAL_GAMEPAD) return false
         if (!isInGameStream || isAppUiRouting) return false
         val isMouse = (event.source and InputDevice.SOURCE_MOUSE) == InputDevice.SOURCE_MOUSE ||
             (event.source and InputDevice.SOURCE_MOUSE_RELATIVE) == InputDevice.SOURCE_MOUSE_RELATIVE
         if (!isMouse) return false
+        if (!_state.value.hasPhysicalMouse) {
+            _state.update { it.copy(hasPhysicalMouse = true) }
+        }
         if (event.actionMasked == MotionEvent.ACTION_DOWN || event.actionMasked == MotionEvent.ACTION_BUTTON_PRESS) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 requestPointerCaptureNow()
@@ -415,24 +552,25 @@ object KeyboardMousePrototype {
 
         if ((diff and MotionEvent.BUTTON_PRIMARY) != 0) {
             val down = (relevant and MotionEvent.BUTTON_PRIMARY) != 0
-            updateButtonRefCount(7, down) // Chuột trái -> RT
+            updateButtonRefCount(7, down)
             if (down) updateLastHint("LMB→RT")
         }
         if ((diff and MotionEvent.BUTTON_SECONDARY) != 0) {
             val down = (relevant and MotionEvent.BUTTON_SECONDARY) != 0
-            updateButtonRefCount(6, down) // Chuột phải -> LT
+            updateButtonRefCount(6, down)
             if (down) updateLastHint("RMB→LT")
         }
         if ((diff and MotionEvent.BUTTON_TERTIARY) != 0) {
             val down = (relevant and MotionEvent.BUTTON_TERTIARY) != 0
-            updateButtonRefCount(11, down) // Chuột giữa -> R3
+            updateButtonRefCount(11, down)
             if (down) updateLastHint("MMB→R3")
         }
     }
 
-    private fun queueMouseDelta(dx: Float, dy: Float) {
+    private fun queueMouseDelta(dx: Float, dy: Float, isTouchpad: Boolean) {
         pendingMouseDx += dx
         pendingMouseDy += dy
+        pendingDeltaIsTouchpad = isTouchpad
         val now = SystemClock.uptimeMillis()
         if (!mouseFlushScheduled) {
             val elapsed = now - lastMouseFlushMs
@@ -453,10 +591,11 @@ object KeyboardMousePrototype {
         pendingMouseDy = 0f
         if (abs(dx) < 0.05f && abs(dy) < 0.05f) return
 
-        val sens = _state.value.mouseSensitivity
-        val scale = sens / MOUSE_BASE_PIXELS_FOR_FULL_STICK
+        val cur = _state.value
+        val basePx = if (pendingDeltaIsTouchpad) TOUCHPAD_BASE_PIXELS_FOR_FULL_STICK else MOUSE_BASE_PIXELS_FOR_FULL_STICK
+        val scale = cur.mouseSensitivity / basePx
         val rawX = dx * scale
-        val rawY = dy * scale
+        val rawY = (if (cur.invertMouseY) -dy else dy) * scale
         val mag = hypot(rawX.toDouble(), rawY.toDouble()).toFloat()
         if (mag < 0.005f) return
 
@@ -600,7 +739,7 @@ object KeyboardMousePrototype {
 }
 
 /**
- * Chuỗi giao diện đủ 12 ngôn ngữ cho thử nghiệm Bàn phím + Chuột (Bản A & Bản B).
+ * Chuỗi giao diện đủ 12 ngôn ngữ cho giao diện "Tay cầm & Bàn phím" và Chế độ PC Hybrid.
  */
 object KbmPrototypeStrings {
     private fun pick(config: AppConfig, map: Map<String, String>): String {
@@ -608,56 +747,187 @@ object KbmPrototypeStrings {
         return map[code] ?: map["en"] ?: ""
     }
 
-    fun sectionTitle(c: AppConfig) = pick(c, mapOf(
-        "vi" to "Thử nghiệm Phím + Chuột",
-        "en" to "Keyboard + Mouse Test",
-        "es" to "Prueba Teclado + Ratón",
-        "pt" to "Teste Teclado + Mouse",
-        "fr" to "Test Clavier + Souris",
-        "de" to "Tastatur + Maus Test",
-        "ja" to "キーボード・マウス試験",
-        "ko" to "키보드 + 마우스 테스트",
-        "zh" to "键鼠测试",
-        "id" to "Uji Keyboard + Mouse",
-        "th" to "ทดสอบคีย์บอร์ด+เมาส์",
-        "ru" to "Тест Клавиатура + Мышь"
+    fun controllerAndKeyboardTitle(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Tay cầm & Bàn phím",
+        "en" to "Controller & Keyboard",
+        "es" to "Mando y Teclado",
+        "pt" to "Controle e Teclado",
+        "fr" to "Manette et Clavier",
+        "de" to "Controller & Tastatur",
+        "ja" to "コントローラー＆キーボード",
+        "ko" to "컨트롤러 및 키보드",
+        "zh" to "手柄与键鼠",
+        "id" to "Kontroler & Keyboard",
+        "th" to "จอยและคีย์บอร์ด",
+        "ru" to "Геймпад и Клавиатура"
     ))
 
-    fun offLabel(c: AppConfig) = pick(c, mapOf(
-        "vi" to "Tắt", "en" to "Off", "es" to "No", "pt" to "Off",
-        "fr" to "Arrêt", "de" to "Aus", "ja" to "オフ", "ko" to "끔",
-        "zh" to "关闭", "id" to "Mati", "th" to "ปิด", "ru" to "Выкл"
+    fun gamepadModeLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Tay cầm", "en" to "Gamepad", "es" to "Mando", "pt" to "Controle",
+        "fr" to "Manette", "de" to "Gamepad", "ja" to "パッド", "ko" to "게임패드",
+        "zh" to "手柄", "id" to "Gamepad", "th" to "จอย", "ru" to "Геймпад"
     ))
 
-    fun modeALabel(c: AppConfig) = pick(c, mapOf(
-        "vi" to "Bản A: Giả tay cầm", "en" to "Ver A: Gamepad", "es" to "Ver A: Mando",
-        "pt" to "Ver A: Controle", "fr" to "Ver A: Manette", "de" to "Ver A: Gamepad",
-        "ja" to "A版: パッド化", "ko" to "A판: 패드변환", "zh" to "A版: 模拟手柄",
-        "id" to "Ver A: Gamepad", "th" to "แบบ A: จอยจำลอง", "ru" to "Вер. A: Геймпад"
+    fun pcKbmModeLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Phím & Chuột", "en" to "PC KBM", "es" to "Teclado/Ratón", "pt" to "Teclado/Mouse",
+        "fr" to "Clavier/Souris", "de" to "Tastatur/Maus", "ja" to "キー/マウス", "ko" to "키보드/마우스",
+        "zh" to "键鼠模式", "id" to "Keyboard/Mouse", "th" to "คีย์บอร์ด/เมาส์", "ru" to "Клава/Мышь"
     ))
 
-    fun modeBLabel(c: AppConfig) = pick(c, mapOf(
-        "vi" to "Bản B: Gốc (Web)", "en" to "Ver B: Native", "es" to "Ver B: Nativo",
-        "pt" to "Ver B: Nativo", "fr" to "Ver B: Natif", "de" to "Ver B: Nativ",
-        "ja" to "B版: ネイティブ", "ko" to "B판: 기본입력", "zh" to "B版: 原生键鼠",
-        "id" to "Ver B: Asli", "th" to "แบบ B: ต้นฉบับ", "ru" to "Вер. B: Нативный"
+    fun hideModeLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Ẩn", "en" to "Hide", "es" to "Ocultar", "pt" to "Ocultar",
+        "fr" to "Masquer", "de" to "Aus", "ja" to "非表示", "ko" to "숨김",
+        "zh" to "隐藏", "id" to "Sembunyi", "th" to "ซ่อน", "ru" to "Скрыть"
+    ))
+
+    fun pcSectionTitle(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Cài đặt Bàn phím & Chuột (PC)",
+        "en" to "PC Keyboard & Mouse Settings",
+        "es" to "Ajustes de Teclado y Ratón (PC)",
+        "pt" to "Ajustes de Teclado e Mouse (PC)",
+        "fr" to "Réglages Clavier & Souris (PC)",
+        "de" to "PC Tastatur- & Mauseinstellungen",
+        "ja" to "PCキーボード・マウス設定",
+        "ko" to "PC 키보드/마우스 설정",
+        "zh" to "PC 键鼠设置",
+        "id" to "Pengaturan Keyboard & Mouse (PC)",
+        "th" to "ตั้งค่าคีย์บอร์ดและเมาส์ (PC)",
+        "ru" to "Настройки клавиатуры и мыши (ПК)"
+    ))
+
+    fun overlayDisplayTitle(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Hiển thị phím PC trên màn hình",
+        "en" to "On-screen PC keys",
+        "es" to "Teclas PC en pantalla",
+        "pt" to "Teclas PC na tela",
+        "fr" to "Touches PC à l'écran",
+        "de" to "PC-Tasten auf Bildschirm",
+        "ja" to "画面上のPCキー表示",
+        "ko" to "화면 PC 키 표시",
+        "zh" to "屏幕 PC 按键显示",
+        "id" to "Tombol PC di layar",
+        "th" to "ปุ่ม PC บนหน้าจอ",
+        "ru" to "Экранные клавиши ПК"
+    ))
+
+    fun overlayAutoLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Tự động", "en" to "Auto", "es" to "Auto", "pt" to "Auto",
+        "fr" to "Auto", "de" to "Auto", "ja" to "自動", "ko" to "자동",
+        "zh" to "自动", "id" to "Otomatis", "th" to "อัตโนมัติ", "ru" to "Авто"
+    ))
+
+    fun overlayTouchPcLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Phím ảo PC", "en" to "PC Touch", "es" to "Táctil PC", "pt" to "Toque PC",
+        "fr" to "Tactile PC", "de" to "PC-Touch", "ja" to "仮想PC", "ko" to "가상 PC",
+        "zh" to "虚拟键鼠", "id" to "Sentuh PC", "th" to "ปุ่มเสมือน PC", "ru" to "Экран ПК"
+    ))
+
+    fun overlayHardwareLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Phím thật", "en" to "Physical", "es" to "Físico", "pt" to "Físico",
+        "fr" to "Physique", "de" to "Physisch", "ja" to "物理のみ", "ko" to "외장 전용",
+        "zh" to "仅外接", "id" to "Fisik saja", "th" to "อุปกรณ์จริง", "ru" to "Только физ."
+    ))
+
+    fun engineTitle(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Kiểu gửi vào game",
+        "en" to "Game input method",
+        "es" to "Método de entrada",
+        "pt" to "Modo de entrada",
+        "fr" to "Mode d'entrée",
+        "de" to "Eingabemodus",
+        "ja" to "ゲーム入力方式",
+        "ko" to "게임 입력 방식",
+        "zh" to "游戏输入模式",
+        "id" to "Metode input game",
+        "th" to "วิธีส่งปุ่มเข้าเกม",
+        "ru" to "Режим ввода в игру"
+    ))
+
+    fun engineAllGamesLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Mọi game (Tay cầm)", "en" to "All games (Pad)", "es" to "Todos (Mando)", "pt" to "Todos (Controle)",
+        "fr" to "Tous (Manette)", "de" to "Alle (Gamepad)", "ja" to "全ゲーム(パッド)", "ko" to "모든 게임(패드)",
+        "zh" to "全游戏(手柄)", "id" to "Semua game (Pad)", "th" to "ทุกเกม (จอย)", "ru" to "Все игры (Пад)"
+    ))
+
+    fun engineNativeWebLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Gốc (Web Xbox)", "en" to "Native (Web)", "es" to "Nativo (Web)", "pt" to "Nativo (Web)",
+        "fr" to "Natif (Web)", "de" to "Nativ (Web)", "ja" to "ネイティブ(Web)", "ko" to "네이티브(웹)",
+        "zh" to "原生(网页)", "id" to "Asli (Web)", "th" to "ต้นฉบับ (เว็บ)", "ru" to "Нативный (Веб)"
+    ))
+
+    fun invertYLabel(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Đảo trục dọc chuột (Y)", "en" to "Invert Mouse Y-Axis", "es" to "Invertir eje Y del ratón",
+        "pt" to "Inverter eixo Y do mouse", "fr" to "Inverser l'axe Y souris", "de" to "Maus Y-Achse umkehren",
+        "ja" to "マウスY軸反転", "ko" to "마우스 Y축 반전", "zh" to "反转鼠标 Y 轴",
+        "id" to "Balik sumbu Y mouse", "th" to "กลับแกน Y เมาส์", "ru" to "Инверсия оси Y мыши"
+    ))
+
+    fun peripheralStatus(c: AppConfig, s: KbmRuntimeState): String {
+        return if (s.hasAnyPhysicalKbm) {
+            pick(c, mapOf(
+                "vi" to "Đã nhận phím/chuột thật — tự ẩn nút cảm ứng ở chế độ Tự động.",
+                "en" to "Physical keyboard/mouse detected — touch keys auto-hidden in Auto mode.",
+                "es" to "Teclado/ratón físico detectado — teclas táctiles ocultas en Auto.",
+                "pt" to "Teclado/mouse físico detectado — teclas ocultas no modo Auto.",
+                "fr" to "Clavier/souris physique détecté — touches masquées en Auto.",
+                "de" to "Physische Tastatur/Maus erkannt — Touch-Tasten in Auto ausgeblendet.",
+                "ja" to "物理キーボード/マウス検出 — 自動モードで画面キーを非表示。",
+                "ko" to "외장 키보드/마우스 감지됨 — 자동 모드에서 화면 키 숨김.",
+                "zh" to "检测到外接键鼠 — 自动模式下已隐藏屏幕按键。",
+                "id" to "Keyboard/mouse fisik terdeteksi — tombol layar disembunyikan di Auto.",
+                "th" to "พบคีย์บอร์ด/เมาส์จริง — ซ่อนปุ่มเสมือนอัตโนมัติในโหมดอัตโนมัติ",
+                "ru" to "Найдены физ. клавиатура/мышь — экранные клавиши скрыты в Авто."
+            ))
+        } else {
+            pick(c, mapOf(
+                "vi" to "Chưa cắm phím/chuột rời — dùng bộ phím & chuột ảo PC trên màn hình.",
+                "en" to "No external KBM — using on-screen PC keyboard & touchpad mouse.",
+                "es" to "Sin KBM externo — usando teclado PC y panel táctil en pantalla.",
+                "pt" to "Sem KBM externo — usando teclado PC e mouse tátil na tela.",
+                "fr" to "Sans KBM externe — clavier PC et pavé souris tactiles actifs.",
+                "de" to "Kein externes KBM — Bildschirm-PC-Tastatur & Touchpad aktiv.",
+                "ja" to "外付け未接続 — 画面上のPCキー＆タッチパッドを使用中。",
+                "ko" to "외장 장치 없음 — 화면 PC 키보드 및 터치패드 사용 중.",
+                "zh" to "未连接外接键鼠 — 正在使用屏幕 PC 键鼠。",
+                "id" to "Belum ada KBM fisik — memakai keyboard PC & touchpad layar.",
+                "th" to "ยังไม่เชื่อมต่อเมาส์/คีย์บอร์ดจริง — ใช้ปุ่ม PC และทัชแพดบนจอ",
+                "ru" to "Нет внешней периферии — включены экранные клавиши и тачпад ПК."
+            ))
+        }
+    }
+
+    fun toastSwitchedToGamepad(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Chế độ: Tay cầm ảo", "en" to "Mode: Virtual Gamepad", "es" to "Modo: Mando virtual",
+        "pt" to "Modo: Controle virtual", "fr" to "Mode : Manette virtuelle", "de" to "Modus: Virtuelles Gamepad",
+        "ja" to "モード: 仮想コントローラー", "ko" to "모드: 가상 게임패드", "zh" to "模式：虚拟手柄",
+        "id" to "Mode: Gamepad Virtual", "th" to "โหมด: จอยเสมือน", "ru" to "Режим: Виртуальный геймпад"
+    ))
+
+    fun toastSwitchedToPc(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Chế độ: Bàn phím & Chuột (PC)", "en" to "Mode: PC Keyboard & Mouse", "es" to "Modo: Teclado y Ratón (PC)",
+        "pt" to "Modo: Teclado e Mouse (PC)", "fr" to "Mode : Clavier & Souris (PC)", "de" to "Modus: PC Tastatur & Maus",
+        "ja" to "モード: PCキーボード＆マウス", "ko" to "모드: PC 키보드 및 마우스", "zh" to "模式：PC 键鼠",
+        "id" to "Mode: Keyboard & Mouse (PC)", "th" to "โหมด: คีย์บอร์ดและเมาส์ (PC)", "ru" to "Режим: Клавиатура и Мышь (ПК)"
+    ))
+
+    fun toastSwitchedToHidden(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Đã ẩn điều khiển trên màn hình", "en" to "On-screen controls hidden", "es" to "Controles en pantalla ocultos",
+        "pt" to "Controles na tela ocultos", "fr" to "Commandes à l'écran masquées", "de" to "Bildschirmsteuerung ausgeblendet",
+        "ja" to "画面操作を非表示にしました", "ko" to "화면 컨트롤 숨김", "zh" to "已隐藏屏幕操控",
+        "id" to "Kontrol layar disembunyikan", "th" to "ซ่อนปุ่มควบคุมบนหน้าจอแล้ว", "ru" to "Экранное управление скрыто"
     ))
 
     fun pillModeShort(c: AppConfig, mode: KbmTestMode): String = when (mode) {
-        KbmTestMode.OFF -> pick(c, mapOf(
-            "vi" to "KBM: Tắt", "en" to "KBM: Off", "es" to "KBM: No", "pt" to "KBM: Off",
-            "fr" to "KBM: Off", "de" to "KBM: Aus", "ja" to "KBM: 切", "ko" to "KBM: 끔",
-            "zh" to "键鼠: 关", "id" to "KBM: Mati", "th" to "KBM: ปิด", "ru" to "KBM: Выкл"
-        ))
+        KbmTestMode.OFF -> hideModeLabel(c)
         KbmTestMode.VIRTUAL_GAMEPAD -> pick(c, mapOf(
-            "vi" to "KBM A: Tay cầm", "en" to "KBM A: Pad", "es" to "KBM A: Mando", "pt" to "KBM A: Pad",
-            "fr" to "KBM A: Pad", "de" to "KBM A: Pad", "ja" to "KBM A: パッド", "ko" to "KBM A: 패드",
-            "zh" to "键鼠 A: 手柄", "id" to "KBM A: Pad", "th" to "KBM A: จอย", "ru" to "KBM A: Пад"
+            "vi" to "PC: Mọi game", "en" to "PC: Pad", "es" to "PC: Mando", "pt" to "PC: Pad",
+            "fr" to "PC: Pad", "de" to "PC: Pad", "ja" to "PC: パッド", "ko" to "PC: 패드",
+            "zh" to "PC: 手柄", "id" to "PC: Pad", "th" to "PC: จอย", "ru" to "ПК: Пад"
         ))
         KbmTestMode.NATIVE_PASSTHROUGH -> pick(c, mapOf(
-            "vi" to "KBM B: Gốc", "en" to "KBM B: Native", "es" to "KBM B: Nativo", "pt" to "KBM B: Nativo",
-            "fr" to "KBM B: Natif", "de" to "KBM B: Nativ", "ja" to "KBM B: 原生", "ko" to "KBM B: 기본",
-            "zh" to "键鼠 B: 原生", "id" to "KBM B: Asli", "th" to "KBM B: ต้นฉบับ", "ru" to "KBM B: Натив"
+            "vi" to "PC: Gốc Web", "en" to "PC: Native", "es" to "PC: Nativo", "pt" to "PC: Nativo",
+            "fr" to "PC: Natif", "de" to "PC: Nativ", "ja" to "PC: 原生", "ko" to "PC: 기본",
+            "zh" to "PC: 原生", "id" to "PC: Asli", "th" to "PC: ต้นฉบับ", "ru" to "ПК: Натив"
         ))
     }
 
@@ -686,32 +956,38 @@ object KbmPrototypeStrings {
     ))
 
     fun modeAHint(c: AppConfig) = pick(c, mapOf(
-        "vi" to "WASD đi • Chuột nhìn (Trái=RT, Phải=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB, Shift=L3 • Esc để nhả chuột.",
-        "en" to "WASD move • Mouse aim (LMB=RT, RMB=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB, Shift=L3 • Esc to release.",
-        "es" to "WASD mover • Ratón mirar (Izq=RT, Der=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB • Esc suelta.",
-        "pt" to "WASD mover • Mouse mirar (Esq=RT, Dir=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB • Esc solta.",
-        "fr" to "WASD bouger • Souris viser (G=RT, D=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB • Esc libère.",
-        "de" to "WASD bewegen • Maus zielen (L=RT, R=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB • Esc löst.",
-        "ja" to "WASD移動・マウス視点(左=RT,右=LT)・Space=A,C=B,R/E=X,F=Y,Q=LB,G=RB・Escで解除。",
-        "ko" to "WASD 이동 • 마우스 시점(좌=RT,우=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB • Esc 해제.",
-        "zh" to "WASD移动 • 鼠标视角(左=RT,右=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB • Esc释放。",
-        "id" to "WASD gerak • Mouse bidik (Kiri=RT, Kanan=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB • Esc lepas.",
-        "th" to "WASD เดิน • เมาส์เล็ง (ซ้าย=RT, ขวา=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB • Esc ปล่อยเมาส์",
-        "ru" to "WASD шаг • Мышь обзор (ЛКМ=RT, ПКМ=LT) • Space=A, C=B, R/E=X, F=Y, Q=LB, G=RB • Esc отпуск."
+        "vi" to "WASD đi • Chuột/vuốt phải nhìn (Trái=RT, Phải=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB, Shift=L3 • Esc nhả chuột.",
+        "en" to "WASD move • Mouse/right-drag aim (LMB=RT, RMB=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB, Shift=L3 • Esc release.",
+        "es" to "WASD mover • Ratón/arrastre mirar (Izq=RT, Der=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB • Esc suelta.",
+        "pt" to "WASD mover • Mouse/arraste mirar (Esq=RT, Dir=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB • Esc solta.",
+        "fr" to "WASD bouger • Souris/glisser viser (G=RT, D=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB • Esc libère.",
+        "de" to "WASD bewegen • Maus/Wischen zielen (L=RT, R=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB • Esc löst.",
+        "ja" to "WASD移動・マウス/右ドラッグ視点(左=RT,右=LT)・Space=A,Ctrl/C=B,R/E=X,F=Y,Q=LB,G=RB・Esc解除。",
+        "ko" to "WASD 이동 • 마우스/우측드래그 시점(좌=RT,우=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB • Esc 해제.",
+        "zh" to "WASD移动 • 鼠标/右滑视角(左=RT,右=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB • Esc释放。",
+        "id" to "WASD gerak • Mouse/geser kanan bidik (Kiri=RT, Kanan=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB • Esc lepas.",
+        "th" to "WASD เดิน • เมาส์/ลากขวาเล็ง (ซ้าย=RT, ขวา=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB • Esc ปล่อย",
+        "ru" to "WASD шаг • Мышь/свайп обзор (ЛКМ=RT, ПКМ=LT) • Space=A, Ctrl/C=B, R/E=X, F=Y, Q=LB, G=RB • Esc отпуск."
     ))
 
     fun modeBHint(c: AppConfig) = pick(c, mapOf(
-        "vi" to "Gửi phím & chuột thẳng vào trang Xbox (chỉ game hỗ trợ KBM gốc). Bấm Thử khóa Web để kiểm tra Pointer Lock.",
-        "en" to "Passes keyboard & mouse straight to Xbox page (native KBM games only). Tap Test Web Lock to check Pointer Lock.",
-        "es" to "Envía teclado y ratón directo a Xbox (solo juegos KBM). Pulsa Probar bloqueo para verificar Pointer Lock.",
+        "vi" to "Gửi phím & chuột thẳng vào trang Xbox (cho game hỗ trợ KBM gốc). Bấm Thử khóa Web để kiểm tra Pointer Lock.",
+        "en" to "Passes keyboard & mouse straight to Xbox page (native KBM games). Tap Test Web Lock to check Pointer Lock.",
+        "es" to "Envía teclado y ratón directo a Xbox (juegos KBM). Pulsa Probar bloqueo para verificar Pointer Lock.",
         "pt" to "Envia teclado e mouse direto ao Xbox (jogos KBM). Toque em Testar trava para checar Pointer Lock.",
         "fr" to "Envoie clavier et souris directement à Xbox (jeux KBM). Touchez Test Lock Web pour vérifier Pointer Lock.",
-        "de" to "Leitet Tastatur & Maus direkt an Xbox (nur KBM-Spiele). Tippe Web-Lock Test für Pointer Lock.",
+        "de" to "Leitet Tastatur & Maus direkt an Xbox (KBM-Spiele). Tippe Web-Lock Test für Pointer Lock.",
         "ja" to "Xboxページへ直接入力（ネイティブKBM対応ゲーム向け）。Webロック試験でPointer Lockを確認。",
-        "ko" to "Xbox 페이지로 키보드/마우스 직접 전달(네이티브 게임 전용). 웹 잠금 시험으로 확인하세요.",
-        "zh" to "将键盘鼠标直通 Xbox 页面（仅原生支持游戏）。点测试网页锁定检查 Pointer Lock。",
+        "ko" to "Xbox 페이지로 키보드/마우스 직접 전달(네이티브 게임용). 웹 잠금 시험으로 확인하세요.",
+        "zh" to "将键盘鼠标直通 Xbox 页面（原生键鼠游戏）。点测试网页锁定检查 Pointer Lock。",
         "id" to "Kirim keyboard & mouse langsung ke Xbox (game KBM asli). Ketuk Uji Kunci Web untuk cek Pointer Lock.",
-        "th" to "ส่งคีย์บอร์ดและเมาส์ตรงไปหน้า Xbox (เฉพาะเกมที่รองรับ) กดลองล็อกเว็บเพื่อตรวจ Pointer Lock",
-        "ru" to "Передаёт клавиатуру и мышь напрямую в Xbox (только KBM-игры). Нажмите Тест Web Lock для проверки."
+        "th" to "ส่งคีย์บอร์ดและเมาส์ตรงไปหน้า Xbox (เกมที่รองรับ) กดลองล็อกเว็บเพื่อตรวจ Pointer Lock",
+        "ru" to "Передаёт клавиатуру и мышь напрямую в Xbox (KBM-игры). Нажмите Тест Web Lock для проверки."
+    ))
+
+    fun touchLookAreaHint(c: AppConfig) = pick(c, mapOf(
+        "vi" to "Vuốt nhìn", "en" to "Drag look", "es" to "Mirar", "pt" to "Olhar",
+        "fr" to "Viser", "de" to "Umsehen", "ja" to "視点操作", "ko" to "시점 이동",
+        "zh" to "滑动视角", "id" to "Geser lihat", "th" to "ลากเล็ง", "ru" to "Обзор"
     ))
 }
