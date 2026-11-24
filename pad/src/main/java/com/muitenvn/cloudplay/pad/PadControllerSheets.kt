@@ -182,7 +182,7 @@ internal fun PadCompactEditToolbar(
                 ) {
                     Text(
                         text = if (isPositionLocked) {
-                            PadStrings.tr(lang, "🔒 Khóa vị trí", "🔒 Locked")
+                            PadStrings.tr(lang, "✓ Đã khóa vị trí", "✓ Locked")
                         } else {
                             PadStrings.tr(lang, "Khóa vị trí", "Lock")
                         },
@@ -1686,7 +1686,7 @@ internal fun PadGlobalSettingsSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = PadStrings.tr(lang, "⚙ Cài đặt tay cầm Ravno Pad", "⚙ Ravno Pad Controller Settings"),
+                        text = PadStrings.tr(lang, "Cài đặt tay cầm Ravno Pad", "Ravno Pad Controller Settings"),
                         color = SheetText,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.ExtraBold
@@ -1838,8 +1838,8 @@ internal fun PadGlobalSettingsSheet(
                             SheetPillButton(
                                 label = PadStrings.tr(
                                     lang,
-                                    "👁 Hiện tất cả nút ẩn ($hiddenNodeCount)",
-                                    "👁 Show All Hidden ($hiddenNodeCount)"
+                                    "Hiện tất cả nút ẩn ($hiddenNodeCount)",
+                                    "Show All Hidden ($hiddenNodeCount)"
                                 ),
                                 onClick = onShowAllHiddenNodes,
                                 testTag = "pad_show_all_hidden_btn"
@@ -2028,9 +2028,9 @@ internal fun PadGlobalSettingsSheet(
                     ) {
                         SheetChoiceChip(
                             label = if (effectiveAutoSprint) {
-                                PadStrings.tr(lang, "🏃 Tự chạy nhanh L3: Bật", "🏃 Auto-Sprint L3: On")
+                                PadStrings.tr(lang, "» Tự chạy nhanh L3: Bật", "» Auto-Sprint L3: On")
                             } else {
-                                PadStrings.tr(lang, "🏃 Tự chạy nhanh L3: Tắt", "🏃 Auto-Sprint L3: Off")
+                                PadStrings.tr(lang, "» Tự chạy nhanh L3: Tắt", "» Auto-Sprint L3: Off")
                             },
                             selected = effectiveAutoSprint,
                             onClick = {

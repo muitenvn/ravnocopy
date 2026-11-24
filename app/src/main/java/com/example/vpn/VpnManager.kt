@@ -754,9 +754,9 @@ object VpnManager {
                     unlockFailAutoSwitchedFromServer = null,
                     isBypassActiveInBrowser = true,
                     statusMessage = if (isEn) {
-                        "✅ Region unlocked successfully: ${currentServer.name} ${currentServer.flag}"
+                        "✓ Region unlocked successfully: ${currentServer.name} ${currentServer.flag}"
                     } else {
-                        "✅ Đã mở khóa vùng thành công: ${currentServer.name} ${currentServer.flag}"
+                        "✓ Đã mở khóa vùng thành công: ${currentServer.name} ${currentServer.flag}"
                     }
                 )
             }
@@ -810,9 +810,9 @@ object VpnManager {
                     unlockFailConsecutiveCount = count,
                     unlockFailAutoSwitchedFromServer = null,
                     statusMessage = if (isEn) {
-                        "⚠️ This server cannot unlock the region, switch to another server?"
+                        "! This server cannot unlock the region, switch to another server?"
                     } else {
-                        "⚠️ Máy chủ này không mở khóa được, đổi sang máy chủ khác?"
+                        "! Máy chủ này không mở khóa được, đổi sang máy chủ khác?"
                     }
                 )
 
@@ -1927,9 +1927,9 @@ object VpnManager {
             unlockFailConsecutiveCount = 0,
             unlockFailAutoSwitchedFromServer = null,
             statusMessage = if (isEn) {
-                "🔄 Switched to next best server: ${bestNext.name} ${bestNext.flag}"
+                "Switched to next best server: ${bestNext.name} ${bestNext.flag}"
             } else {
-                "🔄 Đã chuyển sang máy chủ tốt nhất kế tiếp: ${bestNext.name} ${bestNext.flag}"
+                "Đã chuyển sang máy chủ tốt nhất kế tiếp: ${bestNext.name} ${bestNext.flag}"
             }
         )
         selectServer(bestNext, context ?: appContext, isManualSelection = wasManual)
@@ -2207,7 +2207,7 @@ object VpnManager {
                         ServerLocation(
                             id = id,
                             name = obj.getString("name"),
-                            flag = obj.optString("flag", "🌐"),
+                            flag = obj.optString("flag", "◈"),
                             ip = ip,
                             port = port,
                             protocol = obj.optString("protocol", "http"),
@@ -2406,16 +2406,16 @@ object VpnManager {
             userCountryName = if (isEn) "Checking IP..." else "Đang xác định IP...",
             isSupportedRegion = false,
             message = if (isEn) {
-                "🔄 Network/VPN changed ($reason). Re-checking IP location..."
+                "Network/VPN changed ($reason). Re-checking IP location..."
             } else {
-                "🔄 Phát hiện thay đổi mạng/VPN ($reason). Đang xác định lại vị trí IP..."
+                "Phát hiện thay đổi mạng/VPN ($reason). Đang xác định lại vị trí IP..."
             },
             actionSummary = if (isEn) "Checking IP..." else "Đang xác định IP..."
         )
         _state.value = _state.value.copy(
             detectedGeoIp = null,
             smartDecision = checkingDecision,
-            statusMessage = if (isEn) "🔄 Checking IP..." else "🔄 Đang xác định IP..."
+            statusMessage = if (isEn) "Checking IP..." else "Đang xác định IP..."
         )
     }
 
@@ -2501,9 +2501,9 @@ object VpnManager {
                     userCountryName = if (isEn) "Unknown / Offline" else "Không xác định / Ngoại tuyến",
                     isSupportedRegion = false,
                     message = if (isEn) {
-                        "🌐 Could not detect network IP (Offline or DNS blocked). You can enable Bypass or select a Server manually."
+                        "Could not detect network IP (Offline or DNS blocked). You can enable Bypass or select a Server manually."
                     } else {
-                        "🌐 Không xác định được địa chỉ IP mạng (Mất kết nối hoặc chặn DNS). Bạn có thể bật Bypass hoặc chọn Server thủ công."
+                        "Không xác định được địa chỉ IP mạng (Mất kết nối hoặc chặn DNS). Bạn có thể bật Bypass hoặc chọn Server thủ công."
                     },
                     actionSummary = if (isEn) "Manual: Select preferred server" else "Thủ công: Chọn máy chủ theo ý muốn"
                 )
@@ -2528,9 +2528,9 @@ object VpnManager {
                 userCountryName = if (isEn) "Unknown / Offline" else "Không xác định / Ngoại tuyến",
                 isSupportedRegion = false,
                 message = if (isEn) {
-                    "🌐 Network IP not yet detected. You can enable Bypass or select a Server manually."
+                    "Network IP not yet detected. You can enable Bypass or select a Server manually."
                 } else {
-                    "🌐 Chưa xác định được IP mạng. Bạn có thể bật Bypass hoặc chọn Server thủ công."
+                    "Chưa xác định được IP mạng. Bạn có thể bật Bypass hoặc chọn Server thủ công."
                 },
                 actionSummary = if (isEn) "Manual: Select preferred server" else "Thủ công: Chọn máy chủ theo ý muốn"
             )
@@ -2554,15 +2554,15 @@ object VpnManager {
             isSupportedRegion = isSupported,
             message = if (needsVpn) {
                 if (isEn) {
-                    "⚠️ Detected IP ${currentGeo.ip} in ${currentGeo.countryName} ${currentGeo.flagEmoji} (xCloud unsupported). Smart VPN will AUTO TURN ON at launch & AUTO TURN OFF in-game!"
+                    "! Detected IP ${currentGeo.ip} in ${currentGeo.countryName} ${currentGeo.flagEmoji} (xCloud unsupported). Smart VPN will AUTO TURN ON at launch & AUTO TURN OFF in-game!"
                 } else {
-                    "⚠️ Phát hiện IP ${currentGeo.ip} tại ${currentGeo.countryName} ${currentGeo.flagEmoji} (Chưa hỗ trợ xCloud). Smart VPN sẽ TỰ ĐỘNG BẬT khi mở game & TỰ ĐỘNG TẮT khi vào trận!"
+                    "! Phát hiện IP ${currentGeo.ip} tại ${currentGeo.countryName} ${currentGeo.flagEmoji} (Chưa hỗ trợ xCloud). Smart VPN sẽ TỰ ĐỘNG BẬT khi mở game & TỰ ĐỘNG TẮT khi vào trận!"
                 }
             } else {
                 if (isEn) {
-                    "✅ Detected IP ${currentGeo.ip} in ${currentGeo.countryName} ${currentGeo.flagEmoji} (xCloud supported). NO VPN NEEDED! Keeping Direct ISP for lowest ping."
+                    "✓ Detected IP ${currentGeo.ip} in ${currentGeo.countryName} ${currentGeo.flagEmoji} (xCloud supported). NO VPN NEEDED! Keeping Direct ISP for lowest ping."
                 } else {
-                    "✅ Phát hiện IP ${currentGeo.ip} tại ${currentGeo.countryName} ${currentGeo.flagEmoji} ĐÃ HỖ TRỢ xCloud. KHÔNG CẦN BẬT VPN! Luôn giữ Direct ISP để đạt Ping thấp nhất."
+                    "✓ Phát hiện IP ${currentGeo.ip} tại ${currentGeo.countryName} ${currentGeo.flagEmoji} ĐÃ HỖ TRỢ xCloud. KHÔNG CẦN BẬT VPN! Luôn giữ Direct ISP để đạt Ping thấp nhất."
                 }
             },
             actionSummary = if (needsVpn) {
@@ -2642,15 +2642,15 @@ object VpnManager {
             smartVpnPhase = nextPhase,
             statusMessage = if (isSupported) {
                 if (isEn) {
-                    "✅ Valid IP: ${currentGeo.countryName} ${currentGeo.flagEmoji} • No VPN needed (Direct ISP)"
+                    "✓ Valid IP: ${currentGeo.countryName} ${currentGeo.flagEmoji} · No VPN needed (Direct ISP)"
                 } else {
-                    "✅ IP hợp lệ: ${currentGeo.countryName} ${currentGeo.flagEmoji} • Không cần VPN (Mạng Trực Tiếp)"
+                    "✓ IP hợp lệ: ${currentGeo.countryName} ${currentGeo.flagEmoji} · Không cần VPN (Mạng Trực Tiếp)"
                 }
             } else {
                 if (isEn) {
-                    "🤖 Smart VPN ready: Auto ON/OFF for IP ${currentGeo.countryName} ${currentGeo.flagEmoji}"
+                    "Smart VPN ready: Auto ON/OFF for IP ${currentGeo.countryName} ${currentGeo.flagEmoji}"
                 } else {
-                    "🤖 Smart VPN sẵn sàng: Tự động Bật/Tắt cho IP ${currentGeo.countryName} ${currentGeo.flagEmoji}"
+                    "Smart VPN sẵn sàng: Tự động Bật/Tắt cho IP ${currentGeo.countryName} ${currentGeo.flagEmoji}"
                 }
             }
         )
@@ -2731,9 +2731,9 @@ object VpnManager {
                 autoBypassTriggered = false,
                 smartVpnPhase = SmartVpnPhase.BYPASS_ACTIVE,
                 statusMessage = if (isEn) {
-                    "🤖 Smart VPN: AUTO TURNED ON to unlock game region..."
+                    "Smart VPN: AUTO TURNED ON to unlock game region..."
                 } else {
-                    "🤖 Smart VPN: Đã TỰ ĐỘNG BẬT để mở khóa vùng vào game..."
+                    "Smart VPN: Đã TỰ ĐỘNG BẬT để mở khóa vùng vào game..."
                 }
             )
         } else {
@@ -2754,9 +2754,9 @@ object VpnManager {
             mode = NetworkMode.DIRECT_NETWORK,
             smartVpnPhase = SmartVpnPhase.DIRECT_SUPPORTED_REGION,
             statusMessage = if (isEn) {
-                "⚡ Smart VPN: Supported region, keeping Direct ISP"
+                "Smart VPN: Supported region, keeping Direct ISP"
             } else {
-                "⚡ Smart VPN: Vị trí hợp lệ, giữ Mạng Trực Tiếp"
+                "Smart VPN: Vị trí hợp lệ, giữ Mạng Trực Tiếp"
             }
         )
     }
@@ -2803,9 +2803,9 @@ object VpnManager {
             detectedGeoIp = spoofGeo,
             smartVpnPhase = SmartVpnPhase.BYPASS_ACTIVE,
             statusMessage = if (isEn) {
-                "✅ Xbox Region unlocked! Region: ${currentServer.name} ${currentServer.flag}"
+                "✓ Xbox Region unlocked! Region: ${currentServer.name} ${currentServer.flag}"
             } else {
-                "✅ Đã vượt rào Xbox thành công! Khu vực: ${currentServer.name} ${currentServer.flag}"
+                "✓ Đã vượt rào Xbox thành công! Khu vực: ${currentServer.name} ${currentServer.flag}"
             }
         )
     }
@@ -2844,7 +2844,7 @@ object VpnManager {
                             "Máy chủ ${server.name} (${server.ip}:${server.port}) không phản hồi, đang tìm máy chủ dự phòng..."
                         )
                         _state.value = _state.value.copy(
-                            statusMessage = if (isEnNow) "🔄 Checking proxy route..." else "🔄 Đang kiểm tra đường truyền proxy..."
+                            statusMessage = if (isEnNow) "Checking proxy route..." else "Đang kiểm tra đường truyền proxy..."
                         )
 
                         val workingBackup = findFirstResponsiveServer(server.countryCode)
@@ -2857,7 +2857,7 @@ object VpnManager {
                             _state.value = _state.value.copy(
                                 currentServer = targetServer,
                                 autoSwitchedBackupCount = _state.value.autoSwitchedBackupCount + 1,
-                                statusMessage = if (isEnNow) "✅ Selected server: ${targetServer.name}" else "✅ Đã chọn máy chủ: ${targetServer.name}"
+                                statusMessage = if (isEnNow) "✓ Selected server: ${targetServer.name}" else "✓ Đã chọn máy chủ: ${targetServer.name}"
                             )
                         } else {
                             Log.w(TAG, "Proxy ports blocked or unreachable. Auto-falling back to Smart Bypass mode.")
@@ -2867,7 +2867,7 @@ object VpnManager {
                             )
                             _state.value = _state.value.copy(
                                 engine = VpnEngine.SMART_BYPASS,
-                                statusMessage = if (isEnNow) "⚡ Auto-switched to Smart Bypass (anti-throttle)" else "⚡ Tự động chuyển Smart Bypass (chống nghẽn mạng)"
+                                statusMessage = if (isEnNow) "Auto-switched to Smart Bypass (anti-throttle)" else "Tự động chuyển Smart Bypass (chống nghẽn mạng)"
                             )
                             clearWebViewProxy()
                         }
@@ -2890,7 +2890,7 @@ object VpnManager {
                         isConnecting = false,
                         autoBypassTriggered = false,
                         detectedGeoIp = targetGeo,
-                        statusMessage = if (isEnNow) "✅ Proxy Active: ${targetServer.name} (${targetServer.ip}:${targetServer.port})" else "✅ Đã kích hoạt Proxy: ${targetServer.name} (${targetServer.ip}:${targetServer.port})"
+                        statusMessage = if (isEnNow) "✓ Proxy Active: ${targetServer.name} (${targetServer.ip}:${targetServer.port})" else "✓ Đã kích hoạt Proxy: ${targetServer.name} (${targetServer.ip}:${targetServer.port})"
                     )
                     com.example.data.AppLogger.success(
                         "VPN",
@@ -2919,7 +2919,7 @@ object VpnManager {
                         autoBypassTriggered = false,
                         isBypassActiveInBrowser = true,
                         detectedGeoIp = targetGeo,
-                        statusMessage = if (isEnNow) "✅ Smart Bypass Active • ${server.name} (${server.ip})" else "✅ Đã kích hoạt Smart Bypass • ${server.name} (${server.ip})"
+                        statusMessage = if (isEnNow) "✓ Smart Bypass Active · ${server.name} (${server.ip})" else "✓ Đã kích hoạt Smart Bypass · ${server.name} (${server.ip})"
                     )
                     com.example.data.AppLogger.success(
                         "VPN",
@@ -3021,13 +3021,13 @@ object VpnManager {
                     val pingSuffix = if (lastPlayPing > 0) " (${lastPlayPing}ms)" else ""
                     _state.value = _state.value.copy(
                         currentServer = best,
-                        statusMessage = if (isEn) "⚡ Selected server: ${best.name}$pingSuffix" else "⚡ Đã chọn máy chủ: ${best.name}$pingSuffix"
+                        statusMessage = if (isEn) "Selected server: ${best.name}$pingSuffix" else "Đã chọn máy chủ: ${best.name}$pingSuffix"
                     )
                     connect(context, best)
                 } else {
                     _state.value = _state.value.copy(
                         isConnecting = false,
-                        statusMessage = if (isEn) "⚠️ No valid unlock server found in $countryCode" else "⚠️ Không tìm thấy máy chủ mở khóa hợp lệ trong vùng $countryCode"
+                        statusMessage = if (isEn) "! No valid unlock server found in $countryCode" else "! Không tìm thấy máy chủ mở khóa hợp lệ trong vùng $countryCode"
                     )
                 }
                 return@launch
@@ -3058,13 +3058,13 @@ object VpnManager {
                 val bestPing = pingMap[best.id] ?: -1
                 _state.value = _state.value.copy(
                     currentServer = best,
-                    statusMessage = if (isEn) "⚡ Selected best server: ${best.name} (${bestPing}ms)" else "⚡ Đã chọn máy chủ tốt nhất: ${best.name} (${bestPing}ms)"
+                    statusMessage = if (isEn) "Selected best server: ${best.name} (${bestPing}ms)" else "Đã chọn máy chủ tốt nhất: ${best.name} (${bestPing}ms)"
                 )
                 connect(context, best)
             } else {
                 _state.value = _state.value.copy(
                     isConnecting = false,
-                    statusMessage = if (isEn) "⚠️ No reachable proxy server found in $countryCode" else "⚠️ Không đo được proxy phản hồi trong vùng $countryCode"
+                    statusMessage = if (isEn) "! No reachable proxy server found in $countryCode" else "! Không đo được proxy phản hồi trong vùng $countryCode"
                 )
             }
         }
@@ -3105,9 +3105,9 @@ object VpnManager {
             autoBypassTriggered = true,
             smartVpnPhase = SmartVpnPhase.DIRECT_GAMING,
             statusMessage = if (isEn) {
-                "⚡ Smart VPN: AUTO DISCONNECTED VPN ($triggerSource)! Streaming directly via ISP (Lowest Ping)."
+                "Smart VPN: AUTO DISCONNECTED VPN ($triggerSource)! Streaming directly via ISP (Lowest Ping)."
             } else {
-                "⚡ Smart VPN: Đã TỰ ĐỘNG TẮT VPN ($triggerSource)! Đang truyền trực tiếp qua mạng ISP (Ping thấp nhất)."
+                "Smart VPN: Đã TỰ ĐỘNG TẮT VPN ($triggerSource)! Đang truyền trực tiếp qua mạng ISP (Ping thấp nhất)."
             }
         )
         com.example.data.AppLogger.success(

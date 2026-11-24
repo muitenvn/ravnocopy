@@ -49,7 +49,7 @@ data class TranslateLanguageOption(
 }
 
 val TRANSLATE_LANGUAGE_OPTIONS = listOf(
-    TranslateLanguageOption("OFF", "Tắt dịch giao diện Xbox", "Off (Disable Xbox UI translation)", "🚫"),
+    TranslateLanguageOption("OFF", "Tắt dịch giao diện Xbox", "Off (Disable Xbox UI translation)", "✕"),
     TranslateLanguageOption("vi", "Tiếng Việt", "Vietnamese (Tiếng Việt)", "🇻🇳"),
     TranslateLanguageOption("en", "English", "English", "🇺🇸"),
     TranslateLanguageOption("es", "Español", "Spanish (Español)", "🇪🇸"),
@@ -95,7 +95,7 @@ enum class StreamGraphicsQuality(
         shortLabel = "Tự Động",
         subtitle = "Tự chỉnh theo mạng Wi-Fi / 4G",
         targetBitrateMbps = 10,
-        deviceLoadLabel = "⚡ Tự điều chỉnh theo mạng",
+        deviceLoadLabel = "Tự điều chỉnh theo mạng",
         dataSavingNotice = "Tự đổi giữa 720p và 1080p",
         description = "Tự động hạ độ phân giải khi mạng yếu và tăng lại khi mạng ổn định."
     ),
@@ -105,7 +105,7 @@ enum class StreamGraphicsQuality(
         shortLabel = "Tiết Kiệm (5M)",
         subtitle = "Đỡ tốn data, mát máy, ít hao pin",
         targetBitrateMbps = 5,
-        deviceLoadLabel = "❄️ Nhẹ máy • Đỡ hao pin",
+        deviceLoadLabel = "Nhẹ máy · Đỡ hao pin",
         dataSavingNotice = "Giới hạn băng thông ~5 Mbps",
         description = "Giảm băng thông truyền tải xuống mức thấp, phù hợp khi dùng dữ liệu di động hoặc máy cấu hình thấp."
     ),
@@ -115,7 +115,7 @@ enum class StreamGraphicsQuality(
         shortLabel = "Trung Bình (9M)",
         subtitle = "Cân bằng độ nét và nhiệt độ máy",
         targetBitrateMbps = 9,
-        deviceLoadLabel = "🌿 Mức trung bình • ~9 Mbps",
+        deviceLoadLabel = "Mức trung bình · ~9 Mbps",
         dataSavingNotice = "Giới hạn băng thông ~9 Mbps",
         description = "Mức cân bằng cho các dòng máy tầm trung, giữ nhiệt độ máy ổn định khi chơi lâu."
     ),
@@ -125,7 +125,7 @@ enum class StreamGraphicsQuality(
         shortLabel = "Cao (14M)",
         subtitle = "Độ phân giải 1080p • 14 Mbps",
         targetBitrateMbps = 14,
-        deviceLoadLabel = "⚡ Độ phân giải 1080p",
+        deviceLoadLabel = "Độ phân giải 1080p",
         dataSavingNotice = "Băng thông ~14 Mbps (~4.5GB/giờ)",
         description = "Độ phân giải 1080p cho mạng Wi-Fi ổn định và thiết bị tầm trung trở lên."
     ),
@@ -135,7 +135,7 @@ enum class StreamGraphicsQuality(
         shortLabel = "Rất Cao (20M)",
         subtitle = "Mức băng thông cao nhất • 20 Mbps",
         targetBitrateMbps = 20,
-        deviceLoadLabel = "🔥 Băng thông 20 Mbps",
+        deviceLoadLabel = "Băng thông 20 Mbps",
         dataSavingNotice = "Băng thông ~20 Mbps (~7GB/giờ)",
         description = "Mức bitrate cao nhất của Xbox Cloud Gaming, phù hợp khi dùng mạng Wi-Fi 5GHz ổn định."
     )
@@ -165,13 +165,13 @@ enum class CellularOptimizationMode(
         subtitle = "Tự chỉnh độ nét theo sóng 4G/5G & Wi-Fi",
         resolutionBadge = "Auto 720p⇄1080p",
         bitrateMbps = 12,
-        deviceLoadBadge = "⚡ Tự động theo mạng",
+        deviceLoadBadge = "Tự động theo mạng",
         description = "Tự động hạ độ nét khi mạng yếu để giữ game mượt, và nâng lại khi mạng ổn định.",
         titleEn = "Auto (720p ⇄ 1080p)",
         shortLabelEn = "Auto (720p⇄1080p)",
         subtitleEn = "Auto-adjusts clarity for 4G/5G & Wi-Fi",
         resolutionBadgeEn = "Auto 720p⇄1080p",
-        deviceLoadBadgeEn = "⚡ Auto Network Fit",
+        deviceLoadBadgeEn = "Auto Network Fit",
         descriptionEn = "Automatically lowers resolution when signal is weak to keep gameplay smooth, and restores clarity when stable.",
         request1080p = true
     ),
@@ -182,13 +182,13 @@ enum class CellularOptimizationMode(
         subtitle = "Nhẹ mạng, tiết kiệm 4G/5G & mát máy • 5 Mbps",
         resolutionBadge = "720p • Thấp",
         bitrateMbps = 5,
-        deviceLoadBadge = "❄️ 720p Nhẹ & Mát Máy",
+        deviceLoadBadge = "720p Nhẹ & Mát Máy",
         description = "Phù hợp khi sóng 4G yếu hoặc muốn tiết kiệm dữ liệu di động và giữ máy mát.",
         titleEn = "720p • Low",
         shortLabelEn = "720p • Low (5M)",
         subtitleEn = "Saves mobile data & keeps phone cool • 5 Mbps",
         resolutionBadgeEn = "720p • Low",
-        deviceLoadBadgeEn = "❄️ 720p Cool & Light",
+        deviceLoadBadgeEn = "720p Cool & Light",
         descriptionEn = "Best for weak 4G signal, saving mobile data, and keeping your phone cool.",
         request1080p = true
     ),
@@ -199,13 +199,13 @@ enum class CellularOptimizationMode(
         subtitle = "Cân bằng độ nét và độ mượt • 9 Mbps",
         resolutionBadge = "900p • Vừa",
         bitrateMbps = 9,
-        deviceLoadBadge = "🌿 900p Cân Bằng",
+        deviceLoadBadge = "900p Cân Bằng",
         description = "Hình ảnh rõ vừa phải, chơi ổn định trên cả 4G/5G và Wi-Fi.",
         titleEn = "900p • Med",
         shortLabelEn = "900p • Med (9M)",
         subtitleEn = "Balanced clarity and smoothness • 9 Mbps",
         resolutionBadgeEn = "900p • Med",
-        deviceLoadBadgeEn = "🌿 900p Balanced",
+        deviceLoadBadgeEn = "900p Balanced",
         descriptionEn = "Balanced clarity and smooth response on 4G/5G and Wi-Fi.",
         request1080p = true
     ),
@@ -216,13 +216,13 @@ enum class CellularOptimizationMode(
         subtitle = "Hình ảnh Full HD sắc nét • 14 Mbps",
         resolutionBadge = "1080p • Cao",
         bitrateMbps = 14,
-        deviceLoadBadge = "✨ 1080p Full HD",
+        deviceLoadBadge = "1080p Full HD",
         description = "Hình ảnh Full HD sắc nét cho mạng Wi-Fi ổn định hoặc 5G mạnh.",
         titleEn = "1080p • High",
         shortLabelEn = "1080p • High (14M)",
         subtitleEn = "Crisp Full HD image • 14 Mbps",
         resolutionBadgeEn = "1080p • High",
-        deviceLoadBadgeEn = "✨ 1080p Full HD",
+        deviceLoadBadgeEn = "1080p Full HD",
         descriptionEn = "Sharp Full HD visuals for stable Wi-Fi or strong 5G.",
         request1080p = true
     ),
@@ -233,13 +233,13 @@ enum class CellularOptimizationMode(
         subtitle = "Độ nét tối đa cho Wi-Fi mạnh • 20 Mbps",
         resolutionBadge = "1080p+ • Rất cao",
         bitrateMbps = 20,
-        deviceLoadBadge = "🔥 1080p+ Tối Đa",
+        deviceLoadBadge = "1080p+ Tối Đa",
         description = "Độ nét cao nhất dành cho mạng Wi-Fi 5GHz hoặc 5G tốc độ cao.",
         titleEn = "1080p+ • Very High",
         shortLabelEn = "1080p+ • Very High (20M)",
         subtitleEn = "Maximum clarity for fast Wi-Fi • 20 Mbps",
         resolutionBadgeEn = "1080p+ • Very High",
-        deviceLoadBadgeEn = "🔥 1080p+ Max",
+        deviceLoadBadgeEn = "1080p+ Max",
         descriptionEn = "Highest visual clarity for fast 5GHz Wi-Fi or strong 5G.",
         request1080p = true
     );
@@ -316,7 +316,7 @@ enum class AppLanguage(
     val shortBadge: String,
     val translateTargetCode: String
 ) {
-    SYSTEM("system", "Theo hệ thống (Tự động)", "System Default (Auto)", "🌐", "AUTO", ""),
+    SYSTEM("system", "Theo hệ thống (Tự động)", "System Default (Auto)", "◈", "AUTO", ""),
     ENGLISH("en", "English", "English", "🇺🇸", "EN", "en"),
     VIETNAMESE("vi", "Tiếng Việt", "Tiếng Việt (Vietnamese)", "🇻🇳", "VI", "vi"),
     SPANISH("es", "Español", "Español (Spanish)", "🇪🇸", "ES", "es"),
@@ -366,7 +366,7 @@ enum class AppLanguage(
     fun effectiveFlag(): String {
         if (this != SYSTEM) return flag
         val code = effectiveLanguageCode()
-        return entries.firstOrNull { it.code == code }?.flag ?: "🌐"
+        return entries.firstOrNull { it.code == code }?.flag ?: "◈"
     }
 
     fun resolveTranslateTargetCode(): String {

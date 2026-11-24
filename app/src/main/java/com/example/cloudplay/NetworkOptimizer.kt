@@ -24,13 +24,13 @@ import org.json.JSONObject
 import kotlin.math.roundToLong
 
 enum class PhysicalNetworkType(val label: String, val icon: String) {
-    WIFI_6GHZ("Wifi 6GHz (Wi-Fi 6E/7)", "🛜"),
-    WIFI_5GHZ("Wifi 5GHz (Tốc độ cao)", "🛜"),
-    WIFI_2_4GHZ("Wifi 2.4GHz (Chống nhiễu)", "🛜"),
-    WIFI_STANDARD("Wifi (Chuẩn)", "🛜"),
-    CELLULAR_4G_5G("Mạng 4G/LTE Di Động", "📶"),
-    ETHERNET("Mạng Dây LAN", "🌐"),
-    UNKNOWN("Không rõ mạng", "📡")
+    WIFI_6GHZ("Wifi 6GHz (Wi-Fi 6E/7)", "Wi-Fi 6G"),
+    WIFI_5GHZ("Wifi 5GHz (Tốc độ cao)", "Wi-Fi 5G"),
+    WIFI_2_4GHZ("Wifi 2.4GHz (Chống nhiễu)", "Wi-Fi 2.4G"),
+    WIFI_STANDARD("Wifi (Chuẩn)", "Wi-Fi"),
+    CELLULAR_4G_5G("Mạng 4G/LTE Di Động", "4G/5G"),
+    ETHERNET("Mạng Dây LAN", "LAN"),
+    UNKNOWN("Không rõ mạng", "")
 }
 
 data class NetworkOptimizerStatus(
@@ -51,7 +51,7 @@ data class NetworkOptimizerStatus(
     val hasVpnTransport: Boolean = false,
     val activeNetworkKey: String = "",
     val summaryText: String = "Đang tối ưu hóa đồ họa và hiệu năng thiết bị...",
-    val profileBadge: String = "⚡ Tự Động"
+    val profileBadge: String = "Tự Động"
 )
 
 data class StreamTelemetry(
@@ -442,7 +442,7 @@ object NetworkOptimizer {
             profileName = "Chế Độ Máy Yếu • 720p Nhẹ (5 Mbps)"
             bitrate = 5
             summary = "Đang bật Chế độ máy yếu: Khóa 720p (5 Mbps) để giảm tải giải mã và giữ ổn định trên 4G/Wi-Fi."
-            badge = "🛡️ 720p Máy Yếu (5M)"
+            badge = "720p Máy Yếu (5M)"
         } else when (cellularMode) {
             CellularOptimizationMode.AUTO -> {
                 val autoMbps = when {
@@ -472,35 +472,35 @@ object NetworkOptimizer {
                     else -> "Tự động điều chỉnh bộ đệm nhận WebRTC trong phiên và giữ thời gian giải mã < 8ms."
                 }
                 badge = when {
-                    is3gOrHPlus -> "📶 3G/H+ (${autoMbps}M)"
-                    isCellular && current.isWeakCellularSignal -> "📶 4G Yếu (${autoMbps}M)"
-                    isCellular -> "📶 Ưu tiên 4G (${autoMbps}M)"
-                    else -> "⚡ Tự động (${autoMbps}M)"
+                    is3gOrHPlus -> "3G/H+ (${autoMbps}M)"
+                    isCellular && current.isWeakCellularSignal -> "4G Yếu (${autoMbps}M)"
+                    isCellular -> "Ưu tiên 4G (${autoMbps}M)"
+                    else -> "Tự động (${autoMbps}M)"
                 }
             }
             CellularOptimizationMode.DATA_SAVER_HIGH_SPEED -> {
                 profileName = "720p • Thấp (Cố Định • 5M)"
                 bitrate = 5
                 summary = "Khóa 720p • 5 Mbps giúp giảm độ trễ trên mạng 4G/5G yếu hoặc Wi-Fi xa cục phát, nhẹ máy và mát pin."
-                badge = "❄️ 720p • Thấp (5M)"
+                badge = "720p · Thấp (5M)"
             }
             CellularOptimizationMode.MEDIUM -> {
                 profileName = "900p • Vừa (Cố Định • 9M)"
                 bitrate = 9
                 summary = "Khóa cố định 900p • 9 Mbps (~3.8GB/giờ), cân bằng giữa độ nét và độ nhạy trên 4G/5G & Wi-Fi."
-                badge = "🌿 900p • Vừa (9M)"
+                badge = "900p · Vừa (9M)"
             }
             CellularOptimizationMode.HIGH -> {
                 profileName = "1080p • Cao (Cố Định • 14M)"
                 bitrate = 14
                 summary = "Khóa cố định 1080p Full HD • 14 Mbps sắc nét cho mạng Wi-Fi gần cục phát hoặc 5G mạnh."
-                badge = "✨ 1080p • Cao (14M)"
+                badge = "1080p · Cao (14M)"
             }
             CellularOptimizationMode.MAX_SPEED_UNCAPPED -> {
                 profileName = "1080p+ • Rất cao (Cố Định • 20M)"
                 bitrate = 20
                 summary = "Khóa cố định tối đa 1080p+ • 20 Mbps cho mạng Wi-Fi 5GHz/6GHz gần cục phát."
-                badge = "🔥 1080p+ • Rất cao (20M)"
+                badge = "1080p+ · Rất cao (20M)"
             }
         }
 

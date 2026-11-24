@@ -172,9 +172,9 @@ object ZeroLagScreenRecorder {
         }
 
         val toastMsg = if (isEn) {
-            "🔴 Recording (${quality.localizedShort(true)} • Low-CPU .MP4)"
+            "● Recording (${quality.localizedShort(true)} · Low-CPU .MP4)"
         } else {
-            "🔴 Đang quay (${quality.localizedShort(false)} • Nhẹ .MP4)"
+            "● Đang quay (${quality.localizedShort(false)} · Nhẹ .MP4)"
         }
         Toast.makeText(context, toastMsg, Toast.LENGTH_SHORT).show()
     }
@@ -213,9 +213,9 @@ object ZeroLagScreenRecorder {
 
         if (ctx != null) {
             val stoppingMsg = if (isEn) {
-                "⏹️ Saving .MP4 video to Gallery (Movies/XboxCloudPlay)..."
+                "■ Saving .MP4 video to Gallery (Movies/XboxCloudPlay)..."
             } else {
-                "⏹️ Đang lưu video .MP4 vào Thư viện (Movies/XboxCloudPlay)..."
+                "■ Đang lưu video .MP4 vào Thư viện (Movies/XboxCloudPlay)..."
             }
             Toast.makeText(ctx, stoppingMsg, Toast.LENGTH_SHORT).show()
         }
@@ -885,9 +885,9 @@ object ZeroLagScreenRecorder {
             val context = ctx ?: appContext ?: return@launch
             val isEn = SettingsRepository.config.value.isEnglishUI()
             val msg = if (isEn) {
-                "✅ Saved MP4 with audio: Movies/XboxCloudPlay/$fileName"
+                "✓ Saved MP4 with audio: Movies/XboxCloudPlay/$fileName"
             } else {
-                "✅ Đã lưu video MP4 có tiếng: Movies/XboxCloudPlay/$fileName"
+                "✓ Đã lưu video MP4 có tiếng: Movies/XboxCloudPlay/$fileName"
             }
             Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
         }

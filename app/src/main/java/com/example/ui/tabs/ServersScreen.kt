@@ -904,7 +904,7 @@ fun ServersScreen(
                                     com.example.data.AppLogger.info("UI", "Bấm nút Chọn tối ưu (trên tab Máy chủ)")
                                     android.widget.Toast.makeText(
                                         context,
-                                        config.tr("⚡ Đang đo ping và chọn máy chủ tối ưu...", "⚡ Measuring ping & selecting best server..."),
+                                        config.tr("Đang đo ping và chọn máy chủ tối ưu...", "Measuring ping & selecting best server..."),
                                         android.widget.Toast.LENGTH_SHORT
                                     ).show()
                                     testAllServers(
@@ -1099,7 +1099,7 @@ fun ServersScreen(
                     "JP" to "🇯🇵 ${config.tr("Nhật Bản", "Japan")}",
                     "KR" to "🇰🇷 ${config.tr("Hàn Quốc", "Korea")}",
                     "US" to "🇺🇸 ${config.tr("Hoa Kỳ", "USA")}",
-                    "ALL" to "🌐 $allLabel (${allServersSnapshot.size})"
+                    "ALL" to "$allLabel (${allServersSnapshot.size})"
                 )
 
                 items(categories) { (code, title) ->
@@ -1178,7 +1178,7 @@ fun ServersScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "⚙️ ${config.tr("Đã thêm", "Custom")} ($customServerCount)",
+                                text = "${config.tr("Đã thêm", "Custom")} ($customServerCount)",
                                 color = if (isSelected) XboxNeonGreen else TextSecondary,
                                 fontFamily = SpaceGroteskFontFamily,
                                 fontWeight = FontWeight.SemiBold,

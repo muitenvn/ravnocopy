@@ -14,11 +14,11 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 enum class QualityTier(val title: String, val badge: String, val resolutionTag: String) {
-    ULTRA("1080p+ • Rất cao", "🔥 1080p+ Rất cao", "1080p+"),
-    HIGH("1080p • Cao", "✨ 1080p Cao", "1080p"),
-    BALANCED("900p • Vừa", "🌿 900p Vừa", "900p"),
-    SAVER("720p • Thấp", "❄️ 720p Thấp", "720p"),
-    EMERGENCY("720p • Nhẹ", "🛡️ 720p Nhẹ", "720p")
+    ULTRA("1080p+ · Rất cao", "1080p+ Rất cao", "1080p+"),
+    HIGH("1080p · Cao", "1080p Cao", "1080p"),
+    BALANCED("900p · Vừa", "900p Vừa", "900p"),
+    SAVER("720p · Thấp", "720p Thấp", "720p"),
+    EMERGENCY("720p · Nhẹ", "720p Nhẹ", "720p")
 }
 
 data class BitrateLadderStep(
@@ -172,7 +172,7 @@ object AdaptiveQualityManager {
                 minAutoMbps = 1.0,
                 maxAutoMbps = 5.0,
                 qualityGrade = if (isEn) "Low-End (5M)" else "Chế Độ Máy Yếu (5M)",
-                qualityNotice = "🛡️ $nextSessionNote"
+                qualityNotice = nextSessionNote
             )
             QualityAdapter.applyAdaptiveBitrate(
                 targetBitrateMbps = lowEndMbps,
@@ -232,7 +232,11 @@ object AdaptiveQualityManager {
                 } else {
                     if (isEn) "Auto Adaptive" else "Tự Động Thích Ứng"
                 },
-                qualityNotice = "${status.physicalType.icon} $nextSessionNote"
+                qualityNotice = if (status.physicalType.icon.isNotBlank()) {
+                    "${status.physicalType.icon} $nextSessionNote"
+                } else {
+                    nextSessionNote
+                }
             )
 
             QualityAdapter.applyAdaptiveBitrate(
@@ -268,7 +272,7 @@ object AdaptiveQualityManager {
                 minAutoMbps = 1.0,
                 maxAutoMbps = 20.0,
                 qualityGrade = if (isEn) "Fixed (${fixedMbps.toInt()}M)" else "Cố Định (${fixedMbps.toInt()}M)",
-                qualityNotice = "📌 $nextSessionNote"
+                qualityNotice = nextSessionNote
             )
 
             QualityAdapter.applyAdaptiveBitrate(
@@ -485,9 +489,9 @@ object AdaptiveQualityManager {
                     }
                 )
                 val notice = when {
-                    actionNote != null && (bufferChanged || bitrateChanged) -> "⚡ $actionNote (Đệm ${nextBufMs.roundToInt()}ms)"
-                    steppedDownForNextSession -> "📌 $nextSessionNote"
-                    else -> "⚡ $nextSessionNote"
+                    actionNote != null && (bufferChanged || bitrateChanged) -> "$actionNote (Đệm ${nextBufMs.roundToInt()}ms)"
+                    steppedDownForNextSession -> nextSessionNote
+                    else -> nextSessionNote
                 }
 
                 _state.value = current.copy(
@@ -513,14 +517,14 @@ object AdaptiveQualityManager {
 
         val fixedGrade = if (isEn) "SDP Cap (${current.smoothBitrateMbps.toInt()}M)" else "Trần SDP (${current.smoothBitrateMbps.toInt()}M)"
         val fixedSuggestion = if (isEn) {
-            "💡 Device is busy, consider choosing a lower quality level for next session"
+            "Device is busy, consider choosing a lower quality level for next session"
         } else {
-            "💡 Máy hơi quá tải, gợi ý chọn mức trần thấp hơn cho phiên sau"
+            "Máy hơi quá tải, gợi ý chọn mức trần thấp hơn cho phiên sau"
         }
         if (current.qualityGrade != fixedGrade || fixedDecodeSlowHint) {
             _state.value = current.copy(
                 qualityGrade = fixedGrade,
-                qualityNotice = if (fixedDecodeSlowHint) fixedSuggestion else "📌 $nextSessionNote"
+                qualityNotice = if (fixedDecodeSlowHint) fixedSuggestion else nextSessionNote
             )
         }
     }
@@ -537,7 +541,7 @@ object AdaptiveQualityManager {
                 currentStep = step.copy(title = if (isEn) "SDP Cap • ${step.targetBitrateMbps.toInt()} Mbps" else "Trần SDP • ${step.targetBitrateMbps.toInt()} Mbps"),
                 smoothBitrateMbps = step.targetBitrateMbps,
                 smoothBufferMs = step.bufferHintMs.toDouble(),
-                qualityNotice = "📌 $nextSessionNote"
+                qualityNotice = nextSessionNote
             )
             QualityAdapter.applyAdaptiveBitrate(
                 targetBitrateMbps = step.targetBitrateMbps,
@@ -567,7 +571,7 @@ object AdaptiveQualityManager {
         _state.value = current.copy(
             isAutoAdapting = enabled,
             currentStep = updatedStep,
-            qualityNotice = "📌 $nextSessionNote"
+            qualityNotice = nextSessionNote
         )
     }
 }

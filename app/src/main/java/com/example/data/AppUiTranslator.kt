@@ -39,12 +39,12 @@ object AppUiTranslator {
             "More options" to "更多选项",
             "Share & QR Code" to "分享与二维码",
             "Cleared saved login & web data!" to "已清除保存的登录和网页数据！",
-            "🎮 Controller Ready" to "🎮 手柄已就绪",
-            "👆 Touch Controls" to "👆 触控操作",
+            "Controller Ready" to "手柄已就绪",
+            "Touch Controls" to "触控操作",
             "Direct Net" to "直连网络",
             "Auto VPN" to "自动关闭 VPN",
             "4G/5G & Wi-Fi" to "支持 4G/5G 与 Wi-Fi",
-            "⚡ 4G/5G & Wi-Fi Low Lag" to "⚡ 4G/5G 与 Wi-Fi 低延迟优化",
+            "4G/5G & Wi-Fi Low Lag" to "4G/5G 与 Wi-Fi 低延迟优化",
             "Full HD • Smooth 60FPS" to "全高清 1080p • 流畅 60FPS",
             "Free • Instant Play" to "免费畅玩 • 秒开即玩",
             "WebRTC RTT • Tap to switch" to "WebRTC 实时延迟 • 点击切换",
@@ -107,22 +107,22 @@ object AppUiTranslator {
             "Optimize" to "优化设置",
             "Account" to "账号",
             "Region" to "跨区",
-            "Got It • Start Playing 🎮" to "明白了 • 开始游戏 🎮",
+            "Got It • Start Playing" to "明白了 · 开始游戏",
             "Share Ravno App" to "分享 Ravno 应用",
             "Scan QR code or send download link" to "扫描二维码或发送下载链接",
             "QR Code & Link" to "二维码与下载链接",
             "Web Page" to "介绍网页",
             "SCAN QR TO DOWNLOAD" to "扫码下载应用",
-            "🌐 Web Download" to "🌐 网页下载",
-            "📥 Direct APK" to "📥 直接下载 APK",
-            "🌐 Download Web Page" to "🌐 应用介绍与下载网页",
-            "📥 Direct APK File Link" to "📥 APK 安装包直链",
+            "Web Download" to "网页下载",
+            "Direct APK" to "直接下载 APK",
+            "Download Web Page" to "应用介绍与下载网页",
+            "Direct APK File Link" to "APK 安装包直链",
             "Share Link" to "分享链接",
             "Download APK" to "下载 APK",
             "New Update Available" to "发现新版本",
-            "🤖 AI Update Summary" to "🤖 AI 更新内容摘要",
+            "AI Update Summary" to "AI 更新内容摘要",
             "What's new" to "更新内容",
-            "Gyroscope (Right Stick / Racing)" to "🧭 陀螺仪 (右摇杆 / 赛车)",
+            "Gyroscope (Right Stick / Racing)" to "陀螺仪 (右摇杆 / 赛车)",
             "Gyroscope Motion" to "陀螺仪体感",
             "Enable Gyroscope" to "启用陀螺仪",
             "Off by default — turn on for Right Stick aim, racing tilt, or game native." to "默认关闭 — 开启后可用于右摇杆瞄准、赛车转向或游戏原生。",
@@ -154,22 +154,22 @@ object AppUiTranslator {
             "Anti-Shake Deadzone" to "防抖死区",
             "Invert Horizontal Axis" to "反转水平方向 (左 ↔ 右)",
             "Reverse left / right tilt direction" to "反转左右倾斜转向方向",
-            "🎯 Recenter Gyro (0°)" to "🎯 重置陀螺仪中心 (0°)",
+            "Recenter Gyro (0°)" to "重置陀螺仪中心 (0°)",
             "Reset" to "重置",
-            "🎯 Recenter Gyroscope Neutral Pose (0°)" to "🎯 重置陀螺仪中立姿态 (0°)",
-            "🎯 Gyroscope center reset to current posture" to "🎯 已按当前握持姿态重置陀螺仪中心"
+            "Recenter Gyroscope Neutral Pose (0°)" to "重置陀螺仪中立姿态 (0°)",
+            "Gyroscope center reset to current posture" to "已按当前握持姿态重置陀螺仪中心"
         ),
         "ja" to mapOf(
             "Auto Translate" to "自動翻訳",
             "More options" to "その他のオプション",
             "Share & QR Code" to "共有 & QRコード",
             "Cleared saved login & web data!" to "ログイン情報とWebキャッシュを消去しました！",
-            "🎮 Controller Ready" to "🎮 コントローラー準備完了",
-            "👆 Touch Controls" to "👆 タッチ操作",
+            "Controller Ready" to "コントローラー準備完了",
+            "Touch Controls" to "タッチ操作",
             "Direct Net" to "ダイレクト接続",
             "Auto VPN" to "自動VPNオフ",
             "4G/5G & Wi-Fi" to "4G/5G & Wi-Fi 対応",
-            "⚡ 4G/5G & Wi-Fi Low Lag" to "⚡ 4G/5G & Wi-Fi 低遅延モード",
+            "4G/5G & Wi-Fi Low Lag" to "4G/5G & Wi-Fi 低遅延モード",
             "Full HD • Smooth 60FPS" to "Full HD • なめらか 60FPS",
             "Free • Instant Play" to "無料 • すぐにプレイ",
             "WebRTC RTT • Tap to switch" to "WebRTC 遅延 • タップで切替",
@@ -225,20 +225,20 @@ object AppUiTranslator {
             "Optimize" to "最適化",
             "Account" to "アカウント",
             "Region" to "地域解除",
-            "Got It • Start Playing 🎮" to "了解 • ゲームを始める 🎮",
+            "Got It • Start Playing" to "了解 · ゲームを始める",
             "Share Ravno App" to "Ravno アプリを共有",
             "Scan QR code or send download link" to "QRコード読取またはリンクを送信",
             "QR Code & Link" to "QRコード & リンク",
             "Web Page" to "紹介ページ",
             "SCAN QR TO DOWNLOAD" to "QRコードでダウンロード",
-            "🌐 Web Download" to "🌐 Webページ",
-            "📥 Direct APK" to "📥 APK直リンク",
+            "Web Download" to "Webページ",
+            "Direct APK" to "APK直リンク",
             "Share Link" to "リンクを共有",
             "Download APK" to "APKをダウンロード",
             "New Update Available" to "新しいアップデートがあります",
-            "🤖 AI Update Summary" to "🤖 AI アップデート要約",
+            "AI Update Summary" to "AI アップデート要約",
             "What's new" to "更新内容",
-            "Gyroscope (Right Stick / Racing)" to "🧭 ジャイロ (右スティック / レース)",
+            "Gyroscope (Right Stick / Racing)" to "ジャイロ (右スティック / レース)",
             "Gyroscope Motion" to "ジャイロ操作",
             "Enable Gyroscope" to "ジャイロを有効にする",
             "Off by default — turn on for Right Stick aim, racing tilt, or game native." to "初期設定はオフ — 右スティック照準・レース・ゲーム対応に使用。",
@@ -270,22 +270,22 @@ object AppUiTranslator {
             "Anti-Shake Deadzone" to "手ブレ防止デッドゾーン",
             "Invert Horizontal Axis" to "左右を反転 (左 ↔ 右)",
             "Reverse left / right tilt direction" to "左右の傾き方向を反転します",
-            "🎯 Recenter Gyro (0°)" to "🎯 ジャイロ中心をリセット (0°)",
+            "Recenter Gyro (0°)" to "ジャイロ中心をリセット (0°)",
             "Reset" to "リセット",
-            "🎯 Recenter Gyroscope Neutral Pose (0°)" to "🎯 ジャイロ基準位置をリセット (0°)",
-            "🎯 Gyroscope center reset to current posture" to "🎯 現在の持ち方にジャイロ中心を合わせました"
+            "Recenter Gyroscope Neutral Pose (0°)" to "ジャイロ基準位置をリセット (0°)",
+            "Gyroscope center reset to current posture" to "現在の持ち方にジャイロ中心を合わせました"
         ),
         "ko" to mapOf(
             "Auto Translate" to "자동 번역",
             "More options" to "더 보기",
             "Share & QR Code" to "공유 및 QR 코드",
             "Cleared saved login & web data!" to "저장된 로그인 및 웹 데이터를 초기화했습니다!",
-            "🎮 Controller Ready" to "🎮 컨트롤러 준비됨",
-            "👆 Touch Controls" to "👆 터치 컨트롤",
+            "Controller Ready" to "컨트롤러 준비됨",
+            "Touch Controls" to "터치 컨트롤",
             "Direct Net" to "직접 연결",
             "Auto VPN" to "자동 VPN 끄기",
             "4G/5G & Wi-Fi" to "4G/5G 및 Wi-Fi 지원",
-            "⚡ 4G/5G & Wi-Fi Low Lag" to "⚡ 4G/5G 및 Wi-Fi 저지연 최적화",
+            "4G/5G & Wi-Fi Low Lag" to "4G/5G 및 Wi-Fi 저지연 최적화",
             "Full HD • Smooth 60FPS" to "Full HD • 부드러운 60FPS",
             "Free • Instant Play" to "무료 • 즉시 플레이",
             "WebRTC RTT • Tap to switch" to "WebRTC 지연 • 탭하여 서버 변경",
@@ -341,20 +341,20 @@ object AppUiTranslator {
             "Optimize" to "최적화",
             "Account" to "계정",
             "Region" to "지역 해제",
-            "Got It • Start Playing 🎮" to "확인 • 게임 시작 🎮",
+            "Got It • Start Playing" to "확인 · 게임 시작",
             "Share Ravno App" to "Ravno 앱 공유",
             "Scan QR code or send download link" to "QR 코드 스캔 또는 다운로드 링크 전송",
             "QR Code & Link" to "QR 코드 및 링크",
             "Web Page" to "소개 웹페이지",
             "SCAN QR TO DOWNLOAD" to "QR 스캔하여 다운로드",
-            "🌐 Web Download" to "🌐 웹 다운로드",
-            "📥 Direct APK" to "📥 APK 직접 링크",
+            "Web Download" to "웹 다운로드",
+            "Direct APK" to "APK 직접 링크",
             "Share Link" to "링크 공유",
             "Download APK" to "APK 다운로드",
             "New Update Available" to "새 업데이트 사용 가능",
-            "🤖 AI Update Summary" to "🤖 AI 업데이트 요약",
+            "AI Update Summary" to "AI 업데이트 요약",
             "What's new" to "새로운 기능",
-            "Gyroscope (Right Stick / Racing)" to "🧭 자이로스코프 (오른쪽 스틱 / 레이싱)",
+            "Gyroscope (Right Stick / Racing)" to "자이로스코프 (오른쪽 스틱 / 레이싱)",
             "Gyroscope Motion" to "자이로 모션",
             "Enable Gyroscope" to "자이로스코프 켜기",
             "Off by default — turn on for Right Stick aim, racing tilt, or game native." to "기본값 꺼짐 — 오른쪽 스틱 조준, 레이싱, 게임 지원에 사용.",
@@ -386,22 +386,22 @@ object AppUiTranslator {
             "Anti-Shake Deadzone" to "손떨림 방지 데드존",
             "Invert Horizontal Axis" to "좌우 방향 반전 (좌 ↔ 우)",
             "Reverse left / right tilt direction" to "좌/우 기울기 조향 방향 반전",
-            "🎯 Recenter Gyro (0°)" to "🎯 자이로 중심 재설정 (0°)",
+            "Recenter Gyro (0°)" to "자이로 중심 재설정 (0°)",
             "Reset" to "초기화",
-            "🎯 Recenter Gyroscope Neutral Pose (0°)" to "🎯 자이로 기준 자세 재설정 (0°)",
-            "🎯 Gyroscope center reset to current posture" to "🎯 현재 자세로 자이로 중심을 재설정했습니다"
+            "Recenter Gyroscope Neutral Pose (0°)" to "자이로 기준 자세 재설정 (0°)",
+            "Gyroscope center reset to current posture" to "현재 자세로 자이로 중심을 재설정했습니다"
         ),
         "es" to mapOf(
             "Auto Translate" to "Traducción automática",
             "More options" to "Más opciones",
             "Share & QR Code" to "Compartir y código QR",
             "Cleared saved login & web data!" to "¡Datos de inicio de sesión y caché borrados!",
-            "🎮 Controller Ready" to "🎮 Mando listo",
-            "👆 Touch Controls" to "👆 Controles táctiles",
+            "Controller Ready" to "Mando listo",
+            "Touch Controls" to "Controles táctiles",
             "Direct Net" to "Red directa",
             "Auto VPN" to "Apagar VPN auto",
             "4G/5G & Wi-Fi" to "4G/5G y Wi-Fi",
-            "⚡ 4G/5G & Wi-Fi Low Lag" to "⚡ Baja latencia 4G/5G y Wi-Fi",
+            "4G/5G & Wi-Fi Low Lag" to "Baja latencia 4G/5G y Wi-Fi",
             "Full HD • Smooth 60FPS" to "Full HD • 60FPS fluidos",
             "Free • Instant Play" to "Gratis • Juego instantáneo",
             "WebRTC RTT • Tap to switch" to "RTT WebRTC • Toca para cambiar",
@@ -449,7 +449,7 @@ object AppUiTranslator {
             "Help" to "Ayuda",
             "Account" to "Cuenta",
             "Region" to "Región",
-            "Got It • Start Playing 🎮" to "Entendido • Jugar 🎮",
+            "Got It • Start Playing" to "Entendido · Jugar",
             "Share Ravno App" to "Compartir aplicación Ravno",
             "Scan QR code or send download link" to "Escanea el código QR o envía el enlace",
             "QR Code & Link" to "Código QR y Enlace",
@@ -458,9 +458,9 @@ object AppUiTranslator {
             "Share Link" to "Compartir enlace",
             "Download APK" to "Descargar APK",
             "New Update Available" to "Nueva actualización disponible",
-            "🤖 AI Update Summary" to "🤖 Resumen de actualización (IA)",
+            "AI Update Summary" to "Resumen de actualización (IA)",
             "What's new" to "Novedades",
-            "Gyroscope (Right Stick / Racing)" to "🧭 Giroscopio (Stick R / Carreras)",
+            "Gyroscope (Right Stick / Racing)" to "Giroscopio (Stick R / Carreras)",
             "Gyroscope Motion" to "Giroscopio",
             "Enable Gyroscope" to "Activar giroscopio",
             "Off by default — turn on for Right Stick aim, racing tilt, or game native." to "Apagado por defecto — actívalo para apuntar (R), carreras o nativo.",
@@ -492,22 +492,22 @@ object AppUiTranslator {
             "Anti-Shake Deadzone" to "Zona muerta antivibración",
             "Invert Horizontal Axis" to "Invertir eje horizontal (Izq. ↔ Der.)",
             "Reverse left / right tilt direction" to "Invierte la dirección de inclinación izquierda / derecha",
-            "🎯 Recenter Gyro (0°)" to "🎯 Recentrar giroscopio (0°)",
+            "Recenter Gyro (0°)" to "Recentrar giroscopio (0°)",
             "Reset" to "Reiniciar",
-            "🎯 Recenter Gyroscope Neutral Pose (0°)" to "🎯 Recentrar posición neutra (0°)",
-            "🎯 Gyroscope center reset to current posture" to "🎯 Centro del giroscopio ajustado a la postura actual"
+            "Recenter Gyroscope Neutral Pose (0°)" to "Recentrar posición neutra (0°)",
+            "Gyroscope center reset to current posture" to "Centro del giroscopio ajustado a la postura actual"
         ),
         "pt" to mapOf(
             "Auto Translate" to "Tradução automática",
             "More options" to "Mais opções",
             "Share & QR Code" to "Compartilhar e QR Code",
             "Cleared saved login & web data!" to "Dados de login e cache limpos!",
-            "🎮 Controller Ready" to "🎮 Controle pronto",
-            "👆 Touch Controls" to "👆 Controles de toque",
+            "Controller Ready" to "Controle pronto",
+            "Touch Controls" to "Controles de toque",
             "Direct Net" to "Rede direta",
             "Auto VPN" to "Desligar VPN auto",
             "4G/5G & Wi-Fi" to "4G/5G e Wi-Fi",
-            "⚡ 4G/5G & Wi-Fi Low Lag" to "⚡ Baixa latência 4G/5G e Wi-Fi",
+            "4G/5G & Wi-Fi Low Lag" to "Baixa latência 4G/5G e Wi-Fi",
             "Full HD • Smooth 60FPS" to "Full HD • 60FPS suaves",
             "Free • Instant Play" to "Grátis • Jogar agora",
             "WebRTC RTT • Tap to switch" to "RTT WebRTC • Toque para trocar",
@@ -551,7 +551,7 @@ object AppUiTranslator {
             "Help" to "Ajuda",
             "Account" to "Conta",
             "Region" to "Região",
-            "Got It • Start Playing 🎮" to "Entendi • Começar a Jogar 🎮",
+            "Got It • Start Playing" to "Entendi · Começar a Jogar",
             "Share Ravno App" to "Compartilhar aplicativo Ravno",
             "Scan QR code or send download link" to "Escaneie o QR Code ou envie o link",
             "QR Code & Link" to "QR Code e Link",
@@ -560,9 +560,9 @@ object AppUiTranslator {
             "Share Link" to "Compartilhar Link",
             "Download APK" to "Baixar APK",
             "New Update Available" to "Nova atualização disponível",
-            "🤖 AI Update Summary" to "🤖 Resumo da atualização (IA)",
+            "AI Update Summary" to "Resumo da atualização (IA)",
             "What's new" to "Novidades",
-            "Gyroscope (Right Stick / Racing)" to "🧭 Giroscópio (Analógico R / Corrida)",
+            "Gyroscope (Right Stick / Racing)" to "Giroscópio (Analógico R / Corrida)",
             "Gyroscope Motion" to "Giroscópio",
             "Enable Gyroscope" to "Ativar giroscópio",
             "Off by default — turn on for Right Stick aim, racing tilt, or game native." to "Desativado por padrão — ative para mirar (R), corrida ou nativo.",
@@ -594,22 +594,22 @@ object AppUiTranslator {
             "Anti-Shake Deadzone" to "Zona morta antitremor",
             "Invert Horizontal Axis" to "Inverter eixo horizontal (Esq. ↔ Dir.)",
             "Reverse left / right tilt direction" to "Inverte a direção de inclinação esquerda / direita",
-            "🎯 Recenter Gyro (0°)" to "🎯 Recentralizar giroscópio (0°)",
+            "Recenter Gyro (0°)" to "Recentralizar giroscópio (0°)",
             "Reset" to "Redefinir",
-            "🎯 Recenter Gyroscope Neutral Pose (0°)" to "🎯 Recentralizar posição neutra (0°)",
-            "🎯 Gyroscope center reset to current posture" to "🎯 Centro do giroscópio ajustado à postura atual"
+            "Recenter Gyroscope Neutral Pose (0°)" to "Recentralizar posição neutra (0°)",
+            "Gyroscope center reset to current posture" to "Centro do giroscópio ajustado à postura atual"
         ),
         "fr" to mapOf(
             "Auto Translate" to "Traduction auto",
             "More options" to "Plus d'options",
             "Share & QR Code" to "Partager & QR Code",
             "Cleared saved login & web data!" to "Données de connexion et cache effacés !",
-            "🎮 Controller Ready" to "🎮 Manette prête",
-            "👆 Touch Controls" to "👆 Commandes tactiles",
+            "Controller Ready" to "Manette prête",
+            "Touch Controls" to "Commandes tactiles",
             "Direct Net" to "Réseau direct",
             "Auto VPN" to "Arrêt VPN auto",
             "4G/5G & Wi-Fi" to "4G/5G & Wi-Fi",
-            "⚡ 4G/5G & Wi-Fi Low Lag" to "⚡ Faible latence 4G/5G & Wi-Fi",
+            "4G/5G & Wi-Fi Low Lag" to "Faible latence 4G/5G & Wi-Fi",
             "Full HD • Smooth 60FPS" to "Full HD • 60FPS fluides",
             "Free • Instant Play" to "Gratuit • Jeu instantané",
             "WebRTC RTT • Tap to switch" to "RTT WebRTC • Appuyer pour changer",
@@ -653,7 +653,7 @@ object AppUiTranslator {
             "Help" to "Aide",
             "Account" to "Compte",
             "Region" to "Région",
-            "Got It • Start Playing 🎮" to "Compris • Jouer 🎮",
+            "Got It • Start Playing" to "Compris · Jouer",
             "Share Ravno App" to "Partager l'application Ravno",
             "Scan QR code or send download link" to "Scannez le QR code ou envoyez le lien",
             "QR Code & Link" to "QR Code & Lien",
@@ -662,9 +662,9 @@ object AppUiTranslator {
             "Share Link" to "Partager le lien",
             "Download APK" to "Télécharger APK",
             "New Update Available" to "Nouvelle mise à jour disponible",
-            "🤖 AI Update Summary" to "🤖 Résumé de la mise à jour (IA)",
+            "AI Update Summary" to "Résumé de la mise à jour (IA)",
             "What's new" to "Nouveautés",
-            "Gyroscope (Right Stick / Racing)" to "🧭 Gyroscope (Stick Droit / Course)",
+            "Gyroscope (Right Stick / Racing)" to "Gyroscope (Stick Droit / Course)",
             "Gyroscope Motion" to "Gyroscope",
             "Enable Gyroscope" to "Activer le gyroscope",
             "Off by default — turn on for Right Stick aim, racing tilt, or game native." to "Désactivé par défaut — activez pour viser (R), course ou natif.",
@@ -696,22 +696,22 @@ object AppUiTranslator {
             "Anti-Shake Deadzone" to "Zone morte anti-tremblement",
             "Invert Horizontal Axis" to "Inverser l'axe horizontal (G ↔ D)",
             "Reverse left / right tilt direction" to "Inverse le sens d'inclinaison gauche / droite",
-            "🎯 Recenter Gyro (0°)" to "🎯 Recentrer le gyroscope (0°)",
+            "Recenter Gyro (0°)" to "Recentrer le gyroscope (0°)",
             "Reset" to "Réinit.",
-            "🎯 Recenter Gyroscope Neutral Pose (0°)" to "🎯 Recentrer la position neutre (0°)",
-            "🎯 Gyroscope center reset to current posture" to "🎯 Centre du gyroscope réinitialisé sur la position actuelle"
+            "Recenter Gyroscope Neutral Pose (0°)" to "Recentrer la position neutre (0°)",
+            "Gyroscope center reset to current posture" to "Centre du gyroscope réinitialisé sur la position actuelle"
         ),
         "de" to mapOf(
             "Auto Translate" to "Auto-Übersetzung",
             "More options" to "Weitere Optionen",
             "Share & QR Code" to "Teilen & QR-Code",
             "Cleared saved login & web data!" to "Anmeldedaten & Web-Cache gelöscht!",
-            "🎮 Controller Ready" to "🎮 Controller bereit",
-            "👆 Touch Controls" to "👆 Touch-Steuerung",
+            "Controller Ready" to "Controller bereit",
+            "Touch Controls" to "Touch-Steuerung",
             "Direct Net" to "Direktnetz",
             "Auto VPN" to "Auto-VPN Aus",
             "4G/5G & Wi-Fi" to "4G/5G & WLAN",
-            "⚡ 4G/5G & Wi-Fi Low Lag" to "⚡ Niedrige Latenz 4G/5G & WLAN",
+            "4G/5G & Wi-Fi Low Lag" to "Niedrige Latenz 4G/5G & WLAN",
             "Full HD • Smooth 60FPS" to "Full HD • Flüssige 60FPS",
             "Free • Instant Play" to "Kostenlos • Sofort spielen",
             "WebRTC RTT • Tap to switch" to "WebRTC RTT • Tippen zum Wechseln",
@@ -755,7 +755,7 @@ object AppUiTranslator {
             "Help" to "Hilfe",
             "Account" to "Konto",
             "Region" to "Region",
-            "Got It • Start Playing 🎮" to "Verstanden • Spielen 🎮",
+            "Got It • Start Playing" to "Verstanden · Spielen",
             "Share Ravno App" to "Ravno App teilen",
             "Scan QR code or send download link" to "QR-Code scannen oder Download-Link senden",
             "QR Code & Link" to "QR-Code & Link",
@@ -764,9 +764,9 @@ object AppUiTranslator {
             "Share Link" to "Link teilen",
             "Download APK" to "APK herunterladen",
             "New Update Available" to "Neues Update verfügbar",
-            "🤖 AI Update Summary" to "🤖 KI-Update-Zusammenfassung",
+            "AI Update Summary" to "KI-Update-Zusammenfassung",
             "What's new" to "Neuigkeiten",
-            "Gyroscope (Right Stick / Racing)" to "🧭 Gyroskop (Rechter Stick / Rennen)",
+            "Gyroscope (Right Stick / Racing)" to "Gyroskop (Rechter Stick / Rennen)",
             "Gyroscope Motion" to "Gyroskop",
             "Enable Gyroscope" to "Gyroskop aktivieren",
             "Off by default — turn on for Right Stick aim, racing tilt, or game native." to "Standardmäßig aus — aktivieren für Zielen (R), Rennen oder Nativ.",
@@ -798,22 +798,22 @@ object AppUiTranslator {
             "Anti-Shake Deadzone" to "Anti-Wackel-Totzone",
             "Invert Horizontal Axis" to "Horizontale Achse umkehren (L ↔ R)",
             "Reverse left / right tilt direction" to "Kehrt die Links/Rechts-Neigungsrichtung um",
-            "🎯 Recenter Gyro (0°)" to "🎯 Gyroskop zentrieren (0°)",
+            "Recenter Gyro (0°)" to "Gyroskop zentrieren (0°)",
             "Reset" to "Zurücksetzen",
-            "🎯 Recenter Gyroscope Neutral Pose (0°)" to "🎯 Nullstellung neu zentrieren (0°)",
-            "🎯 Gyroscope center reset to current posture" to "🎯 Gyroskop-Mitte auf aktuelle Haltung zurückgesetzt"
+            "Recenter Gyroscope Neutral Pose (0°)" to "Nullstellung neu zentrieren (0°)",
+            "Gyroscope center reset to current posture" to "Gyroskop-Mitte auf aktuelle Haltung zurückgesetzt"
         ),
         "ru" to mapOf(
             "Auto Translate" to "Автоперевод",
             "More options" to "Ещё",
             "Share & QR Code" to "Поделиться и QR-код",
             "Cleared saved login & web data!" to "Данные входа и кэш очищены!",
-            "🎮 Controller Ready" to "🎮 Геймпад готов",
-            "👆 Touch Controls" to "👆 Сенсорное управление",
+            "Controller Ready" to "Геймпад готов",
+            "Touch Controls" to "Сенсорное управление",
             "Direct Net" to "Прямая сеть",
             "Auto VPN" to "Авто-откл. VPN",
             "4G/5G & Wi-Fi" to "4G/5G и Wi-Fi",
-            "⚡ 4G/5G & Wi-Fi Low Lag" to "⚡ Низкий пинг 4G/5G и Wi-Fi",
+            "4G/5G & Wi-Fi Low Lag" to "Низкий пинг 4G/5G и Wi-Fi",
             "Full HD • Smooth 60FPS" to "Full HD • Плавные 60 FPS",
             "Free • Instant Play" to "Бесплатно • Быстрый старт",
             "WebRTC RTT • Tap to switch" to "RTT WebRTC • Нажмите для смены",
@@ -857,7 +857,7 @@ object AppUiTranslator {
             "Help" to "Помощь",
             "Account" to "Аккаунт",
             "Region" to "Регион",
-            "Got It • Start Playing 🎮" to "Понятно • Играть 🎮",
+            "Got It • Start Playing" to "Понятно · Играть",
             "Share Ravno App" to "Поделиться Ravno",
             "Scan QR code or send download link" to "Отсканируйте QR-код или отправьте ссылку",
             "QR Code & Link" to "QR-код и ссылка",
@@ -866,9 +866,9 @@ object AppUiTranslator {
             "Share Link" to "Поделиться ссылкой",
             "Download APK" to "Скачать APK",
             "New Update Available" to "Доступно обновление",
-            "🤖 AI Update Summary" to "🤖 ИИ-описание обновления",
+            "AI Update Summary" to "ИИ-описание обновления",
             "What's new" to "Что нового",
-            "Gyroscope (Right Stick / Racing)" to "🧭 Гироскоп (Правый стик / Гонки)",
+            "Gyroscope (Right Stick / Racing)" to "Гироскоп (Правый стик / Гонки)",
             "Gyroscope Motion" to "Гироскоп",
             "Enable Gyroscope" to "Включить гироскоп",
             "Off by default — turn on for Right Stick aim, racing tilt, or game native." to "По умолчанию выкл. — прицел (R), гонки или нативный режим.",
@@ -900,22 +900,22 @@ object AppUiTranslator {
             "Anti-Shake Deadzone" to "Мёртвая зона против дрожания",
             "Invert Horizontal Axis" to "Инверсия горизонтали (Лево ↔ Право)",
             "Reverse left / right tilt direction" to "Инвертировать направление наклона влево / вправо",
-            "🎯 Recenter Gyro (0°)" to "🎯 Центрировать гироскоп (0°)",
+            "Recenter Gyro (0°)" to "Центрировать гироскоп (0°)",
             "Reset" to "Сброс",
-            "🎯 Recenter Gyroscope Neutral Pose (0°)" to "🎯 Сбросить центр гироскопа (0°)",
-            "🎯 Gyroscope center reset to current posture" to "🎯 Центр гироскопа установлен по текущему положению"
+            "Recenter Gyroscope Neutral Pose (0°)" to "Сбросить центр гироскопа (0°)",
+            "Gyroscope center reset to current posture" to "Центр гироскопа установлен по текущему положению"
         ),
         "th" to mapOf(
             "Auto Translate" to "แปลภาษาอัตโนมัติ",
             "More options" to "ตัวเลือกเพิ่มเติม",
             "Share & QR Code" to "แชร์ & คิวอาร์โค้ด",
             "Cleared saved login & web data!" to "ล้างข้อมูลการเข้าสู่ระบบและแคชเรียบร้อย!",
-            "🎮 Controller Ready" to "🎮 จอยพร้อมใช้งาน",
-            "👆 Touch Controls" to "👆 ปุ่มสัมผัส",
+            "Controller Ready" to "จอยพร้อมใช้งาน",
+            "Touch Controls" to "ปุ่มสัมผัส",
             "Direct Net" to "เน็ตตรง",
             "Auto VPN" to "ปิด VPN อัตโนมัติ",
             "4G/5G & Wi-Fi" to "รองรับ 4G/5G & Wi-Fi",
-            "⚡ 4G/5G & Wi-Fi Low Lag" to "⚡ ลดแล็ก 4G/5G และ Wi-Fi",
+            "4G/5G & Wi-Fi Low Lag" to "ลดแล็ก 4G/5G และ Wi-Fi",
             "Full HD • Smooth 60FPS" to "Full HD • ลื่นไหล 60FPS",
             "Free • Instant Play" to "เล่นฟรี • เข้าเกมทันที",
             "WebRTC RTT • Tap to switch" to "WebRTC RTT • แตะเพื่อเปลี่ยน",
@@ -959,7 +959,7 @@ object AppUiTranslator {
             "Help" to "แก้ไขปัญหา",
             "Account" to "บัญชี",
             "Region" to "ปลดล็อกโซน",
-            "Got It • Start Playing 🎮" to "เข้าใจแล้ว • เริ่มเล่นเกม 🎮",
+            "Got It • Start Playing" to "เข้าใจแล้ว · เริ่มเล่นเกม",
             "Share Ravno App" to "แชร์แอป Ravno",
             "Scan QR code or send download link" to "สแกน QR Code หรือส่งลิงก์ดาวน์โหลด",
             "QR Code & Link" to "คิวอาร์โค้ด & ลิงก์",
@@ -968,9 +968,9 @@ object AppUiTranslator {
             "Share Link" to "แชร์ลิงก์",
             "Download APK" to "ดาวน์โหลด APK",
             "New Update Available" to "มีอัปเดตเวอร์ชันใหม่",
-            "🤖 AI Update Summary" to "🤖 สรุปการอัปเดตโดย AI",
+            "AI Update Summary" to "สรุปการอัปเดตโดย AI",
             "What's new" to "มีอะไรใหม่",
-            "Gyroscope (Right Stick / Racing)" to "🧭 ไจโรสโคป (ก้านขวา / แข่งรถ)",
+            "Gyroscope (Right Stick / Racing)" to "ไจโรสโคป (ก้านขวา / แข่งรถ)",
             "Gyroscope Motion" to "ไจโรสโคป",
             "Enable Gyroscope" to "เปิดใช้งานไจโรสโคป",
             "Off by default — turn on for Right Stick aim, racing tilt, or game native." to "ปิดเป็นค่าเริ่มต้น — เปิดเพื่อเล็งก้านขวา แข่งรถ หรือตามเกม",
@@ -1002,22 +1002,22 @@ object AppUiTranslator {
             "Anti-Shake Deadzone" to "เดดโซนกันมือสั่น",
             "Invert Horizontal Axis" to "กลับทิศแนวนอน (ซ้าย ↔ ขวา)",
             "Reverse left / right tilt direction" to "กลับทิศทางการเอียงซ้าย / ขวา",
-            "🎯 Recenter Gyro (0°)" to "🎯 รีเซ็ตจุดศูนย์กลางไจโร (0°)",
+            "Recenter Gyro (0°)" to "รีเซ็ตจุดศูนย์กลางไจโร (0°)",
             "Reset" to "รีเซ็ต",
-            "🎯 Recenter Gyroscope Neutral Pose (0°)" to "🎯 ตั้งค่าศูนย์กลางไจโรใหม่ (0°)",
-            "🎯 Gyroscope center reset to current posture" to "🎯 ตั้งจุดศูนย์กลางไจโรตามท่าถือปัจจุบันแล้ว"
+            "Recenter Gyroscope Neutral Pose (0°)" to "ตั้งค่าศูนย์กลางไจโรใหม่ (0°)",
+            "Gyroscope center reset to current posture" to "ตั้งจุดศูนย์กลางไจโรตามท่าถือปัจจุบันแล้ว"
         ),
         "id" to mapOf(
             "Auto Translate" to "Terjemahan Otomatis",
             "More options" to "Opsi lainnya",
             "Share & QR Code" to "Bagikan & Kode QR",
             "Cleared saved login & web data!" to "Data login & cache web telah dihapus!",
-            "🎮 Controller Ready" to "🎮 Stik Siap",
-            "👆 Touch Controls" to "👆 Kontrol Sentuh",
+            "Controller Ready" to "Stik Siap",
+            "Touch Controls" to "Kontrol Sentuh",
             "Direct Net" to "Jaringan Langsung",
             "Auto VPN" to "Matikan VPN Otomatis",
             "4G/5G & Wi-Fi" to "4G/5G & Wi-Fi",
-            "⚡ 4G/5G & Wi-Fi Low Lag" to "⚡ Latensi Rendah 4G/5G & Wi-Fi",
+            "4G/5G & Wi-Fi Low Lag" to "Latensi Rendah 4G/5G & Wi-Fi",
             "Full HD • Smooth 60FPS" to "Full HD • 60FPS Mulus",
             "Free • Instant Play" to "Gratis • Main Instan",
             "WebRTC RTT • Tap to switch" to "WebRTC RTT • Ketuk untuk ganti",
@@ -1061,7 +1061,7 @@ object AppUiTranslator {
             "Help" to "Bantuan",
             "Account" to "Akun",
             "Region" to "Wilayah",
-            "Got It • Start Playing 🎮" to "Mengerti • Mulai Main 🎮",
+            "Got It • Start Playing" to "Mengerti · Mulai Main",
             "Share Ravno App" to "Bagikan Aplikasi Ravno",
             "Scan QR code or send download link" to "Pindai kode QR atau kirim tautan unduhan",
             "QR Code & Link" to "Kode QR & Tautan",
@@ -1070,9 +1070,9 @@ object AppUiTranslator {
             "Share Link" to "Bagikan Tautan",
             "Download APK" to "Unduh APK",
             "New Update Available" to "Pembaruan Baru Tersedia",
-            "🤖 AI Update Summary" to "🤖 Ringkasan Pembaruan (AI)",
+            "AI Update Summary" to "Ringkasan Pembaruan (AI)",
             "What's new" to "Apa yang baru",
-            "Gyroscope (Right Stick / Racing)" to "🧭 Giroskop (Stik Kanan / Balapan)",
+            "Gyroscope (Right Stick / Racing)" to "Giroskop (Stik Kanan / Balapan)",
             "Gyroscope Motion" to "Giroskop",
             "Enable Gyroscope" to "Aktifkan Giroskop",
             "Off by default — turn on for Right Stick aim, racing tilt, or game native." to "Mati secara default — aktifkan untuk bidik (R), balapan, atau bawaan.",
@@ -1104,10 +1104,10 @@ object AppUiTranslator {
             "Anti-Shake Deadzone" to "Deadzone Antiguncangan",
             "Invert Horizontal Axis" to "Balik Sumbu Horizontal (Kiri ↔ Kanan)",
             "Reverse left / right tilt direction" to "Membalik arah miring kiri / kanan",
-            "🎯 Recenter Gyro (0°)" to "🎯 Pusatkan Ulang Giroskop (0°)",
+            "Recenter Gyro (0°)" to "Pusatkan Ulang Giroskop (0°)",
             "Reset" to "Reset",
-            "🎯 Recenter Gyroscope Neutral Pose (0°)" to "🎯 Pusatkan Ulang Posisi Netral (0°)",
-            "🎯 Gyroscope center reset to current posture" to "🎯 Pusat giroskop diatur ulang ke posisi saat ini"
+            "Recenter Gyroscope Neutral Pose (0°)" to "Pusatkan Ulang Posisi Netral (0°)",
+            "Gyroscope center reset to current posture" to "Pusat giroskop diatur ulang ke posisi saat ini"
         )
     )
     }
@@ -1222,51 +1222,67 @@ object AppUiTranslator {
                 else -> en
             }
         }
-        if (en.startsWith("❤️ Favorites (")) {
-            val count = en.removePrefix("❤️ Favorites ")
+        if (en.startsWith("♥ Favorites (")) {
+            val count = en.removePrefix("♥ Favorites ")
             return when (lang) {
-                "zh" -> "❤️ 收藏 $count"
-                "ja" -> "❤️ お気に入り $count"
-                "ko" -> "❤️ 즐겨찾기 $count"
-                "es" -> "❤️ Favoritos $count"
-                "pt" -> "❤️ Favoritos $count"
-                "fr" -> "❤️ Favoris $count"
-                "de" -> "❤️ Favoriten $count"
-                "ru" -> "❤️ Избранное $count"
-                "th" -> "❤️ รายการโปรด $count"
-                "id" -> "❤️ Favorit $count"
+                "zh" -> "♥ 收藏 $count"
+                "ja" -> "♥ お気に入り $count"
+                "ko" -> "♥ 즐겨찾기 $count"
+                "es" -> "♥ Favoritos $count"
+                "pt" -> "♥ Favoritos $count"
+                "fr" -> "♥ Favoris $count"
+                "de" -> "♥ Favoriten $count"
+                "ru" -> "♥ Избранное $count"
+                "th" -> "♥ รายการโปรด $count"
+                "id" -> "♥ Favorit $count"
                 else -> en
             }
         }
-        if (en.startsWith("🔥 Xbox Popular (")) {
-            val count = en.removePrefix("🔥 Xbox Popular ")
+        if (en.startsWith("Xbox Popular (")) {
+            val count = en.removePrefix("Xbox Popular ")
             return when (lang) {
-                "zh" -> "🔥 Xbox 热门 $count"
-                "ja" -> "🔥 Xbox 人気 $count"
-                "ko" -> "🔥 Xbox 인기 $count"
-                "es" -> "🔥 Populares Xbox $count"
-                "pt" -> "🔥 Populares Xbox $count"
-                "fr" -> "🔥 Populaires Xbox $count"
-                "de" -> "🔥 Xbox Beliebt $count"
-                "ru" -> "🔥 Популярное $count"
-                "th" -> "🔥 ยอดนิยม $count"
-                "id" -> "🔥 Populer $count"
+                "zh" -> "Xbox 热门 $count"
+                "ja" -> "Xbox 人気 $count"
+                "ko" -> "Xbox 인기 $count"
+                "es" -> "Populares Xbox $count"
+                "pt" -> "Populares Xbox $count"
+                "fr" -> "Populaires Xbox $count"
+                "de" -> "Xbox Beliebt $count"
+                "ru" -> "Популярное $count"
+                "th" -> "ยอดนิยม $count"
+                "id" -> "Populer $count"
                 else -> en
             }
         }
-        if (en.startsWith("🆕 New on Cloud (")) {
-            val count = en.removePrefix("🆕 New on Cloud ")
+        if (en.startsWith("New on Cloud (")) {
+            val count = en.removePrefix("New on Cloud ")
             return when (lang) {
-                "zh" -> "🆕 最新上架 $count"
-                "ja" -> "🆕 新着クラウド $count"
-                "ko" -> "🆕 신규 추가 $count"
-                "es" -> "🆕 Nuevos $count"
-                "pt" -> "🆕 Novos $count"
-                "fr" -> "🆕 Nouveautés $count"
-                "de" -> "🆕 Neu in der Cloud $count"
-                "ru" -> "🆕 Новинки $count"
-                "th" -> "🆕 มาใหม่ $count"
-                "id" -> "🆕 Baru di Cloud $count"
+                "zh" -> "最新上架 $count"
+                "ja" -> "新着クラウド $count"
+                "ko" -> "신규 추가 $count"
+                "es" -> "Nuevos $count"
+                "pt" -> "Novos $count"
+                "fr" -> "Nouveautés $count"
+                "de" -> "Neu in der Cloud $count"
+                "ru" -> "Новинки $count"
+                "th" -> "มาใหม่ $count"
+                "id" -> "Baru di Cloud $count"
+                else -> en
+            }
+        }
+        if (en.startsWith("↑ Update ")) {
+            val ver = en.removePrefix("↑ Update ")
+            return when (lang) {
+                "zh" -> "↑ 新版本 $ver"
+                "ja" -> "↑ 更新 $ver"
+                "ko" -> "↑ 업데이트 $ver"
+                "es" -> "↑ Actualización $ver"
+                "pt" -> "↑ Atualização $ver"
+                "fr" -> "↑ Mise à jour $ver"
+                "de" -> "↑ Update $ver"
+                "ru" -> "↑ Обновление $ver"
+                "th" -> "↑ อัปเดต $ver"
+                "id" -> "↑ Pembaruan $ver"
                 else -> en
             }
         }
@@ -1343,11 +1359,11 @@ object AppUiTranslator {
                 else -> en
             }
             "Third-party public servers • Use for Xbox region unlock only, not for sensitive accounts/data.",
-            "⚠️ Public proxies: use for Xbox unlock only, not sensitive data." -> return when (lang) {
-                "zh" -> "⚠️ 公共节点仅用于解锁 Xbox 地区，请勿传输敏感数据。"; "ja" -> "⚠️ 公開サーバーはXboxの地域解除のみに使用し、機密通信は避けてください。"; "ko" -> "⚠️ 공개 서버는 Xbox 지역 해제용으로만 사용하고 민감한 정보는 피하세요."
-                "es" -> "⚠️ Proxies públicos: solo para desbloquear Xbox, no para datos sensibles."; "pt" -> "⚠️ Proxies públicos: use apenas para desbloquear o Xbox, não dados sensíveis."
-                "fr" -> "⚠️ Proxys publics : uniquement pour débloquer Xbox, pas pour données sensibles."; "de" -> "⚠️ Öffentliche Proxys: nur zur Xbox-Regionsfreischaltung nutzen."
-                "ru" -> "⚠️ Публичные прокси: только для разблокировки Xbox, не для важных данных."; "th" -> "⚠️ พร็อกซีสาธารณะ: ใช้ปลดล็อกโซน Xbox เท่านั้น อย่าใช้กับข้อมูลสำคัญ"; "id" -> "⚠️ Proxy publik: gunakan hanya untuk buka wilayah Xbox, bukan data sensitif."
+            "Public proxies: use for Xbox unlock only, not sensitive data." -> return when (lang) {
+                "zh" -> "! 公共节点仅用于解锁 Xbox 地区，请勿传输敏感数据。"; "ja" -> "! 公開サーバーはXboxの地域解除のみに使用し、機密通信は避けてください。"; "ko" -> "! 공개 서버는 Xbox 지역 해제용으로만 사용하고 민감한 정보는 피하세요."
+                "es" -> "! Proxies públicos: solo para desbloquear Xbox, no para datos sensibles."; "pt" -> "! Proxies públicos: use apenas para desbloquear o Xbox, não dados sensíveis."
+                "fr" -> "! Proxys publics : uniquement pour débloquer Xbox, pas pour données sensibles."; "de" -> "! Öffentliche Proxys: nur zur Xbox-Regionsfreischaltung nutzen."
+                "ru" -> "! Публичные прокси: только для разблокировки Xbox, не для важных данных."; "th" -> "! พร็อกซีสาธารณะ: ใช้ปลดล็อกโซน Xbox เท่านั้น อย่าใช้กับข้อมูลสำคัญ"; "id" -> "! Proxy publik: gunakan hanya untuk buka wilayah Xbox, bukan data sensitif."
                 else -> en
             }
             "Untested unlock", "Untested" -> return when (lang) {
@@ -1415,9 +1431,9 @@ object AppUiTranslator {
                 "fr" -> "Instable"; "de" -> "Instabil"; "ru" -> "Нестабильно"; "th" -> "ไม่เสถียร"; "id" -> "Tidak stabil"
                 else -> en
             }
-            "⚡ Smart Server Selection" -> return when (lang) {
-                "zh" -> "⚡ 智能节点选择算法"; "ja" -> "⚡ スマートサーバー選択"; "ko" -> "⚡ 스마트 서버 자동 선택"; "es" -> "⚡ Selección inteligente"; "pt" -> "⚡ Seleção inteligente"
-                "fr" -> "⚡ Sélection intelligente"; "de" -> "⚡ Intelligente Serverwahl"; "ru" -> "⚡ Умный выбор сервера"; "th" -> "⚡ เลือกเซิร์ฟเวอร์อัจฉริยะ"; "id" -> "⚡ Pilihan Server Pintar"
+            "Smart Server Selection" -> return when (lang) {
+                "zh" -> "智能节点选择算法"; "ja" -> "スマートサーバー選択"; "ko" -> "스마트 서버 자동 선택"; "es" -> "Selección inteligente"; "pt" -> "Seleção inteligente"
+                "fr" -> "Sélection intelligente"; "de" -> "Intelligente Serverwahl"; "ru" -> "Умный выбор сервера"; "th" -> "เลือกเซิร์ฟเวอร์อัจฉริยะ"; "id" -> "Pilihan Server Pintar"
                 else -> en
             }
             "Session ➔ Unlock" -> return when (lang) {
@@ -1586,9 +1602,9 @@ object AppUiTranslator {
                 "fr" -> "Utilise le proxy uniquement à l'ouverture du jeu"; "de" -> "Nutzt Proxy nur beim Starten des Spiels"; "ru" -> "Использует прокси только при запуске игры"; "th" -> "ผ่านเซิร์ฟเวอร์กลางเฉพาะตอนเริ่มเปิดเกม"; "id" -> "Gunakan proxy hanya saat membuka game"
                 else -> en
             }
-            "Intermediate Server 🌐" -> return when (lang) {
-                "zh" -> "中转代理服务器 🌐"; "ja" -> "中継サーバー経由 🌐"; "ko" -> "중계 서버 경유 🌐"; "es" -> "Servidor Intermedio 🌐"; "pt" -> "Servidor Intermediário 🌐"
-                "fr" -> "Serveur Intermédiaire 🌐"; "de" -> "Zwischenserver 🌐"; "ru" -> "Промежуточный сервер 🌐"; "th" -> "เซิร์ฟเวอร์ตัวกลาง 🌐"; "id" -> "Server Perantara 🌐"
+            "Intermediate Server" -> return when (lang) {
+                "zh" -> "中转代理服务器"; "ja" -> "中継サーバー経由"; "ko" -> "중계 서버 경유"; "es" -> "Servidor Intermedio"; "pt" -> "Servidor Intermediário"
+                "fr" -> "Serveur Intermédiaire"; "de" -> "Zwischenserver"; "ru" -> "Промежуточный сервер"; "th" -> "เซิร์ฟเวอร์ตัวกลาง"; "id" -> "Server Perantara"
                 else -> en
             }
             "Connects via JP/KR/US servers" -> return when (lang) {
@@ -1701,9 +1717,9 @@ object AppUiTranslator {
                 "fr" -> "Langue cible de traduction :"; "de" -> "Zielsprache der Übersetzung:"; "ru" -> "Язык перевода:"; "th" -> "ภาษาที่ต้องการแปล:"; "id" -> "Bahasa Target Terjemahan:"
                 else -> en
             }
-            "🚫 Off" -> return when (lang) {
-                "zh" -> "🚫 关闭"; "ja" -> "🚫 オフ"; "ko" -> "🚫 끄기"; "es" -> "🚫 Desactivado"; "pt" -> "🚫 Desligado"
-                "fr" -> "🚫 Désactivé"; "de" -> "🚫 Aus"; "ru" -> "🚫 Выкл."; "th" -> "🚫 ปิด"; "id" -> "🚫 Mati"
+            "Off" -> return when (lang) {
+                "zh" -> "关闭"; "ja" -> "オフ"; "ko" -> "끄기"; "es" -> "Desactivado"; "pt" -> "Desligado"
+                "fr" -> "Désactivé"; "de" -> "Aus"; "ru" -> "Выкл."; "th" -> "ปิด"; "id" -> "Mati"
                 else -> en
             }
             "Bilingual mode (Translated + Original)" -> return when (lang) {
@@ -1726,9 +1742,9 @@ object AppUiTranslator {
                 "fr" -> "✓ Actif"; "de" -> "✓ Aktiv"; "ru" -> "✓ Активно"; "th" -> "✓ กำลังใช้"; "id" -> "✓ Aktif"
                 else -> en
             }
-            "🌐 System" -> return when (lang) {
-                "zh" -> "🌐 跟随系统"; "ja" -> "🌐 システム"; "ko" -> "🌐 시스템"; "es" -> "🌐 Sistema"; "pt" -> "🌐 Sistema"
-                "fr" -> "🌐 Système"; "de" -> "🌐 System"; "ru" -> "🌐 Система"; "th" -> "🌐 ตามระบบ"; "id" -> "🌐 Sistem"
+            "System" -> return when (lang) {
+                "zh" -> "跟随系统"; "ja" -> "システム"; "ko" -> "시스템"; "es" -> "Sistema"; "pt" -> "Sistema"
+                "fr" -> "Système"; "de" -> "System"; "ru" -> "Система"; "th" -> "ตามระบบ"; "id" -> "Sistem"
                 else -> en
             }
             "Xbox Cloud Storefront Market" -> return when (lang) {
@@ -1756,9 +1772,9 @@ object AppUiTranslator {
                 "fr" -> "Voir les Conditions Complètes"; "de" -> "Vollständige Bedingungen anzeigen"; "ru" -> "Полные условия использования"; "th" -> "ดูข้อกำหนดการใช้งานฉบับเต็ม"; "id" -> "Lihat Ketentuan Lengkap"
                 else -> en
             }
-            "System Activity Log (Track Probe & App)", "📋 View App Log (Track Probe & Ping)" -> return when (lang) {
-                "zh" -> "📋 查看系统日志 (追踪节点与延迟)"; "ja" -> "📋 システムログを表示 (Ping・通信履歴)"; "ko" -> "📋 시스템 로그 보기 (프로브 및 핑 추적)"; "es" -> "📋 Ver Registro del Sistema (Ping y Red)"; "pt" -> "📋 Ver Log do Sistema (Ping e Rede)"
-                "fr" -> "📋 Journal d'activité système"; "de" -> "📋 Systemprotokoll anzeigen (Probe & Ping)"; "ru" -> "📋 Журнал активности системы"; "th" -> "📋 ดูบันทึกระบบ (ติดตามแอปและปิง)"; "id" -> "📋 Lihat Log Sistem (Lacak Probe & Ping)"
+            "System Activity Log (Track Probe & App)", "View App Log (Track Probe & Ping)" -> return when (lang) {
+                "zh" -> "查看系统日志 (追踪节点与延迟)"; "ja" -> "システムログを表示 (Ping・通信履歴)"; "ko" -> "시스템 로그 보기 (프로브 및 핑 추적)"; "es" -> "Ver Registro del Sistema (Ping y Red)"; "pt" -> "Ver Log do Sistema (Ping e Rede)"
+                "fr" -> "Journal d'activité système"; "de" -> "Systemprotokoll anzeigen (Probe & Ping)"; "ru" -> "Журнал активности системы"; "th" -> "ดูบันทึกระบบ (ติดตามแอปและปิง)"; "id" -> "Lihat Log Sistem (Lacak Probe & Ping)"
                 else -> en
             }
             "Copy Diagnostic Report" -> return when (lang) {
@@ -1796,11 +1812,17 @@ object AppUiTranslator {
                 "fr" -> "▶ Lire"; "de" -> "▶ Start"; "ru" -> "▶ Пуск"; "th" -> "▶ เล่น"; "id" -> "▶ Putar"
                 else -> en
             }
-            "⏹ Stop" -> return when (lang) {
-                "zh" -> "⏹ 停止"; "ja" -> "⏹ 停止"; "ko" -> "⏹ 정지"; "es" -> "⏹ Detener"; "pt" -> "⏹ Parar"
-                "fr" -> "⏹ Arrêter"; "de" -> "⏹ Stopp"; "ru" -> "⏹ Стоп"; "th" -> "⏹ หยุด"; "id" -> "⏹ Hentikan"
+            "■ Stop" -> return when (lang) {
+                "zh" -> "■ 停止"; "ja" -> "■ 停止"; "ko" -> "■ 정지"; "es" -> "■ Detener"; "pt" -> "■ Parar"
+                "fr" -> "■ Arrêter"; "de" -> "■ Stopp"; "ru" -> "■ Стоп"; "th" -> "■ หยุด"; "id" -> "■ Hentikan"
                 else -> en
             }
+        }
+        return translateUiExtra(lang, en)
+    }
+
+    private fun translateUiExtra(lang: String, en: String): String {
+        when (en) {
             "Auto-start music on app launch" -> return when (lang) {
                 "zh" -> "打开应用时自动播放背景音乐"; "ja" -> "アプリ起動時にBGMを自動再生"; "ko" -> "앱 실행 시 배경 음악 자동 재생"; "es" -> "Iniciar música al abrir la app"; "pt" -> "Iniciar música ao abrir o app"
                 "fr" -> "Lancer la musique à l'ouverture"; "de" -> "Musik beim App-Start automatisch abspielen"; "ru" -> "Автозапуск музыки при входе"; "th" -> "เปิดเพลงอัตโนมัติเมื่อเข้าแอป"; "id" -> "Putar musik otomatis saat buka aplikasi"
@@ -2219,6 +2241,86 @@ object AppUiTranslator {
             "Press Any Key / Button / Stick" -> return when (lang) {
                 "zh" -> "按任意键 / 手柄键 / 摇杆绑定"; "ja" -> "任意のキー / ボタン / スティックを押す"; "ko" -> "아무 키 / 버튼 / 스틱 눌러 지정"; "es" -> "Pulsar cualquier tecla / botón / stick"; "pt" -> "Pressionar qualquer tecla / botão / stick"
                 "fr" -> "Appuyer sur une touche / bouton / stick"; "de" -> "Beliebige Taste / Stick drücken"; "ru" -> "Нажать любую клавишу / кнопку / стик"; "th" -> "กดปุ่ม / คีย์ / ดันแกนใดก็ได้"; "id" -> "Tekan Tombol / Kunci / Stik Apa Pun"
+                else -> en
+            }
+            "TV Mode" -> return when (lang) {
+                "zh" -> "电视界面"; "ja" -> "テレビ UI"; "ko" -> "TV 모드"; "es" -> "Modo TV"; "pt" -> "Modo TV"
+                "fr" -> "Mode TV"; "de" -> "TV-Modus"; "ru" -> "Режим ТВ"; "th" -> "โหมดทีวี"; "id" -> "Mode TV"
+                else -> en
+            }
+            "Switch to TV Mode", "Switch to TV UI" -> return when (lang) {
+                "zh" -> "切换到电视界面"; "ja" -> "テレビ UI に切替"; "ko" -> "TV 모드로 전환"; "es" -> "Cambiar a Modo TV"; "pt" -> "Mudar para Modo TV"
+                "fr" -> "Passer en Mode TV"; "de" -> "Zum TV-Modus wechseln"; "ru" -> "Переключить на режим ТВ"; "th" -> "สลับเป็นโหมดทีวี"; "id" -> "Beralih ke Mode TV"
+                else -> en
+            }
+            "Switch to Phone UI" -> return when (lang) {
+                "zh" -> "切换到手机界面"; "ja" -> "スマホ UI に切替"; "ko" -> "모바일 UI로 전환"; "es" -> "Cambiar a Modo Móvil"; "pt" -> "Mudar para Modo Celular"
+                "fr" -> "Passer en Mode Mobile"; "de" -> "Zur Handy-UI wechseln"; "ru" -> "Переключить на режим телефона"; "th" -> "สลับเป็นหน้าจอมือถือ"; "id" -> "Beralih ke UI Ponsel"
+                else -> en
+            }
+            "Phone UI" -> return when (lang) {
+                "zh" -> "手机界面"; "ja" -> "スマホ UI"; "ko" -> "모바일 UI"; "es" -> "Modo Móvil"; "pt" -> "UI Celular"
+                "fr" -> "UI Mobile"; "de" -> "Handy-UI"; "ru" -> "Телефон"; "th" -> "มือถือ"; "id" -> "UI Ponsel"
+                else -> en
+            }
+            "Use Phone as Controller" -> return when (lang) {
+                "zh" -> "用手机当手柄"; "ja" -> "スマホをコントローラーにする"; "ko" -> "휴대폰을 컨트롤러로 사용"; "es" -> "Usar móvil como mando"; "pt" -> "Usar celular como controle"
+                "fr" -> "Utiliser le téléphone comme manette"; "de" -> "Handy als Controller nutzen"; "ru" -> "Телефон как геймпад"; "th" -> "ใช้มือถือเป็นจอยเกม"; "id" -> "Gunakan Ponsel sebagai Kontroler"
+                else -> en
+            }
+            "Phone wants to pair" -> return when (lang) {
+                "zh" -> "手机请求配对"; "ja" -> "スマホがペアリング要求中"; "ko" -> "휴대폰 페어링 요청"; "es" -> "El teléfono quiere vincularse"; "pt" -> "Celular quer parear"
+                "fr" -> "Le téléphone demande l'appairage"; "de" -> "Handy möchte koppeln"; "ru" -> "Телефон запрашивает пару"; "th" -> "มือถือต้องการจับคู่"; "id" -> "Ponsel ingin memasangkan"
+                else -> en
+            }
+            "Auto-select Best" -> return when (lang) {
+                "zh" -> "自动选择最佳节点"; "ja" -> "最適サーバーを自動選択"; "ko" -> "최적 서버 자동 선택"; "es" -> "Elegir mejor automáticamente"; "pt" -> "Escolher melhor automaticamente"
+                "fr" -> "Sélection auto du meilleur"; "de" -> "Besten automatisch wählen"; "ru" -> "Автовыбор лучшего"; "th" -> "เลือกเซิร์ฟเวอร์ดีที่สุดอัตโนมัติ"; "id" -> "Pilih Terbaik Otomatis"
+                else -> en
+            }
+            "Test Rumble" -> return when (lang) {
+                "zh" -> "测试震动"; "ja" -> "振動テスト"; "ko" -> "진동 테스트"; "es" -> "Probar vibración"; "pt" -> "Testar vibração"
+                "fr" -> "Tester vibration"; "de" -> "Vibration testen"; "ru" -> "Тест вибрации"; "th" -> "ทดสอบการสั่น"; "id" -> "Uji Getar"
+                else -> en
+            }
+            "Auto-Sprint" -> return when (lang) {
+                "zh" -> "自动冲刺 (L3)"; "ja" -> "オートスプリント (L3)"; "ko" -> "자동 질주 (L3)"; "es" -> "Esprintar auto (L3)"; "pt" -> "Corrida automática (L3)"
+                "fr" -> "Sprint auto (L3)"; "de" -> "Auto-Sprint (L3)"; "ru" -> "Автобег (L3)"; "th" -> "วิ่งเร็วอัตโนมัติ (L3)"; "id" -> "Lari Otomatis (L3)"
+                else -> en
+            }
+            "Push Left Stick to Auto-Sprint" -> return when (lang) {
+                "zh" -> "推满左摇杆自动冲刺"; "ja" -> "左スティック最大押しで自動ダッシュ"; "ko" -> "왼쪽 스틱 끝까지 밀어 자동 질주"; "es" -> "Empujar stick izq. para esprintar"; "pt" -> "Empurrar analógico esq. para correr"
+                "fr" -> "Pousser stick gauche pour sprinter"; "de" -> "Linken Stick voll drücken für Sprint"; "ru" -> "Толкнуть левый стик для автобега"; "th" -> "ดันก้านซ้ายสุดเพื่อวิ่งเร็วอัตโนมัติ"; "id" -> "Dorong stik kiri penuh untuk lari cepat"
+                else -> en
+            }
+            "Manual Xbox Market Override" -> return when (lang) {
+                "zh" -> "手动覆盖 Xbox 商店地区"; "ja" -> "Xbox ストア地域を手動指定"; "ko" -> "Xbox 마켓 지역 수동 지정"; "es" -> "Elegir región de Xbox manualmente"; "pt" -> "Escolher mercado Xbox manualmente"
+                "fr" -> "Choisir la région Xbox manuellement"; "de" -> "Xbox-Markt manuell festlegen"; "ru" -> "Ручной выбор региона Xbox"; "th" -> "กำหนดโซนร้านค้า Xbox ด้วยตนเอง"; "id" -> "Atur Wilayah Toko Xbox Manual"
+                else -> en
+            }
+            "Search Xbox games..." -> return when (lang) {
+                "zh" -> "搜索 Xbox 游戏..."; "ja" -> "Xbox ゲームを検索..."; "ko" -> "Xbox 게임 검색..."; "es" -> "Buscar juegos de Xbox..."; "pt" -> "Buscar jogos Xbox..."
+                "fr" -> "Rechercher des jeux Xbox..."; "de" -> "Xbox-Spiele suchen..."; "ru" -> "Поиск игр Xbox..."; "th" -> "ค้นหาเกม Xbox..."; "id" -> "Cari game Xbox..."
+                else -> en
+            }
+            "Web Download" -> return when (lang) {
+                "zh" -> "网页下载"; "ja" -> "Webページ"; "ko" -> "웹 다운로드"; "es" -> "Web de descarga"; "pt" -> "Site de download"
+                "fr" -> "Page Web"; "de" -> "Webseite"; "ru" -> "Веб-страница"; "th" -> "หน้าเว็บดาวน์โหลด"; "id" -> "Halaman Web"
+                else -> en
+            }
+            "Direct APK" -> return when (lang) {
+                "zh" -> "直接下载 APK"; "ja" -> "APK直リンク"; "ko" -> "APK 직접 링크"; "es" -> "APK directo"; "pt" -> "APK direto"
+                "fr" -> "APK direct"; "de" -> "Direkt-APK"; "ru" -> "Прямой APK"; "th" -> "ไฟล์ APK โดยตรง"; "id" -> "APK Langsung"
+                else -> en
+            }
+            "Download Web Page" -> return when (lang) {
+                "zh" -> "应用介绍与下载网页"; "ja" -> "紹介・ダウンロードページ"; "ko" -> "소개 및 다운로드 웹페이지"; "es" -> "Página de descarga"; "pt" -> "Página de download"
+                "fr" -> "Page de téléchargement"; "de" -> "Download-Webseite"; "ru" -> "Страница загрузки"; "th" -> "หน้าเว็บแนะนำและดาวน์โหลด"; "id" -> "Halaman Web Unduhan"
+                else -> en
+            }
+            "Direct APK File Link" -> return when (lang) {
+                "zh" -> "APK 安装包直链"; "ja" -> "APK ファイル直接リンク"; "ko" -> "APK 파일 직접 링크"; "es" -> "Enlace directo al APK"; "pt" -> "Link direto do APK"
+                "fr" -> "Lien direct du fichier APK"; "de" -> "Direkter APK-Dateilink"; "ru" -> "Прямая ссылка на APK"; "th" -> "ลิงก์ดาวน์โหลดไฟล์ APK โดยตรง"; "id" -> "Tautan Langsung File APK"
                 else -> en
             }
         }

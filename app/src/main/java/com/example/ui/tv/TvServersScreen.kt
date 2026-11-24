@@ -231,7 +231,7 @@ internal fun TvServersScreen(
                 )
 
                 TvChip(
-                    text = config.tr("⚡ Tự chọn tốt nhất", "⚡ Auto-select Best"),
+                    text = config.tr("Tự chọn tốt nhất", "Auto-select Best"),
                     selected = false,
                     scale = scale * 0.92f,
                     onClick = { if (!isTestingAll) triggerPingTest(autoPickBest = true) },

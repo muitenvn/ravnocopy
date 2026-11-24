@@ -25,6 +25,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -515,9 +518,11 @@ private fun TvRemotePadConnectedBody(
                 .border(1.dp, TvAccent, RoundedCornerShape((14.dp * scale).coerceAtLeast(10.dp))),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "📱",
-                fontSize = (26f * scale).coerceAtLeast(20f).sp
+            Icon(
+                imageVector = Icons.Default.Smartphone,
+                contentDescription = null,
+                tint = TvAccent,
+                modifier = Modifier.size((28.dp * scale).coerceAtLeast(22.dp))
             )
         }
 
@@ -639,13 +644,24 @@ internal fun TvInGamePairingToast(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = config.tr("📱 Điện thoại muốn ghép", "📱 Phone wants to pair"),
-                color = TvInk,
-                fontFamily = SpaceGroteskFontFamily,
-                fontSize = (13f * scale).coerceAtLeast(11f).sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy((6.dp * scale).coerceAtLeast(4.dp))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Smartphone,
+                    contentDescription = null,
+                    tint = TvAccent,
+                    modifier = Modifier.size((15.dp * scale).coerceAtLeast(13.dp))
+                )
+                Text(
+                    text = config.tr("Điện thoại muốn ghép", "Phone wants to pair"),
+                    color = TvInk,
+                    fontFamily = SpaceGroteskFontFamily,
+                    fontSize = (13f * scale).coerceAtLeast(11f).sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
             Text(
                 text = serverState.localIpAddress.ifBlank { "LAN" },
                 color = TvCyan,

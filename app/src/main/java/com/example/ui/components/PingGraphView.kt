@@ -124,7 +124,7 @@ fun PingVisualizerCard(
 
                 Text(
                     text = if (mode == NetworkMode.DIRECT_NETWORK) {
-                        if (isEn) "⚡ Direct Azure Tokyo" else "⚡ Trực tiếp Azure Tokyo"
+                        if (isEn) "Direct Azure Tokyo" else "Trực tiếp Azure Tokyo"
                     } else {
                         if (isEn) "🇯🇵 Via Japan Relay" else "🇯🇵 Qua Relay Japan"
                     },

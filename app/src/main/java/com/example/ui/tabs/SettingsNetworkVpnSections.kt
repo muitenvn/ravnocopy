@@ -111,7 +111,7 @@ internal fun SettingsNetworkVpnSection(
                 ),
                 Triple(
                     VpnEngine.PROXY_TUNNEL,
-                    config.tr("Máy chủ trung gian 🌐", "Intermediate Server 🌐"),
+                    config.tr("Máy chủ trung gian", "Intermediate Server"),
                     config.tr("Kết nối qua máy chủ Nhật / Hàn / Mỹ", "Connects via JP/KR/US servers")
                 ),
                 Triple(
@@ -192,7 +192,7 @@ internal fun SettingsLanguageBasicSection(
             )
 
             val translateOptions = listOf(
-                Triple(SettingsRepository.TRANSLATE_LANG_OFF, config.tr("🚫 Tắt", "🚫 Off"), "translate_lang_off_btn"),
+                Triple(SettingsRepository.TRANSLATE_LANG_OFF, config.tr("Tắt", "Off"), "translate_lang_off_btn"),
                 Triple("vi", "🇻🇳 Tiếng Việt", "translate_lang_vi_btn"),
                 Triple("es", "🇪🇸 Español", "translate_lang_es_btn"),
                 Triple("pt", "🇧🇷 Português", "translate_lang_pt_btn"),
@@ -277,7 +277,7 @@ internal fun SettingsLanguageBasicSection(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listOf(
-                        Triple(AppLanguage.SYSTEM, config.tr("🌐 Hệ thống", "🌐 System"), "app_lang_system_button"),
+                        Triple(AppLanguage.SYSTEM, config.tr("Hệ thống", "System"), "app_lang_system_button"),
                         Triple(AppLanguage.VIETNAMESE, "🇻🇳 Tiếng Việt", "app_lang_vi_button"),
                         Triple(AppLanguage.ENGLISH, "🇺🇸 English", "app_lang_en_button")
                     ).forEach { (lang, label, tag) ->
@@ -580,9 +580,9 @@ internal fun SettingsAdvancedSection(
                     ) {
                         Text(
                             text = if (isEn) {
-                                "⚠️ Custom market active ($effectiveMarket). Non-en-US markets may cause region errors or fail to launch games."
+                                "! Custom market active ($effectiveMarket). Non-en-US markets may cause region errors or fail to launch games."
                             } else {
-                                "⚠️ Đang chọn thị trường thủ công ($effectiveMarket). Thị trường khác en-US có thể báo lỗi vùng hoặc không vào được game."
+                                "! Đang chọn thị trường thủ công ($effectiveMarket). Thị trường khác en-US có thể báo lỗi vùng hoặc không vào được game."
                             },
                             color = TextPrimary,
                             fontSize = 11.sp,
@@ -630,7 +630,7 @@ internal fun SettingsAdvancedSection(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = config.tr("⚙️ Tự chọn thị trường Xbox thủ công", "⚙️ Manual Xbox Market Override"),
+                        text = config.tr("Tự chọn thị trường Xbox thủ công", "Manual Xbox Market Override"),
                         color = TextSecondary,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold

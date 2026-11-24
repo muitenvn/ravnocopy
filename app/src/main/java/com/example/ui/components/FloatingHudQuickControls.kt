@@ -5,8 +5,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.ScreenRotation
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -179,12 +183,26 @@ internal fun HudControlsTabContent(
                         },
                         modifier = Modifier.testTag("hud_gyro_recenter_btn")
                     ) {
-                        Text(
-                            text = config.tr("🎯 Đặt lại tâm con quay (0°)", "🎯 Recenter Gyro (0°)"),
-                            color = HudAccent,
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.GpsFixed,
+                                contentDescription = null,
+                                tint = HudAccent,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = config.tr("Đặt lại tâm con quay (0°)", "Recenter Gyro (0°)"),
+                                color = HudAccent,
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                         Text(
                             text = config.tr("Đặt lại", "Reset"),
                             color = HudCyan,
@@ -348,15 +366,26 @@ internal fun HudControlsTabContent(
             },
             modifier = Modifier.testTag("hud_expanded_switch_tv_ui_button")
         ) {
-            Text(
-                text = config.tr("📺 Chuyển sang Giao diện TV", "📺 Switch to TV UI"),
-                color = HudCyan,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.weight(1f, fill = false)
-            )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tv,
+                    contentDescription = null,
+                    tint = HudCyan,
+                    modifier = Modifier.size(15.dp)
+                )
+                Text(
+                    text = config.tr("Chuyển sang Giao diện TV", "Switch to TV UI"),
+                    color = HudCyan,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             Text(
                 text = "⇄",
                 color = HudCyan,
@@ -385,7 +414,7 @@ internal fun HudDeviceTabContent(
 ) {
     val batteryVal = if (batteryPercent >= 0) {
         if (isBatteryCharging) {
-            config.tr("$batteryPercent% · đang sạc ⚡", "$batteryPercent% · charging ⚡")
+            config.tr("$batteryPercent% · đang sạc", "$batteryPercent% · charging")
         } else {
             "$batteryPercent%"
         }

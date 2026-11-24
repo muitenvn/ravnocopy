@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -338,8 +339,14 @@ fun DashboardScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(5.dp)
                                 ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Tv,
+                                        contentDescription = null,
+                                        tint = XboxNeonGreen,
+                                        modifier = Modifier.size(14.dp)
+                                    )
                                     Text(
-                                        text = config.tr("📺 Giao diện TV", "📺 TV Mode"),
+                                        text = config.tr("Giao diện TV", "TV Mode"),
                                         color = XboxNeonGreen,
                                         fontFamily = SpaceGroteskFontFamily,
                                         fontSize = 12.sp,

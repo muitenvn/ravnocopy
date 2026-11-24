@@ -433,8 +433,8 @@ internal fun TvLibraryScreen(
                             )
                         } else {
                             config.tr(
-                                "🔍 Bấm A để tìm thêm \"$searchQuery\" trực tiếp trên Microsoft Xbox Store",
-                                "🔍 Press A to search \"$searchQuery\" live on Microsoft Xbox Store"
+                                "Bấm A để tìm thêm \"$searchQuery\" trực tiếp trên Microsoft Xbox Store",
+                                "Press A to search \"$searchQuery\" live on Microsoft Xbox Store"
                             )
                         },
                         color = TvCyan,

@@ -474,7 +474,7 @@ internal fun TvInGameFloatingHud(
                                     "PIN ${remotePadServerState.currentPin}"
                                 }
                                 TvHudActionRow(
-                                    title = config.tr("📱 Dùng điện thoại làm tay cầm", "📱 Use Phone as Controller"),
+                                    title = config.tr("Dùng điện thoại làm tay cầm", "Use Phone as Controller"),
                                     trailingText = remotePadTrailing,
                                     trailingColor = if (remotePadServerState.status == com.muitenvn.cloudplay.protocol.TvServiceStatus.HAS_CONTROLLER) {
                                         TvAccent
@@ -561,7 +561,7 @@ internal fun TvInGameFloatingHud(
 
                                 // Hàng 9: Chuyển nhanh về Giao diện Điện thoại (hỗ trợ tay cầm ảo cảm ứng)
                                 TvHudActionRow(
-                                    title = config.tr("📲 Chuyển sang Giao diện Điện thoại", "📲 Switch to Phone UI"),
+                                    title = config.tr("Chuyển sang Giao diện Điện thoại", "Switch to Phone UI"),
                                     trailingText = "⇄",
                                     trailingColor = TvCyan,
                                     scale = scale,

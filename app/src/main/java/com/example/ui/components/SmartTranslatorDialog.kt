@@ -399,7 +399,7 @@ private fun AdaptivePopupScope.LiveTranslateSection(
                         .testTag("translator_paste_button")
                 ) {
                     Text(
-                        text = if (isEn) "📋 Paste & Translate" else "📋 Dán & Dịch",
+                        text = if (isEn) "Paste & Translate" else "Dán & Dịch",
                         color = XboxNeonGreen,
                         fontSize = rSp(10f),
                         fontWeight = FontWeight.Bold,
@@ -636,9 +636,9 @@ private fun AdaptivePopupScope.LiveTranslateSection(
                     ) {
                         Text(
                             text = if (translationResult.isFromCache) {
-                                if (isEn) "⚡ Translation Cache" else "⚡ Bộ nhớ đệm từ điển"
+                                if (isEn) "Translation Cache" else "Bộ nhớ đệm từ điển"
                             } else {
-                                if (isEn) "⏱️ Response time: ${translationResult.executionTimeMs}ms" else "⏱️ Thời gian phản hồi: ${translationResult.executionTimeMs}ms"
+                                if (isEn) "Response time: ${translationResult.executionTimeMs}ms" else "Thời gian phản hồi: ${translationResult.executionTimeMs}ms"
                             },
                             color = TextSecondary,
                             fontSize = rSp(9f)

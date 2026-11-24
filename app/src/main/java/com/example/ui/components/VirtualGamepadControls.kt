@@ -278,7 +278,7 @@ internal fun VirtualAnalogStick(
 
         if (isAutoSprinting || (enableAutoSprintL3 && isTouching)) {
             Text(
-                text = if (isAutoSprinting) "🏃 L3" else "▲ L3",
+                text = if (isAutoSprinting) "» L3" else "▲ L3",
                 color = if (isAutoSprinting) HudCyan else HudMuted.copy(alpha = 0.65f),
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Black,

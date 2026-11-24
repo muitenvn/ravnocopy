@@ -132,7 +132,7 @@ internal fun SettingsGamepadTouchSection(
             }
             Toast.makeText(
                 context,
-                if (isEn) "📳 Vibration test signal sent" else "📳 Đã gửi tín hiệu thử rung tay cầm / điện thoại",
+                config.tr("Đã gửi tín hiệu thử rung tay cầm / điện thoại", "Vibration test signal sent"),
                 Toast.LENGTH_SHORT
             ).show()
         } catch (_: Exception) {}
@@ -224,7 +224,7 @@ internal fun SettingsGamepadTouchSection(
                         .testTag("settings_test_controller_rumble_btn")
                 ) {
                     Text(
-                        text = if (isEn) "📳 Test Rumble" else "📳 Thử rung",
+                        text = config.tr("Thử rung", "Test Rumble"),
                         color = XboxNeonGreen,
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
@@ -278,7 +278,7 @@ internal fun SettingsGamepadTouchSection(
         // Con quay hồi chuyển (Gyroscope) - Mặc định TẮT; bật thủ công chọn Theo game hỗ trợ hoặc Đua xe (Trái/Phải)
         SettingsCard(
             title = config.tr(
-                "🧭 Con quay hồi chuyển (Cần R / Đua xe)",
+                "Con quay hồi chuyển (Cần R / Đua xe)",
                 "Gyroscope (Right Stick / Racing)"
             )
         ) {
@@ -455,7 +455,7 @@ internal fun SettingsGamepadTouchSection(
                                 com.example.cloudplay.GyroscopeController.requestRecenterNow()
                                 Toast.makeText(
                                     context,
-                                    config.tr("🎯 Đã đặt lại tâm con quay hồi chuyển theo tư thế hiện tại", "🎯 Gyroscope center reset to current posture"),
+                                    config.tr("Đã đặt lại tâm con quay hồi chuyển theo tư thế hiện tại", "Gyroscope center reset to current posture"),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             },
@@ -465,7 +465,7 @@ internal fun SettingsGamepadTouchSection(
                                     com.example.cloudplay.GyroscopeController.requestRecenterNow()
                                     Toast.makeText(
                                         context,
-                                        config.tr("🎯 Đã đặt lại tâm con quay hồi chuyển theo tư thế hiện tại", "🎯 Gyroscope center reset to current posture"),
+                                        config.tr("Đã đặt lại tâm con quay hồi chuyển theo tư thế hiện tại", "Gyroscope center reset to current posture"),
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -477,7 +477,7 @@ internal fun SettingsGamepadTouchSection(
                             )
                         ) {
                             Text(
-                                text = config.tr("🎯 Đặt lại tâm con quay hồi chuyển (0°)", "🎯 Recenter Gyroscope Neutral Pose (0°)"),
+                                text = config.tr("Đặt lại tâm con quay hồi chuyển (0°)", "Recenter Gyroscope Neutral Pose (0°)"),
                                 color = XboxNeonGreen,
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
@@ -769,8 +769,8 @@ internal fun SettingsGamepadTouchSection(
             }
 
             SettingToggleRow(
-                title = if (isEn) "🏃 Auto-Sprint" else "🏃 Đẩy kịch cần trái để chạy nhanh",
-                subtitle = if (isEn) "Push left stick forward to sprint" else "Tự chạy nhanh khi đẩy cần hết cỡ",
+                title = config.tr("Đẩy kịch cần trái để chạy nhanh", "Auto-Sprint"),
+                subtitle = config.tr("Tự chạy nhanh khi đẩy cần hết cỡ", "Push left stick forward to sprint"),
                 checked = config.gamepadSprintLockEnabled,
                 onCheckedChange = { SettingsRepository.updateGamepadSprintLockEnabled(it) }
             )

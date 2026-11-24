@@ -200,8 +200,8 @@ internal fun TvHomeScreen(
                     if (availableUpdate != null) {
                         TvPill(
                             text = config.tr(
-                                "⬆ Bản mới ${availableUpdate.latestVersion}",
-                                "⬆ Update ${availableUpdate.latestVersion}"
+                                "↑ Bản mới ${availableUpdate.latestVersion}",
+                                "↑ Update ${availableUpdate.latestVersion}"
                             ),
                             scale = scale,
                             tone = TvPillTone.WARN,
@@ -248,7 +248,7 @@ internal fun TvHomeScreen(
                     )
 
                     TvPill(
-                        text = config.tr("📱 Tay cầm", "📱 Pad"),
+                        text = config.tr("Tay cầm", "Pad"),
                         scale = scale,
                         tone = TvPillTone.GREEN,
                         onClick = onOpenRemotePad,
@@ -256,7 +256,7 @@ internal fun TvHomeScreen(
                     )
 
                     TvPill(
-                        text = config.tr("📲 Điện thoại", "📲 Phone UI"),
+                        text = config.tr("Điện thoại", "Phone UI"),
                         scale = scale,
                         tone = TvPillTone.CYAN,
                         onClick = {

@@ -89,9 +89,9 @@ internal fun CustomProxyDialog(
                 val ok = !GeoIpDetector.isPrivateOrLoopbackIp(trimmedHost) &&
                     PingTester.isHostReachable(trimmedHost, p, 1500)
                 testResult = if (ok) {
-                    if (isEn) "✅ Connection successful!" else "✅ Kết nối thành công!"
+                    if (isEn) "✓ Connection successful!" else "✓ Kết nối thành công!"
                 } else {
-                    if (isEn) "❌ Could not reach this IP/Port" else "❌ Không thể kết nối tới IP/Port này"
+                    if (isEn) "✕ Could not reach this IP/Port" else "✕ Không thể kết nối tới IP/Port này"
                 }
                 isTesting = false
             }
@@ -228,9 +228,9 @@ internal fun CustomProxyDialog(
                 if (isPrivateIp) {
                     Text(
                         text = if (isEn) {
-                            "⚠️ Private or loopback IP (127.0.0.1, 10.x, 192.168.x) cannot unlock Xbox Cloud."
+                            "! Private or loopback IP (127.0.0.1, 10.x, 192.168.x) cannot unlock Xbox Cloud."
                         } else {
-                            "⚠️ Địa chỉ IP nội bộ / loopback (127.0.0.1, 10.x, 192.168.x) không hợp lệ."
+                            "! Địa chỉ IP nội bộ / loopback (127.0.0.1, 10.x, 192.168.x) không hợp lệ."
                         },
                         color = JapanRed,
                         fontSize = rSp(11f)
@@ -377,12 +377,12 @@ internal fun CustomProxyDialog(
                         color = XboxSurface,
                         border = BorderStroke(
                             borderThin,
-                            if (msg.startsWith("✅")) XboxNeonGreen else JapanRed
+                            if (msg.startsWith("✓")) XboxNeonGreen else JapanRed
                         )
                     ) {
                         Text(
                             text = msg,
-                            color = if (msg.startsWith("✅")) XboxNeonGreen else JapanRed,
+                            color = if (msg.startsWith("✓")) XboxNeonGreen else JapanRed,
                             fontSize = rSp(11.2f),
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(horizontal = padInner, vertical = gapSmall)

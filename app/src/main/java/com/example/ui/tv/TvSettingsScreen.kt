@@ -197,7 +197,7 @@ internal fun TvSettingsScreen(
             }
             Toast.makeText(
                 context,
-                config.tr("📳 Đã gửi tín hiệu thử rung tay cầm", "📳 Vibration test signal sent"),
+                config.tr("Đã gửi tín hiệu thử rung tay cầm", "Vibration test signal sent"),
                 Toast.LENGTH_SHORT
             ).show()
         } catch (_: Exception) {}
@@ -331,7 +331,7 @@ internal fun TvSettingsScreen(
                         item(key = "tv_set_quick_remote_pad") {
                             val isPhoneConnected = remotePadServerState.connectedDeviceName.isNotBlank()
                             TvSettingActionRow(
-                                title = config.tr("📱 Dùng điện thoại làm tay cầm", "📱 Use Phone as Controller"),
+                                title = config.tr("Dùng điện thoại làm tay cầm", "Use Phone as Controller"),
                                 subtitle = if (isPhoneConnected) {
                                     config.tr(
                                         "Đang kết nối: ${remotePadServerState.connectedDeviceName} (Tay cầm 1) · Bấm để quản lý",
@@ -562,12 +562,12 @@ internal fun TvSettingsScreen(
                             }
                             TvSettingActionRow(
                                 title = if (gamepadStatus.hasPhysicalController) {
-                                    "🎮 ${gamepadStatus.controllerName}"
+                                    gamepadStatus.controllerName
                                 } else {
-                                    config.tr("🎮 Chưa kết nối tay cầm Bluetooth / USB", "🎮 No physical controller detected")
+                                    config.tr("Chưa kết nối tay cầm Bluetooth / USB", "No physical controller detected")
                                 },
                                 subtitle = statusSub,
-                                actionLabel = config.tr("📳 Thử rung", "📳 Test Rumble"),
+                                actionLabel = config.tr("Thử rung", "Test Rumble"),
                                 scale = scale,
                                 focusRequester = firstPaneItemFocusRequester,
                                 onMoveLeftToCategory = moveFocusToCategory,
@@ -629,7 +629,7 @@ internal fun TvSettingsScreen(
                                 )
                             }
                             TvSettingActionRow(
-                                title = config.tr("📱 Dùng điện thoại làm tay cầm", "📱 Use Phone as Controller"),
+                                title = config.tr("Dùng điện thoại làm tay cầm", "Use Phone as Controller"),
                                 subtitle = remoteSub,
                                 actionLabel = if (isPhoneConnected) {
                                     config.tr("Đang kết nối", "Connected")
@@ -646,7 +646,7 @@ internal fun TvSettingsScreen(
                         item(key = "tv_set_gyro_enabled") {
                             TvSettingToggleRow(
                                 title = config.tr(
-                                    "🧭 Con quay hồi chuyển (Cần R / Đua xe)",
+                                    "Con quay hồi chuyển (Cần R / Đua xe)",
                                     "Gyroscope (Right Stick / Racing)"
                                 ),
                                 subtitle = config.tr(
@@ -919,7 +919,7 @@ internal fun TvSettingsScreen(
 
                         item(key = "tv_set_auto_sprint") {
                             TvSettingToggleRow(
-                                title = config.tr("🏃 Đẩy kịch cần trái để chạy nhanh", "🏃 Push Left Stick to Auto-Sprint"),
+                                title = config.tr("Đẩy kịch cần trái để chạy nhanh", "Push Left Stick to Auto-Sprint"),
                                 subtitle = config.tr(
                                     "Tự kích hoạt L3 khi đẩy cần trái lên hết cỡ.",
                                     "Automatically triggers L3 when pushing left stick fully forward."

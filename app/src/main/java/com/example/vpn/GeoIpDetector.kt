@@ -47,10 +47,10 @@ object GeoIpDetector {
         val clean = countryCode.trim().uppercase(java.util.Locale.ROOT).let {
             if (it == "UK") "GB" else it
         }
-        if (clean.length != 2 || clean == "XX" || clean == "ZZ") return "🌐"
+        if (clean.length != 2 || clean == "XX" || clean == "ZZ") return "◈"
         val c0 = clean[0]
         val c1 = clean[1]
-        if (c0 !in 'A'..'Z' || c1 !in 'A'..'Z') return "🌐"
+        if (c0 !in 'A'..'Z' || c1 !in 'A'..'Z') return "◈"
         val firstCodePoint = 0x1F1E6 + (c0 - 'A')
         val secondCodePoint = 0x1F1E6 + (c1 - 'A')
         return String(Character.toChars(firstCodePoint)) + String(Character.toChars(secondCodePoint))

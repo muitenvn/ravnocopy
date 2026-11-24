@@ -167,13 +167,13 @@ class StreamController(private val context: Context) {
                 if (vpnState.mode != NetworkMode.VPN_JAPAN) {
                     VpnManager.autoTurnOnForLaunch(context)
                     showTemporaryBanner(
-                        if (isEn) "🌐 Auto-enabled region unlock VPN for game launch..." else "🌐 Đã tự động bật VPN mở khóa vùng để vào game...",
+                        if (isEn) "Auto-enabled region unlock VPN for game launch..." else "Đã tự động bật VPN mở khóa vùng để vào game...",
                         BannerType.INFO,
                         3500
                     )
                 } else if (config.autoBypassEnabled) {
                     showTemporaryBanner(
-                        if (isEn) "🚀 Launching game: VPN will auto-disconnect once stream connects..." else "🚀 Đang vào game: Sẽ tự động tắt VPN khi luồng game kết nối...",
+                        if (isEn) "Launching game: VPN will auto-disconnect once stream connects..." else "Đang vào game: Sẽ tự động tắt VPN khi luồng game kết nối...",
                         BannerType.INFO,
                         3500
                     )
@@ -227,20 +227,20 @@ class StreamController(private val context: Context) {
                 try {
                     android.widget.Toast.makeText(
                         context,
-                        if (isEn) "⚡ Game loaded! Auto-disconnecting VPN in ${delaySec}s to lower latency..." else "⚡ Game đã tải thành công! Tự động ngắt VPN sau ${delaySec}s để giảm độ trễ...",
+                        if (isEn) "Game loaded! Auto-disconnecting VPN in ${delaySec}s to lower latency..." else "Game đã tải thành công! Tự động ngắt VPN sau ${delaySec}s để giảm độ trễ...",
                         android.widget.Toast.LENGTH_SHORT
                     ).show()
                 } catch (_: Exception) {}
                 scheduleAutoBypass(delaySec, if (isEn) "Game stream connected" else "Luồng game đã kết nối")
             } else if (isVpnActive) {
                 showTemporaryBanner(
-                    if (isEn) "⚠️ Game loaded successfully! Disconnect VPN now to lower latency." else "⚠️ Game đã tải thành công! Hãy ngắt VPN ngay để giảm độ trễ.",
+                    if (isEn) "! Game loaded successfully! Disconnect VPN now to lower latency." else "! Game đã tải thành công! Hãy ngắt VPN ngay để giảm độ trễ.",
                     BannerType.WARNING,
                     9000
                 )
             } else {
                 showTemporaryBanner(
-                    if (isEn) "✅ In-game! Direct stream connected." else "✅ Đã vào game! Đang kết nối trực tiếp ổn định.",
+                    if (isEn) "✓ In-game! Direct stream connected." else "✓ Đã vào game! Đang kết nối trực tiếp ổn định.",
                     BannerType.SUCCESS,
                     5000
                 )
@@ -492,7 +492,7 @@ class StreamController(private val context: Context) {
                 val isEn = config.isEnglishUI()
                 if ((config.smartVpnEnabled || config.autoReconnectOnMenu) && VpnManager.needsVpnToPlay()) {
                     showTemporaryBanner(
-                        if (isEn) "🎮 Exited game: Re-enabling region unlock VPN..." else "🎮 Đã thoát game: Tự động bật lại VPN mở khóa vùng...",
+                        if (isEn) "Exited game: Re-enabling region unlock VPN..." else "Đã thoát game: Tự động bật lại VPN mở khóa vùng...",
                         BannerType.INFO,
                         4000
                     )
@@ -500,7 +500,7 @@ class StreamController(private val context: Context) {
                     try {
                         android.widget.Toast.makeText(
                             context,
-                            if (isEn) "🌐 Exited game: Auto-reenabled region unlock VPN" else "🌐 Đã thoát game: Tự động bật lại VPN mở khóa vùng",
+                            if (isEn) "Exited game: Auto-reenabled region unlock VPN" else "Đã thoát game: Tự động bật lại VPN mở khóa vùng",
                             android.widget.Toast.LENGTH_SHORT
                         ).show()
                     } catch (_: Exception) {}
@@ -519,7 +519,7 @@ class StreamController(private val context: Context) {
         )
         val isEn = SettingsRepository.config.value.isEnglishUI()
         showTemporaryBanner(
-            if (isEn) "🛡️ Kept VPN connection active as requested." else "🛡️ Đã giữ nguyên kết nối VPN theo yêu cầu.",
+            if (isEn) "Kept VPN connection active as requested." else "Đã giữ nguyên kết nối VPN theo yêu cầu.",
             BannerType.INFO,
             3000
         )
@@ -541,9 +541,9 @@ class StreamController(private val context: Context) {
                     countdownRemainingSeconds = sec,
                     showBanner = true,
                     bannerMessage = if (isEn) {
-                        "⚡ In-game: Auto-disconnecting VPN in ${sec}s... (Tap Cancel to keep)"
+                        "In-game: Auto-disconnecting VPN in ${sec}s... (Tap Cancel to keep)"
                     } else {
-                        "⚡ Đã vào game: Tự động TẮT VPN sau ${sec}s... (Chạm Hủy nếu muốn giữ)"
+                        "Đã vào game: Tự động TẮT VPN sau ${sec}s... (Chạm Hủy nếu muốn giữ)"
                     },
                     bannerType = BannerType.COUNTDOWN
                 )
@@ -562,9 +562,9 @@ class StreamController(private val context: Context) {
             autoBypassTriggered = true,
             showBanner = true,
             bannerMessage = if (isEn) {
-                "✅ VPN auto-disconnected! Using direct network."
+                "✓ VPN auto-disconnected! Using direct network."
             } else {
-                "✅ Đã TỰ ĐỘNG TẮT VPN khi vào game! Đang dùng mạng trực tiếp."
+                "✓ Đã TỰ ĐỘNG TẮT VPN khi vào game! Đang dùng mạng trực tiếp."
             },
             bannerType = BannerType.SUCCESS
         )
@@ -575,7 +575,7 @@ class StreamController(private val context: Context) {
             try {
                 android.widget.Toast.makeText(
                     context,
-                    if (isEn) "✅ VPN Disconnected — Switched to Direct ISP!" else "✅ Đã TỰ ĐỘNG TẮT VPN — Chuyển sang mạng trực tiếp!",
+                    if (isEn) "✓ VPN Disconnected — Switched to Direct ISP!" else "✓ Đã TỰ ĐỘNG TẮT VPN — Chuyển sang mạng trực tiếp!",
                     android.widget.Toast.LENGTH_LONG
                 ).show()
             } catch (_: Exception) {}
@@ -681,9 +681,9 @@ class StreamController(private val context: Context) {
                     SettingsRepository.updateHideStreamStatsOverlay(nextHide)
                     showTemporaryBanner(
                         if (nextHide) {
-                            if (isEn) "📊 Stream stats hidden (Combo Shortcut)" else "📊 Đã ẩn thanh thông số (Phím tắt tay cầm)"
+                            if (isEn) "Stream stats hidden (Combo Shortcut)" else "Đã ẩn thanh thông số (Phím tắt tay cầm)"
                         } else {
-                            if (isEn) "📊 Stream stats shown (Combo Shortcut)" else "📊 Đã hiện thanh thông số (Phím tắt tay cầm)"
+                            if (isEn) "Stream stats shown (Combo Shortcut)" else "Đã hiện thanh thông số (Phím tắt tay cầm)"
                         },
                         BannerType.INFO,
                         2200
@@ -697,9 +697,9 @@ class StreamController(private val context: Context) {
                     )
                     showTemporaryBanner(
                         if (nextShow) {
-                            if (isEn) "🎮 Virtual Gamepad ON (Combo Shortcut)" else "🎮 Đã bật Tay cầm ảo (Phím tắt tay cầm)"
+                            if (isEn) "Virtual Gamepad ON (Combo Shortcut)" else "Đã bật Tay cầm ảo (Phím tắt tay cầm)"
                         } else {
-                            if (isEn) "🎮 Virtual Gamepad OFF (Combo Shortcut)" else "🎮 Đã tắt Tay cầm ảo (Phím tắt tay cầm)"
+                            if (isEn) "Virtual Gamepad OFF (Combo Shortcut)" else "Đã tắt Tay cầm ảo (Phím tắt tay cầm)"
                         },
                         BannerType.INFO,
                         2200

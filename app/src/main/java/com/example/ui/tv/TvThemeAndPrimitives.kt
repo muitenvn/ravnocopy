@@ -469,7 +469,7 @@ internal fun TvLeftNavigationRail(
             horizontalArrangement = Arrangement.spacedBy((6.dp * scale).coerceAtLeast(4.dp))
         ) {
             Text(
-                text = config.tr("📲 Giao diện ĐT", "📲 Phone UI"),
+                text = config.tr("Giao diện ĐT", "Phone UI"),
                 color = TvCyan,
                 fontFamily = SpaceGroteskFontFamily,
                 fontSize = (11.5f * scale).coerceAtLeast(9.5f).sp,

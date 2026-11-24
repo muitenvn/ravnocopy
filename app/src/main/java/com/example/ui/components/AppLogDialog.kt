@@ -321,8 +321,8 @@ fun AppLogDialog(
                                 else -> TextPrimary
                             }
                             val levelIcon = when (entry.level) {
-                                AppLogLevel.ERROR -> "⛔ "
-                                AppLogLevel.WARN -> "⚠️ "
+                                AppLogLevel.ERROR -> "✕ "
+                                AppLogLevel.WARN -> "! "
                                 AppLogLevel.SUCCESS -> "✓ "
                                 AppLogLevel.INFO -> ""
                             }

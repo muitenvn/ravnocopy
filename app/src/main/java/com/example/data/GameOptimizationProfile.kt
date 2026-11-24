@@ -44,22 +44,22 @@ object GameOptimizationRepository {
         bannerResId = R.drawable.cyber_gaming_banner_1791438050320,
         primaryAccentHex = 0xFF0074E4, // Fortnite Electric Blue
         secondaryAccentHex = 0xFF9C27B0, // Epic Purple
-        badge = "⚡ HỖ TRỢ CẢM ỨNG & TAY CẦM",
-        badgeEn = "⚡ TOUCH & GAMEPAD READY",
+        badge = "HỖ TRỢ CẢM ỨNG & TAY CẦM",
+        badgeEn = "TOUCH & GAMEPAD READY",
         isFreeToPlay = true,
         recommendedFps = "60 FPS",
         nativeTouchSupport = true,
-        loadingQuote = "Nhảy dù Battle Bus • Điều khiển nhạy • Giành Victory Royale! 👑",
-        loadingQuoteEn = "Drop from the Battle Bus • Responsive controls • Claim Victory Royale! 👑",
+        loadingQuote = "Nhảy dù Battle Bus · Điều khiển nhạy · Giành Victory Royale!",
+        loadingQuoteEn = "Drop from the Battle Bus · Responsive controls · Claim Victory Royale!",
         tips = listOf(
             "Bật phản hồi cảm ứng nhanh",
-            "Mở thanh điều khiển để chuyển 1 chạm giữa [👆 Cảm ứng Epic] (dùng nút cảm ứng gốc của game) và [🎮 Tay cầm ảo].",
+            "Mở thanh điều khiển để chuyển 1 chạm giữa [Cảm ứng Epic] (dùng nút cảm ứng gốc của game) và [Tay cầm ảo].",
             "Tối ưu âm thanh nổi giúp nghe rõ tiếng bước chân và hướng tiếng súng.",
             "Hỗ trợ chạm nhiều ngón cùng lúc để vừa di chuyển, vừa xây dựng và ngắm bắn mượt mà."
         ),
         tipsEn = listOf(
             "Enable fast touch response",
-            "Open the control bar to switch in 1 tap between [👆 Epic Touch] (game's native touch buttons) and [🎮 Virtual Pad].",
+            "Open the control bar to switch in 1 tap between [Epic Touch] (game's native touch buttons) and [Virtual Pad].",
             "Stereo audio is tuned for clear footsteps, chest cues, and directional gunfire.",
             "Multi-touch support is enabled for smooth building, editing, and aiming."
         ),
@@ -84,8 +84,8 @@ object GameOptimizationRepository {
         isFreeToPlay = false,
         recommendedFps = "60 FPS Ultra",
         nativeTouchSupport = true,
-        loadingQuote = "Lái xe tốc độ cao qua những cung đường hoang dã tuyệt đẹp tại Mexico! 🏎️",
-        loadingQuoteEn = "Race at high speed across the vibrant open roads of Mexico! 🏎️",
+        loadingQuote = "Lái xe tốc độ cao qua những cung đường hoang dã tuyệt đẹp tại Mexico!",
+        loadingQuoteEn = "Race at high speed across the vibrant open roads of Mexico!",
         tips = listOf(
             "Bật độ rung phản hồi xúc giác trong Game Bar để cảm nhận tiếng bánh xe trượt chân thực.",
             "Giữ đường truyền ổn định để hình ảnh đổ bóng xe hơi và cảnh vật luôn sắc nét chuẩn 1080p."
@@ -114,8 +114,8 @@ object GameOptimizationRepository {
         isFreeToPlay = false,
         recommendedFps = "30-60 FPS",
         nativeTouchSupport = false,
-        loadingQuote = "Du hành giữa các vì sao, khám phá hơn 1000 hành tinh bí ẩn! 🚀",
-        loadingQuoteEn = "Journey among the stars and explore over 1,000 uncharted planets! 🚀",
+        loadingQuote = "Du hành giữa các vì sao, khám phá hơn 1000 hành tinh bí ẩn!",
+        loadingQuoteEn = "Journey among the stars and explore over 1,000 uncharted planets!",
         tips = listOf(
             "Sử dụng cần Analog ảo hoặc tay cầm Bluetooth để điều khiển phi thuyền linh hoạt hơn.",
             "Bật chế độ Clarity Boost trong Game Bar để các vì sao và bề mặt hành tinh rõ nét hơn."
@@ -143,8 +143,8 @@ object GameOptimizationRepository {
         isFreeToPlay = false,
         recommendedFps = "60 FPS Arena",
         nativeTouchSupport = true,
-        loadingQuote = "Chiến binh Spartan trở lại bảo vệ loài người trước thế lực Banished! 🛡️",
-        loadingQuoteEn = "Become the Master Chief and defend humanity against the Banished! 🛡️",
+        loadingQuote = "Chiến binh Spartan trở lại bảo vệ loài người trước thế lực Banished!",
+        loadingQuoteEn = "Become the Master Chief and defend humanity against the Banished!",
         tips = listOf(
             "Bật phản hồi cảm ứng nhanh để ngắm bắn Battle Rifle chính xác.",
             "Tay cầm Bluetooth hoặc phím ảo ABXY độ nhạy cao là lựa chọn tối ưu cho Halo."
@@ -203,10 +203,10 @@ object GameOptimizationRepository {
             isFreeToPlay = false,
             recommendedFps = "60 FPS Stream",
             nativeTouchSupport = true,
-            loadingQuote = "Tận hưởng kho game đồ sộ đỉnh cao mọi lúc mọi nơi! 🎮",
-            loadingQuoteEn = "Enjoy console-quality cloud gaming anywhere, anytime! 🎮",
+            loadingQuote = "Tận hưởng kho game đồ sộ đỉnh cao mọi lúc mọi nơi!",
+            loadingQuoteEn = "Enjoy console-quality cloud gaming anywhere, anytime!",
             tips = listOf(
-                "Bạn có thể mở thanh Game Bar (nút 🎮 nổi) bất cứ lúc nào để kiểm tra ping hoặc bật tắt tay cầm ảo.",
+                "Bạn có thể mở thanh Game Bar (nút điều khiển nổi) bất cứ lúc nào để kiểm tra ping hoặc bật tắt tay cầm ảo.",
                 "Chế độ Direct Network Bypass tự động chuyển kết nối trực tiếp giúp giảm tối đa độ trễ."
             ),
             tipsEn = listOf(

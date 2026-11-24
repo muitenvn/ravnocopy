@@ -483,15 +483,15 @@ fun UpdateAvailableDialog(
                                 Text(
                                     text = if (dl.usingFallbackGitHub) {
                                         if (isEn) {
-                                            "📥 Direct GitHub (${dl.mirrorIndex}/${dl.totalMirrors})"
+                                            "Direct GitHub (${dl.mirrorIndex}/${dl.totalMirrors})"
                                         } else {
-                                            "📥 Đang tải thường: GitHub gốc (${dl.mirrorIndex}/${dl.totalMirrors})"
+                                            "Đang tải thường: GitHub gốc (${dl.mirrorIndex}/${dl.totalMirrors})"
                                         }
                                     } else {
                                         if (isEn) {
-                                            "⚡ Mirror: $activeNodeLabel (${dl.mirrorIndex}/${dl.totalMirrors})"
+                                            "Mirror: $activeNodeLabel (${dl.mirrorIndex}/${dl.totalMirrors})"
                                         } else {
-                                            "⚡ Máy chủ phụ: $activeNodeLabel (${dl.mirrorIndex}/${dl.totalMirrors})"
+                                            "Máy chủ phụ: $activeNodeLabel (${dl.mirrorIndex}/${dl.totalMirrors})"
                                         }
                                     },
                                     color = DirectCyan,
@@ -531,9 +531,9 @@ fun UpdateAvailableDialog(
                             if (dl.failedMirrors.isNotEmpty()) {
                                 Text(
                                     text = if (isEn) {
-                                        "🔄 Auto-switched mirror (skipped: ${dl.failedMirrors.takeLast(3).joinToString(", ")})"
+                                        "Auto-switched mirror (skipped: ${dl.failedMirrors.takeLast(3).joinToString(", ")})"
                                     } else {
-                                        "🔄 Đã tự chuyển máy chủ (bỏ qua: ${dl.failedMirrors.takeLast(3).joinToString(", ")})"
+                                        "Đã tự chuyển máy chủ (bỏ qua: ${dl.failedMirrors.takeLast(3).joinToString(", ")})"
                                     },
                                     color = WarningAmber,
                                     fontSize = rSp(2.25f),
@@ -549,7 +549,7 @@ fun UpdateAvailableDialog(
                             ) {
                                 if (dl.mirrorIndex < dl.totalMirrors) {
                                     UpdateDialogFlatActionButton(
-                                        text = if (isEn) "⏭ Next Mirror" else "⏭ Đổi máy chủ khác",
+                                        text = if (isEn) "Next Mirror" else "Đổi máy chủ khác",
                                         containerColor = XboxSurfaceVariant,
                                         contentColor = DirectCyan,
                                         borderColor = DirectCyan.copy(alpha = 0.75f),
@@ -798,7 +798,7 @@ fun UpdateAvailableDialog(
                                     MirrorChipItem(
                                         chipIdx = 0,
                                         chipId = "auto",
-                                        label = if (isEn) "⚡ Auto (${mirrorNodes.size})" else "⚡ Tự động (${mirrorNodes.size})",
+                                        label = if (isEn) "Auto (${mirrorNodes.size})" else "Tự động (${mirrorNodes.size})",
                                         isAutoChip = true,
                                         testTag = "update_mirror_chip_auto"
                                     )
@@ -824,7 +824,7 @@ fun UpdateAvailableDialog(
                                     MirrorChipItem(
                                         chipIdx = 0,
                                         chipId = "auto",
-                                        label = if (isEn) "⚡ Auto (${mirrorNodes.size})" else "⚡ Tự động (${mirrorNodes.size})",
+                                        label = if (isEn) "Auto (${mirrorNodes.size})" else "Tự động (${mirrorNodes.size})",
                                         isAutoChip = true,
                                         testTag = "update_mirror_chip_auto"
                                     )
@@ -844,9 +844,9 @@ fun UpdateAvailableDialog(
                         // Nút 1 (Chính - Focus mặc định): Tải nhanh qua máy chủ phụ
                         UpdateDialogFlatActionButton(
                             text = if (selectedNodeName != null) {
-                                if (isEn) "⚡ Download via $selectedNodeName" else "⚡ Tải qua máy chủ phụ: $selectedNodeName"
+                                if (isEn) "Download via $selectedNodeName" else "Tải qua máy chủ phụ: $selectedNodeName"
                             } else {
-                                if (isEn) "⚡ Fast download via mirror" else "⚡ Tải nhanh qua máy chủ phụ"
+                                if (isEn) "Fast download via mirror" else "Tải nhanh qua máy chủ phụ"
                             },
                             containerColor = XboxNeonGreen,
                             contentColor = Color(0xFF03140B),
@@ -874,9 +874,9 @@ fun UpdateAvailableDialog(
                         // Nút 2: Tải thường trực tiếp từ GitHub gốc
                         UpdateDialogFlatActionButton(
                             text = if (isEn) {
-                                "📥 Normal Download (Direct from GitHub)"
+                                "Normal Download (Direct from GitHub)"
                             } else {
-                                "📥 Tải thường (Trực tiếp từ GitHub gốc)"
+                                "Tải thường (Trực tiếp từ GitHub gốc)"
                             },
                             containerColor = XboxSurface,
                             contentColor = DirectCyan,

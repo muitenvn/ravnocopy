@@ -337,18 +337,18 @@ object PadStrings {
 
     fun gyroSectionTitle(lang: PadLanguage) = tr(
         lang = lang,
-        vi = "🧭 CON QUAY HỒI CHUYỂN (THEO GAME / ĐUA XE)",
-        en = "🧭 GYROSCOPE (GAME NATIVE / RACING)",
-        es = "🧭 GIROSCOPIO (JUEGO NATIVO / CARRERAS)",
-        pt = "🧭 GIROSCÓPIO (NATIVO DO JOGO / CORRIDA)",
-        fr = "🧭 GYROSCOPE (JEU NATIF / COURSE)",
-        de = "🧭 GYROSKOP (SPIEL-NATIV / RENNEN)",
-        ja = "🧭 ジャイロ (ゲーム対応 / レース)",
-        ko = "🧭 자이로스코프 (게임 지원 / 레이싱)",
-        zh = "🧭 陀螺仪 (游戏原生 / 赛车)",
-        id = "🧭 GIROSKOP (BAWAAN GAME / BALAPAN)",
-        th = "🧭 ไจโรสโคป (ตามเกมรองรับ / แข่งรถ)",
-        ru = "🧭 ГИРОСКОП (ПОДДЕРЖКА ИГРЫ / ГОНКИ)"
+        vi = "CON QUAY HỒI CHUYỂN (THEO GAME / ĐUA XE)",
+        en = "GYROSCOPE (GAME NATIVE / RACING)",
+        es = "GIROSCOPIO (JUEGO NATIVO / CARRERAS)",
+        pt = "GIROSCÓPIO (NATIVO DO JOGO / CORRIDA)",
+        fr = "GYROSCOPE (JEU NATIF / COURSE)",
+        de = "GYROSKOP (SPIEL-NATIV / RENNEN)",
+        ja = "ジャイロ (ゲーム対応 / レース)",
+        ko = "자이로스코프 (게임 지원 / 레이싱)",
+        zh = "陀螺仪 (游戏原生 / 赛车)",
+        id = "GIROSKOP (BAWAAN GAME / BALAPAN)",
+        th = "ไจโรสโคป (ตามเกมรองรับ / แข่งรถ)",
+        ru = "ГИРОСКОП (ПОДДЕРЖКА ИГРЫ / ГОНКИ)"
     )
 
     fun gyroPhoneTitle(lang: PadLanguage) = tr(
@@ -546,34 +546,34 @@ object PadStrings {
     fun gyroHoldLtChip(lang: PadLanguage, enabled: Boolean) = if (enabled) {
         tr(
             lang = lang,
-            vi = "🎯 Giữ LT ngắm: Bật",
-            en = "🎯 Hold LT: On",
-            es = "🎯 Mantener LT: Sí",
-            pt = "🎯 Segurar LT: Sim",
-            fr = "🎯 Maintenir LT : Oui",
-            de = "🎯 LT halten: Ein",
-            ja = "🎯 LT長押し: オン",
-            ko = "🎯 LT 유지: 켜짐",
-            zh = "🎯 按住 LT: 开",
-            id = "🎯 Tahan LT: Aktif",
-            th = "🎯 กดค้าง LT: เปิด",
-            ru = "🎯 Удерж. LT: Вкл."
+            vi = "Giữ LT ngắm: Bật",
+            en = "Hold LT: On",
+            es = "Mantener LT: Sí",
+            pt = "Segurar LT: Sim",
+            fr = "Maintenir LT : Oui",
+            de = "LT halten: Ein",
+            ja = "LT長押し: オン",
+            ko = "LT 유지: 켜짐",
+            zh = "按住 LT: 开",
+            id = "Tahan LT: Aktif",
+            th = "กดค้าง LT: เปิด",
+            ru = "Удерж. LT: Вкл."
         )
     } else {
         tr(
             lang = lang,
-            vi = "🎯 Giữ LT ngắm: Tắt",
-            en = "🎯 Hold LT: Off",
-            es = "🎯 Mantener LT: No",
-            pt = "🎯 Segurar LT: Não",
-            fr = "🎯 Maintenir LT : Non",
-            de = "🎯 LT halten: Aus",
-            ja = "🎯 LT長押し: オフ",
-            ko = "🎯 LT 유지: 꺼짐",
-            zh = "🎯 按住 LT: 关",
-            id = "🎯 Tahan LT: Mati",
-            th = "🎯 กดค้าง LT: ปิด",
-            ru = "🎯 Удерж. LT: Выкл."
+            vi = "Giữ LT ngắm: Tắt",
+            en = "Hold LT: Off",
+            es = "Mantener LT: No",
+            pt = "Segurar LT: Não",
+            fr = "Maintenir LT : Non",
+            de = "LT halten: Aus",
+            ja = "LT長押し: オフ",
+            ko = "LT 유지: 꺼짐",
+            zh = "按住 LT: 关",
+            id = "Tahan LT: Mati",
+            th = "กดค้าง LT: ปิด",
+            ru = "Удерж. LT: Выкл."
         )
     }
 
@@ -727,17 +727,17 @@ object PadStrings {
 
     fun gyroRecenterLabel(lang: PadLanguage) = tr(
         lang = lang,
-        vi = "🎯 Đặt lại tâm con quay (0°)",
-        en = "🎯 Recenter Gyro (0°)",
-        es = "🎯 Recentrar giroscopio (0°)",
-        pt = "🎯 Recentralizar giroscópio (0°)",
-        fr = "🎯 Recentrer le gyroscope (0°)",
-        de = "🎯 Gyroskop zentrieren (0°)",
-        ja = "🎯 ジャイロ中心をリセット (0°)",
-        ko = "🎯 자이로 중심 재설정 (0°)",
-        zh = "🎯 重置陀螺仪中心 (0°)",
-        id = "🎯 Pusatkan Ulang Giroskop (0°)",
-        th = "🎯 รีเซ็ตจุดศูนย์กลางไจโร (0°)",
-        ru = "🎯 Центрировать гироскоп (0°)"
+        vi = "Đặt lại tâm con quay (0°)",
+        en = "Recenter Gyro (0°)",
+        es = "Recentrar giroscopio (0°)",
+        pt = "Recentralizar giroscópio (0°)",
+        fr = "Recentrer le gyroscope (0°)",
+        de = "Gyroskop zentrieren (0°)",
+        ja = "ジャイロ中心をリセット (0°)",
+        ko = "자이로 중심 재설정 (0°)",
+        zh = "重置陀螺仪中心 (0°)",
+        id = "Pusatkan Ulang Giroskop (0°)",
+        th = "รีเซ็ตจุดศูนย์กลางไจโร (0°)",
+        ru = "Центрировать гироскоп (0°)"
     )
 }

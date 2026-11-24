@@ -32,6 +32,10 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -377,9 +381,11 @@ private fun PadFindTvScreen(
                             .background(PadSurface2),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "📺",
-                            fontSize = m.headingFont
+                        Icon(
+                            imageVector = Icons.Default.Tv,
+                            contentDescription = null,
+                            tint = PadAccent,
+                            modifier = Modifier.size(m.cardPad * 1.45f)
                         )
                     }
                     Spacer(modifier = Modifier.height(m.itemGap))
@@ -453,9 +459,11 @@ private fun PadFindTvScreen(
                                     .background(PadSurface2),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = "📺",
-                                    fontSize = m.bodyFont
+                                Icon(
+                                    imageVector = Icons.Default.Tv,
+                                    contentDescription = null,
+                                    tint = if (tv.hasRememberToken) PadAccent else PadCyan,
+                                    modifier = Modifier.size(m.cardPad * 1.25f)
                                 )
                             }
 
@@ -1008,9 +1016,11 @@ private fun PadDisconnectedSummaryScreen(
                     .background(PadSurface2),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "⚠️",
-                    fontSize = m.headingFont
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = PadWarn,
+                    modifier = Modifier.size(m.cardPad * 1.35f)
                 )
             }
 

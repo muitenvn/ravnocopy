@@ -3491,7 +3491,7 @@ private fun OfficialVirtualAnalogStick(
 
         if (isAutoSprinting || (autoSprintL3 && isTouching)) {
             Text(
-                text = if (isAutoSprinting) "🏃 L3" else "▲ L3",
+                text = if (isAutoSprinting) "» L3" else "▲ L3",
                 color = if (isAutoSprinting) OfficialHudCyan else OfficialPadBtnText.copy(alpha = 0.55f),
                 fontSize = tinyFontSize,
                 fontWeight = FontWeight.Black,

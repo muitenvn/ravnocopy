@@ -315,8 +315,8 @@ fun WebDownloadPortalDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf(
-                            false to config.tr("🌐 Trang Web tải", "🌐 Web Download"),
-                            true to config.tr("📥 Link file APK", "📥 Direct APK")
+                            false to config.tr("Trang Web tải", "Web Download"),
+                            true to config.tr("Link file APK", "Direct APK")
                         ).forEach { (isDirectMode, modeLabel) ->
                             val selected = qrUseDirectApk == isDirectMode
                             Surface(
@@ -363,13 +363,13 @@ fun WebDownloadPortalDialog(
                     Text(
                         text = if (qrUseDirectApk) {
                             config.tr(
-                                "✓ Mã QR đang trỏ tới: 📥 Link tải trực tiếp file APK",
-                                "✓ QR encodes: 📥 Direct APK File Link"
+                                "✓ Mã QR đang trỏ tới: Link tải trực tiếp file APK",
+                                "✓ QR encodes: Direct APK File Link"
                             )
                         } else {
                             config.tr(
-                                "✓ Mã QR đang trỏ tới: 🌐 Trang web giới thiệu & tải ứng dụng",
-                                "✓ QR encodes: 🌐 Download Web Page"
+                                "✓ Mã QR đang trỏ tới: Trang web giới thiệu & tải ứng dụng",
+                                "✓ QR encodes: Download Web Page"
                             )
                         },
                         color = if (qrUseDirectApk) XboxNeonGreen else DirectCyan,
@@ -414,7 +414,7 @@ fun WebDownloadPortalDialog(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = (if (!qrUseDirectApk) "✓ " else "") +
-                                    config.tr("🌐 Trang web giới thiệu & tải ứng dụng", "🌐 Download Web Page"),
+                                    config.tr("Trang web giới thiệu & tải ứng dụng", "Download Web Page"),
                                 color = DirectCyan,
                                 fontSize = rSp(10f),
                                 fontWeight = FontWeight.Bold
@@ -466,7 +466,7 @@ fun WebDownloadPortalDialog(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = (if (qrUseDirectApk) "✓ " else "") +
-                                    config.tr("📥 Link tải trực tiếp file APK", "📥 Direct APK File Link"),
+                                    config.tr("Link tải trực tiếp file APK", "Direct APK File Link"),
                                 color = XboxNeonGreen,
                                 fontSize = rSp(10f),
                                 fontWeight = FontWeight.Bold
