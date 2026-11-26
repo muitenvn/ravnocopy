@@ -391,13 +391,13 @@ object PhysicalGamepadCaptureBus {
             val stdSlot = mapKeyCodeToStandardCode(keyCode)
             if (stdSlot != null) {
                 val steps = bindings[stdSlot]
-                val isGamepadMacro = steps != null && (
-                    steps.any { KeySequenceCodec.isGamepadSlotCode(it.code) } ||
+                if (steps != null) {
+                    val isGamepadMacro = steps.any { KeySequenceCodec.isGamepadSlotCode(it.code) } ||
                         hasSequenceDelay(steps) ||
                         (isPureChord(steps) && activeTriggerOutputChords.containsKey(stdSlot))
-                )
-                if (isGamepadMacro && steps != null) {
-                    return handleGamepadTriggerMacro(wv, stdSlot, steps, event)
+                    if (isGamepadMacro) {
+                        return handleGamepadTriggerMacro(wv, stdSlot, steps, event)
+                    }
                 }
                 // Đảm bảo nhả nếu trước đó nút tay cầm này đang giữ một phím gộp
                 if (event.action == KeyEvent.ACTION_UP && activeTriggerOutputChords.containsKey(stdSlot)) {

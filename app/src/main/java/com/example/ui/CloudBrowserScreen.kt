@@ -287,6 +287,7 @@ fun CloudBrowserScreen(
     }
 
     DisposableEffect(activity) {
+        VpnManager.ensureWebViewProxyCleanIfNotProxyEngine()
         VpnManager.setInGameStreamActive(true)
         (activity as? com.example.MainActivity)?.applyImmersiveFullscreen(true)
         onDispose {
@@ -1598,6 +1599,12 @@ fun CloudBrowserScreen(
                                     "WEBVIEW",
                                     "Lỗi tải trang chính ($safeHp): mã=$code, lý do=$desc"
                                 )
+                                val isProxyErr = desc.contains("ERR_PROXY", ignoreCase = true) ||
+                                    desc.contains("ERR_TUNNEL", ignoreCase = true)
+                                if (isProxyErr && VpnManager.state.value.engine != com.example.vpn.VpnEngine.PROXY_TUNNEL) {
+                                    VpnManager.ensureWebViewProxyCleanIfNotProxyEngine()
+                                    view?.postDelayed({ view.reload() }, 250L)
+                                }
                             }
                         }
 
@@ -1716,6 +1723,7 @@ fun CloudBrowserScreen(
                         "WEB-UI",
                         "Khởi tạo WebView (phiên #$webViewSessionKey): initialUrl=${com.example.data.AppLogger.safeUrlHostPath(activeSessionInitialUrl)} -> formatted=${com.example.data.AppLogger.safeUrlHostPath(formattedInitialUrl)} | chế độ=${config.xboxWebUiMode.name} | ua=$initUaMode | thị trường=$effectiveLocale"
                     )
+                    VpnManager.ensureWebViewProxyCleanIfNotProxyEngine()
                     loadUrl(formattedInitialUrl, customHeaders)
                     webViewInstance = this
                 }

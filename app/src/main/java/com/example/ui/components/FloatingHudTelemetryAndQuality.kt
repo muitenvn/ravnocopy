@@ -357,9 +357,14 @@ internal fun HudNetworkTabContent(
         // VPN quick switch row
         val isVpnOn = vpnState.mode != NetworkMode.DIRECT_NETWORK
         HudSurfaceRow(minHeight = 42.dp) {
+            val hudModeName = when (vpnState.engine) {
+                com.example.vpn.VpnEngine.SMART_BYPASS -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
+                com.example.vpn.VpnEngine.PROXY_TUNNEL -> "Proxy"
+                com.example.vpn.VpnEngine.EXTERNAL_VPN -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn)
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "VPN",
+                    text = hudModeName,
                     color = HudInk,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -379,9 +384,9 @@ internal fun HudNetworkTabContent(
             }
             HudButton(
                 text = if (isVpnOn) {
-                    config.tr("Tắt VPN", "Turn Off")
+                    "${config.tr("Tắt", "Off")} $hudModeName"
                 } else {
-                    config.tr("Đổi VPN", "Turn On VPN")
+                    "${config.tr("Bật", "On")} $hudModeName"
                 },
                 onClick = {
                     onInteraction()

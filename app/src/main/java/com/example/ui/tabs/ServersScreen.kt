@@ -817,17 +817,24 @@ fun ServersScreen(
                         )
                     }
 
+                    val isProxyWithoutServer = vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL &&
+                        (allServersSnapshot.isEmpty() || currentServer.kind != com.example.vpn.ServerKind.PROXY)
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(modeChipShape)
-                            .gamepadClickable(cornerRadius = 8.dp) { detailServer = currentServer }
+                            .gamepadClickable(
+                                enabled = !isProxyWithoutServer,
+                                cornerRadius = 8.dp
+                            ) { detailServer = currentServer }
                             .testTag("header_selected_server_pill"),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = currentServer.flag,
+                            text = if (isProxyWithoutServer) "◈" else currentServer.flag,
+                            color = if (isProxyWithoutServer) XboxNeonGreen else TextPrimary,
                             fontSize = 20.sp
                         )
 
@@ -836,7 +843,14 @@ fun ServersScreen(
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Text(
-                                text = currentServer.name,
+                                text = if (isProxyWithoutServer) {
+                                    stringResource(
+                                        if (vpnState.isAutoSyncingLiveProxies) R.string.vpn_proxy_scanning
+                                        else R.string.vpn_proxy_empty_title
+                                    )
+                                } else {
+                                    currentServer.name
+                                },
                                 color = TextPrimary,
                                 fontFamily = SpaceGroteskFontFamily,
                                 fontSize = 14.sp,
@@ -845,7 +859,11 @@ fun ServersScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "$currentUnlockText · $selectionReasonText",
+                                text = if (isProxyWithoutServer) {
+                                    vpnState.statusMessage.ifBlank { stringResource(R.string.vpn_proxy_empty_desc) }
+                                } else {
+                                    "$currentUnlockText · $selectionReasonText"
+                                },
                                 color = TextSecondary,
                                 fontFamily = SpaceGroteskFontFamily,
                                 fontSize = 12.sp,
@@ -853,9 +871,15 @@ fun ServersScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier
                                     .testTag("selected_server_reason_label")
-                                    .semantics { contentDescription = selectionReasonText }
+                                    .semantics {
+                                        contentDescription = if (isProxyWithoutServer) {
+                                            vpnState.statusMessage
+                                        } else {
+                                            selectionReasonText
+                                        }
+                                    }
                             )
-                            if (config.enableGlobalpingProbe && activeProbeEstimate != null) {
+                            if (!isProxyWithoutServer && config.enableGlobalpingProbe && activeProbeEstimate != null) {
                                 Text(
                                     text = activeProbeEstimate.formatLabel(isEn),
                                     color = WarningAmber,
@@ -868,27 +892,29 @@ fun ServersScreen(
                             }
                         }
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            val currentBars = when {
-                                currentPingMs <= 0 -> 3
-                                currentPingMs < 70 -> 4
-                                currentPingMs < 120 -> 3
-                                currentPingMs < 180 -> 2
-                                else -> 1
+                        if (!isProxyWithoutServer) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val currentBars = when {
+                                    currentPingMs <= 0 -> 3
+                                    currentPingMs < 70 -> 4
+                                    currentPingMs < 120 -> 3
+                                    currentPingMs < 180 -> 2
+                                    else -> 1
+                                }
+                                SignalBarsIndicator(activeBars = currentBars, activeColor = currentUnlockColor)
+                                Text(
+                                    text = currentPingText,
+                                    color = currentUnlockColor,
+                                    fontFamily = JetBrainsMonoFontFamily,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
-                            SignalBarsIndicator(activeBars = currentBars, activeColor = currentUnlockColor)
-                            Text(
-                                text = currentPingText,
-                                color = currentUnlockColor,
-                                fontFamily = JetBrainsMonoFontFamily,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                softWrap = false
-                            )
                         }
                     }
 
@@ -1422,27 +1448,29 @@ fun ServersScreen(
                     }
                 }
 
-                // "Thêm proxy riêng" chip right in the horizontal chip row (matching mockup)
-                item(key = "add_custom_proxy_chip") {
-                    Box(
-                        modifier = Modifier
-                            .defaultMinSize(minHeight = 36.dp)
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(XboxSurface, RoundedCornerShape(999.dp))
-                            .border(1.dp, XboxCardBorder, RoundedCornerShape(999.dp))
-                            .gamepadClickable(cornerRadius = 999.dp) { showCustomDialog = true }
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = config.tr("Thêm proxy riêng", "Add custom proxy"),
-                            color = TextSecondary,
-                            fontFamily = SpaceGroteskFontFamily,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.5.sp,
-                            maxLines = 1,
-                            softWrap = false
-                        )
+                // Chỉ hiện nút "Thêm proxy riêng" khi đang ở chế độ Proxy trong app
+                if (vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL) {
+                    item(key = "add_custom_proxy_chip") {
+                        Box(
+                            modifier = Modifier
+                                .defaultMinSize(minHeight = 36.dp)
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(XboxSurface, RoundedCornerShape(999.dp))
+                                .border(1.dp, XboxCardBorder, RoundedCornerShape(999.dp))
+                                .gamepadClickable(cornerRadius = 999.dp) { showCustomDialog = true }
+                                .padding(horizontal = 12.dp, vertical = 7.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = config.tr("Thêm proxy riêng", "Add custom proxy"),
+                                color = TextSecondary,
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 12.5.sp,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
                     }
                 }
 
@@ -1813,7 +1841,9 @@ fun ServersScreen(
             onDismiss = { showCustomDialog = false },
             onAddServer = { custom ->
                 VpnManager.addCustomServer(custom)
-                onSelectServer(custom)
+                if (vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL) {
+                    onSelectServer(custom)
+                }
                 showCustomDialog = false
             }
         )

@@ -213,10 +213,19 @@ internal fun TvServersScreen(
                     fontWeight = FontWeight.ExtraBold,
                     maxLines = 1
                 )
+                val isProxyWithoutServer = vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL &&
+                    (allServers.isEmpty() || currentServer.kind != com.example.vpn.ServerKind.PROXY)
                 TvPill(
-                    text = "${config.tr("Đang dùng", "Active")}: ${currentServer.flag} ${currentServer.name}",
+                    text = if (isProxyWithoutServer) {
+                        androidx.compose.ui.res.stringResource(
+                            if (vpnState.isAutoSyncingLiveProxies) com.example.R.string.vpn_proxy_scanning
+                            else com.example.R.string.vpn_proxy_empty_title
+                        )
+                    } else {
+                        "${config.tr("Đang dùng", "Active")}: ${currentServer.flag} ${currentServer.name}"
+                    },
                     scale = scale,
-                    tone = TvPillTone.GREEN
+                    tone = if (isProxyWithoutServer) TvPillTone.WARN else TvPillTone.GREEN
                 )
             }
 
@@ -244,19 +253,26 @@ internal fun TvServersScreen(
                     modifier = Modifier.testTag("tv_servers_auto_best_btn")
                 )
 
-                TvChip(
-                    text = config.tr("+ Máy chủ riêng", "+ Custom Proxy"),
-                    selected = false,
-                    scale = scale * 0.92f,
-                    onClick = { showCustomDialog = true },
-                    modifier = Modifier.testTag("tv_servers_add_custom_btn")
-                )
+                if (vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL) {
+                    TvChip(
+                        text = config.tr("+ Proxy riêng", "+ Custom Proxy"),
+                        selected = false,
+                        scale = scale * 0.92f,
+                        onClick = { showCustomDialog = true },
+                        modifier = Modifier.testTag("tv_servers_add_custom_btn")
+                    )
+                }
 
+                val modeShortName = when (vpnState.engine) {
+                    com.example.vpn.VpnEngine.SMART_BYPASS -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
+                    com.example.vpn.VpnEngine.PROXY_TUNNEL -> "Proxy"
+                    com.example.vpn.VpnEngine.EXTERNAL_VPN -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn)
+                }
                 TvButton(
                     text = if (isVpnActive) {
-                        config.tr("Tắt VPN", "Turn Off VPN")
+                        "${config.tr("Tắt", "Off")} $modeShortName"
                     } else {
-                        config.tr("Bật VPN", "Turn On VPN")
+                        "${config.tr("Bật", "On")} $modeShortName"
                     },
                     variant = if (isVpnActive) TvButtonVariant.DANGER else TvButtonVariant.PRIMARY,
                     scale = scale * 0.9f,

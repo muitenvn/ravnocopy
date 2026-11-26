@@ -46,22 +46,40 @@ object RemoteServerCatalog {
 
     val DEFAULT_PROXY_SOURCES: List<ProxyFeedSource> = listOf(
         ProxyFeedSource(
-            id = "proxyscrape_http",
-            type = "plain_ip_port",
+            id = "proxyscrape_v4_json",
+            type = "proxyscrape_v4_json",
             protocol = "http",
-            urlTemplate = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=2500&country={country}&ssl=yes&anonymity=all"
+            urlTemplate = "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&protocol=http&proxy_format=ipport&format=json&timeout=5000"
         ),
         ProxyFeedSource(
-            id = "proxyscrape_socks5",
-            type = "plain_ip_port",
-            protocol = "socks5",
-            urlTemplate = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=socks5&timeout=2500&country={country}&ssl=all&anonymity=all"
+            id = "proxifly_http_json",
+            type = "proxifly_json",
+            protocol = "http",
+            urlTemplate = "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.json"
         ),
         ProxyFeedSource(
             id = "geonode_json",
             type = "geonode_json",
-            protocol = "auto",
-            urlTemplate = "https://proxylist.geonode.com/api/proxy-list?limit=30&page=1&sort_by=lastChecked&sort_type=desc&country={country}&protocols=http%2Csocks5"
+            protocol = "http",
+            urlTemplate = "https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=http"
+        ),
+        ProxyFeedSource(
+            id = "proxyscrape_http",
+            type = "plain_ip_port",
+            protocol = "http",
+            urlTemplate = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country={country}&ssl=all&anonymity=all"
+        ),
+        ProxyFeedSource(
+            id = "monosans_http",
+            type = "plain_ip_port",
+            protocol = "http",
+            urlTemplate = "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt"
+        ),
+        ProxyFeedSource(
+            id = "thespeedx_http",
+            type = "plain_ip_port",
+            protocol = "http",
+            urlTemplate = "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt"
         )
     )
 
@@ -320,7 +338,13 @@ object RemoteServerCatalog {
             reader.endObject()
             // Chỉ chấp nhận nguồn HTTPS hợp lệ
             if (id.isBlank() || !urlTemplate.startsWith("https://")) continue
-            if (type != "plain_ip_port" && type != "geonode_json") continue
+            if (type != "plain_ip_port" &&
+                type != "geonode_json" &&
+                type != "proxyscrape_v4_json" &&
+                type != "proxifly_json"
+            ) {
+                continue
+            }
             list.add(ProxyFeedSource(id = id, type = type, protocol = proto, urlTemplate = urlTemplate))
         }
         reader.endArray()

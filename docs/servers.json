@@ -58,30 +58,43 @@
     { "id": "us_sanfrancisco_9", "name": "United States San Francisco #9", "flag": "🇺🇸", "ip": "167.99.3.26", "port": 6826, "azureEndpoint": "westus.cloudapp.azure.com", "description": "San Francisco Cloud Relay", "countryCode": "US" },
     { "id": "us_chicago_14", "name": "United States Chicago Hub #14", "flag": "🇺🇸", "ip": "167.99.8.113", "port": 8006, "azureEndpoint": "centralus.cloudapp.azure.com", "description": "Chicago Central Cloud Hub", "countryCode": "US" }
   ],
-  "proxyServers": [
-    { "id": "seed_us_virginia_socks5", "name": "United States Virginia SOCKS5", "flag": "🇺🇸", "ip": "68.71.254.6", "port": 4145, "protocol": "socks5", "azureEndpoint": "eastus.cloudapp.azure.com", "description": "East Coast SOCKS5 Proxy Seed", "countryCode": "US" },
-    { "id": "seed_us_nevada_socks5", "name": "United States West SOCKS5", "flag": "🇺🇸", "ip": "68.71.241.33", "port": 4145, "protocol": "socks5", "azureEndpoint": "westus.cloudapp.azure.com", "description": "Western SOCKS5 Proxy Seed", "countryCode": "US" },
-    { "id": "seed_us_texas_socks5", "name": "United States Central SOCKS5", "flag": "🇺🇸", "ip": "68.71.251.134", "port": 4145, "protocol": "socks5", "azureEndpoint": "southcentralus.cloudapp.azure.com", "description": "South Central SOCKS5 Proxy Seed", "countryCode": "US" },
-    { "id": "seed_us_newyork_http", "name": "United States New York HTTP", "flag": "🇺🇸", "ip": "159.65.230.46", "port": 8888, "protocol": "http", "azureEndpoint": "eastus.cloudapp.azure.com", "description": "New York HTTP Proxy Seed", "countryCode": "US" }
-  ],
+  "proxyServers": [],
   "proxySources": [
     {
-      "id": "proxyscrape_http",
-      "type": "plain_ip_port",
+      "id": "proxyscrape_v4_json",
+      "type": "proxyscrape_v4_json",
       "protocol": "http",
-      "urlTemplate": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=2500&country={country}&ssl=yes&anonymity=all"
+      "urlTemplate": "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&protocol=http&proxy_format=ipport&format=json&timeout=5000"
     },
     {
-      "id": "proxyscrape_socks5",
-      "type": "plain_ip_port",
-      "protocol": "socks5",
-      "urlTemplate": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=socks5&timeout=2500&country={country}&ssl=all&anonymity=all"
+      "id": "proxifly_http_json",
+      "type": "proxifly_json",
+      "protocol": "http",
+      "urlTemplate": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.json"
     },
     {
       "id": "geonode_json",
       "type": "geonode_json",
-      "protocol": "auto",
-      "urlTemplate": "https://proxylist.geonode.com/api/proxy-list?limit=30&page=1&sort_by=lastChecked&sort_type=desc&country={country}&protocols=http%2Csocks5"
+      "protocol": "http",
+      "urlTemplate": "https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=http"
+    },
+    {
+      "id": "proxyscrape_http",
+      "type": "plain_ip_port",
+      "protocol": "http",
+      "urlTemplate": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country={country}&ssl=all&anonymity=all"
+    },
+    {
+      "id": "monosans_http",
+      "type": "plain_ip_port",
+      "protocol": "http",
+      "urlTemplate": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt"
+    },
+    {
+      "id": "thespeedx_http",
+      "type": "plain_ip_port",
+      "protocol": "http",
+      "urlTemplate": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt"
     }
   ]
 }

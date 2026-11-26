@@ -424,35 +424,49 @@ object PingTester {
         val statusDetail: String
     )
 
+    private const val MAX_CONCURRENT_PROXY_SCANS = 8
+    private val proxyScanSemaphore = Semaphore(MAX_CONCURRENT_PROXY_SCANS)
+
     /**
-     * Kiểm tra bắt tay Proxy thật (HTTP CONNECT hoặc SOCKS5 CONNECT tới máy chủ Xbox)
-     * dưới giới hạn `socketSemaphore` (tối đa 5 socket mở đồng thời).
-     * Tự động loại bỏ các cổng OpenVPN/SoftEther giả danh proxy hoặc proxy trả lỗi 403/407/502.
+     * Kiểm tra bắt tay Proxy thật (HTTP CONNECT hoặc SOCKS5 CONNECT tới máy chủ Xbox):
+     * - Bước 1: Mở kết nối TCP + bắt tay HTTP CONNECT (đọc trọn phần header tới `\r\n\r\n`) hoặc SOCKS5 CONNECT.
+     * - Bước 2 (khi `verifyTlsAndHttp = true`, mặc định trên máy thật): Bắt tay TLS thật (có SNI + kiểm chứng chứng chỉ SSL hệ thống)
+     *   và gửi `HEAD / HTTP/1.1` qua đường hầm để chứng minh proxy thực sự truyền được HTTPS tới Xbox,
+     *   tự động loại bỏ proxy giả, proxy MITM sửa SSL hoặc proxy nghẽn 0 B/s.
      */
     suspend fun verifyRealProxyEndpoint(
         host: String,
         port: Int,
         protocol: String,
-        timeoutMs: Int = 2200,
+        timeoutMs: Int = 2400,
         targetHost: String = "www.xbox.com",
-        targetPort: Int = 443
+        targetPort: Int = 443,
+        verifyTlsAndHttp: Boolean = true,
+        useFastScanPool: Boolean = false
     ): ProxyHandshakeResult = withContext(Dispatchers.IO) {
         val trimmedHost = host.trim()
         if (trimmedHost.isBlank() || port !in 1..65535) {
             return@withContext ProxyHandshakeResult(false, -1, "invalid_endpoint")
         }
-        val safeTimeout = timeoutMs.coerceIn(500, 3500)
+        val safeTimeout = timeoutMs.coerceIn(500, 4500)
         val normalizedProto = protocol.trim().lowercase(Locale.ROOT)
-        socketSemaphore.withPermit {
+        val permitPool = if (useFastScanPool) proxyScanSemaphore else socketSemaphore
+        permitPool.withPermit {
             val currentOpen = activeOpenSockets.incrementAndGet()
             peakOpenSockets.updateAndGet { peak -> maxOf(peak, currentOpen) }
             val socket = Socket()
+            var sslSocket: javax.net.ssl.SSLSocket? = null
             try {
                 socket.tcpNoDelay = true
-                socket.soTimeout = safeTimeout
+                val connectTimeout = if (verifyTlsAndHttp) {
+                    (safeTimeout * 0.48).roundToInt().coerceIn(500, 1400)
+                } else {
+                    safeTimeout
+                }
+                socket.soTimeout = connectTimeout
                 val resolvedAddr = InetAddress.getByName(trimmedHost)
                 val startNano = System.nanoTime()
-                socket.connect(InetSocketAddress(resolvedAddr, port), safeTimeout)
+                socket.connect(InetSocketAddress(resolvedAddr, port), connectTimeout)
 
                 val okAndDetail: Pair<Boolean, String> = if (normalizedProto == "socks5") {
                     performSocks5ConnectHandshake(socket, targetHost, targetPort)
@@ -460,11 +474,48 @@ object PingTester {
                     performHttpConnectHandshake(socket, targetHost, targetPort)
                 }
 
+                if (!okAndDetail.first) {
+                    return@withPermit ProxyHandshakeResult(false, -1, okAndDetail.second)
+                }
+
+                if (verifyTlsAndHttp) {
+                    val elapsedBeforeTlsMs = ((System.nanoTime() - startNano) / 1_000_000.0).roundToInt()
+                    val remainingMs = (safeTimeout - elapsedBeforeTlsMs).coerceAtLeast(600)
+                    val factory = javax.net.ssl.SSLSocketFactory.getDefault() as javax.net.ssl.SSLSocketFactory
+                    val wrapped = factory.createSocket(socket, targetHost, targetPort, true) as javax.net.ssl.SSLSocket
+                    sslSocket = wrapped
+                    wrapped.soTimeout = remainingMs
+                    try {
+                        val params = wrapped.sslParameters
+                        params.endpointIdentificationAlgorithm = "HTTPS"
+                        wrapped.sslParameters = params
+                    } catch (_: Throwable) {
+                    }
+                    wrapped.startHandshake()
+
+                    // Kiểm tra truyền dữ liệu HTTPS thật qua đường hầm Proxy
+                    val httpHead = "HEAD / HTTP/1.1\r\n" +
+                        "Host: $targetHost\r\n" +
+                        "User-Agent: Mozilla/5.0\r\n" +
+                        "Connection: close\r\n\r\n"
+                    val sslOut = wrapped.outputStream
+                    sslOut.write(httpHead.toByteArray(Charsets.US_ASCII))
+                    sslOut.flush()
+
+                    val statusLine = readHttpLine(wrapped.inputStream, 160)
+                    val validHttpReply = statusLine.startsWith("HTTP/1.1 ") ||
+                        statusLine.startsWith("HTTP/1.0 ") ||
+                        statusLine.startsWith("HTTP/2")
+                    if (!validHttpReply) {
+                        return@withPermit ProxyHandshakeResult(false, -1, "tls_no_http_reply")
+                    }
+                }
+
                 val elapsedMs = ((System.nanoTime() - startNano) / 1_000_000.0).roundToInt().coerceAtLeast(1)
-                if (okAndDetail.first && elapsedMs <= safeTimeout) {
-                    ProxyHandshakeResult(true, elapsedMs, okAndDetail.second)
+                if (elapsedMs <= safeTimeout) {
+                    ProxyHandshakeResult(true, elapsedMs, if (verifyTlsAndHttp) "tls_https_ok" else okAndDetail.second)
                 } else {
-                    ProxyHandshakeResult(false, -1, okAndDetail.second)
+                    ProxyHandshakeResult(false, -1, "slow_rtt_${elapsedMs}ms")
                 }
             } catch (ce: CancellationException) {
                 throw ce
@@ -472,12 +523,34 @@ object PingTester {
                 ProxyHandshakeResult(false, -1, e.javaClass.simpleName)
             } finally {
                 try {
+                    sslSocket?.close()
+                } catch (_: Exception) {
+                }
+                try {
                     socket.close()
                 } catch (_: Exception) {
                 }
                 activeOpenSockets.decrementAndGet()
             }
         }
+    }
+
+    private fun readHttpLine(input: java.io.InputStream, maxLen: Int): String {
+        val lineBuf = StringBuilder(64)
+        var prev = -1
+        while (lineBuf.length < maxLen) {
+            val b = input.read()
+            if (b == -1) break
+            if (b == '\n'.code) {
+                if (prev == '\r'.code && lineBuf.isNotEmpty()) {
+                    lineBuf.setLength(lineBuf.length - 1)
+                }
+                break
+            }
+            lineBuf.append(b.toChar())
+            prev = b
+        }
+        return lineBuf.toString().trim()
     }
 
     private fun performHttpConnectHandshake(
@@ -493,23 +566,21 @@ object PingTester {
         out.flush()
 
         val input = socket.getInputStream()
-        val lineBuf = StringBuilder(64)
-        var prev = -1
-        while (lineBuf.length < 160) {
-            val b = input.read()
-            if (b == -1) break
-            if (b == '\n'.code) {
-                if (prev == '\r'.code && lineBuf.isNotEmpty()) {
-                    lineBuf.setLength(lineBuf.length - 1)
-                }
-                break
-            }
-            lineBuf.append(b.toChar())
-            prev = b
+        val statusLine = readHttpLine(input, 160)
+        val isHttp200 = statusLine.startsWith("HTTP/1.1 200") ||
+            statusLine.startsWith("HTTP/1.0 200") ||
+            statusLine.startsWith("HTTP/2 200")
+        if (!isHttp200) {
+            return false to statusLine.ifBlank { "empty_http_response" }
         }
-        val statusLine = lineBuf.toString().trim()
-        val isHttp200 = (statusLine.startsWith("HTTP/1.1 200") || statusLine.startsWith("HTTP/1.0 200"))
-        return isHttp200 to statusLine.ifBlank { "empty_http_response" }
+        // Đọc hết các dòng header của phản hồi CONNECT tới dòng trống (\r\n\r\n) trước khi bắt tay TLS
+        var headerLines = 0
+        while (headerLines < 32) {
+            val hdr = readHttpLine(input, 512)
+            if (hdr.isEmpty()) break
+            headerLines++
+        }
+        return true to statusLine
     }
 
     private fun performSocks5ConnectHandshake(
@@ -547,14 +618,33 @@ object PingTester {
         out.write(req)
         out.flush()
 
-        // 3. Read reply header: VER=5, REP=0(succeeded), RSV=0, ATYP
+        // 3. Read reply header: VER=5, REP=0(succeeded), RSV=0, ATYP + BND.ADDR + BND.PORT
         val replyHeader = ByteArray(4)
         if (!readExactBytes(input, replyHeader)) {
             return false to "socks5_eof_reply"
         }
         val ver = replyHeader[0].toInt() and 0xFF
         val rep = replyHeader[1].toInt() and 0xFF
-        return (ver == 0x05 && rep == 0x00) to "socks5_rep_$rep"
+        val atyp = replyHeader[3].toInt() and 0xFF
+        if (ver != 0x05 || rep != 0x00) {
+            return false to "socks5_rep_$rep"
+        }
+        // Đọc trọn BND.ADDR + BND.PORT để stream sạch trước khi bắt tay TLS
+        val skipLen = when (atyp) {
+            0x01 -> 4 + 2 // IPv4 + port
+            0x04 -> 16 + 2 // IPv6 + port
+            0x03 -> {
+                val lenByte = input.read()
+                if (lenByte < 0) return false to "socks5_eof_domain_len"
+                lenByte + 2
+            }
+            else -> return false to "socks5_bad_atyp_$atyp"
+        }
+        val tail = ByteArray(skipLen)
+        if (!readExactBytes(input, tail)) {
+            return false to "socks5_eof_tail"
+        }
+        return true to "socks5_rep_0"
     }
 
     private fun readExactBytes(input: java.io.InputStream, target: ByteArray): Boolean {

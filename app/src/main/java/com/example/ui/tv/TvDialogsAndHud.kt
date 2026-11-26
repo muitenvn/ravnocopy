@@ -508,12 +508,17 @@ internal fun TvInGameFloatingHud(
                                     testTag = "tv_hud_record_row"
                                 )
 
-                                // Hàng 6: Chuyển mạng VPN / Trực tiếp
+                                // Hàng 6: Chuyển mạng Bypass / Proxy / VPN ngoài <-> Trực tiếp
+                                val tvHudModeName = when (vpnState.engine) {
+                                    com.example.vpn.VpnEngine.SMART_BYPASS -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
+                                    com.example.vpn.VpnEngine.PROXY_TUNNEL -> "Proxy"
+                                    com.example.vpn.VpnEngine.EXTERNAL_VPN -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn)
+                                }
                                 TvHudActionRow(
                                     title = if (vpnState.mode == NetworkMode.VPN_JAPAN) {
-                                        config.tr("Tắt VPN (Chuyển sang Trực tiếp)", "Disconnect VPN (Use Direct)")
+                                        "${config.tr("Tắt", "Disconnect")} $tvHudModeName (${config.tr("Trực tiếp", "Direct")})"
                                     } else {
-                                        config.tr("Bật VPN mở khóa vùng", "Connect Region Unlock VPN")
+                                        "${config.tr("Bật", "Connect")} $tvHudModeName"
                                     },
                                     trailingText = netLabel,
                                     trailingColor = TvCyan,

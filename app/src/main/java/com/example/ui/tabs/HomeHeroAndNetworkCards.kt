@@ -439,9 +439,12 @@ internal fun QuickNetworkCockpitCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            val isProxyWithoutServer = vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL &&
+                vpnState.currentServer.kind != com.example.vpn.ServerKind.PROXY
             // Flag
             Text(
-                text = vpnState.currentServer.flag,
+                text = if (isProxyWithoutServer) "◈" else vpnState.currentServer.flag,
+                color = if (isProxyWithoutServer) XboxNeonGreen else TextPrimary,
                 fontSize = 20.sp
             )
 
@@ -451,7 +454,14 @@ internal fun QuickNetworkCockpitCard(
                 verticalArrangement = Arrangement.spacedBy(1.dp)
             ) {
                 Text(
-                    text = vpnState.currentServer.name,
+                    text = if (isProxyWithoutServer) {
+                        androidx.compose.ui.res.stringResource(
+                            if (vpnState.isAutoSyncingLiveProxies) com.example.R.string.vpn_proxy_scanning
+                            else com.example.R.string.vpn_proxy_empty_title
+                        )
+                    } else {
+                        vpnState.currentServer.name
+                    },
                     color = TextPrimary,
                     fontFamily = SpaceGroteskFontFamily,
                     fontSize = 14.sp,
@@ -528,8 +538,13 @@ internal fun QuickNetworkCockpitCard(
                 .testTag("quick_vpn_toggle_button"),
             contentAlignment = Alignment.Center
         ) {
+            val modeShortName = when (vpnState.engine) {
+                com.example.vpn.VpnEngine.SMART_BYPASS -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
+                com.example.vpn.VpnEngine.PROXY_TUNNEL -> "Proxy"
+                com.example.vpn.VpnEngine.EXTERNAL_VPN -> "VPN"
+            }
             Text(
-                text = if (isConnected) config.tr("Tắt VPN", "VPN Off") else "VPN",
+                text = if (isConnected) "${config.tr("Tắt", "Off")} $modeShortName" else modeShortName,
                 fontFamily = SpaceGroteskFontFamily,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
