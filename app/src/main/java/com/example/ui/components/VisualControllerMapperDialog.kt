@@ -44,6 +44,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +56,8 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.cloudplay.PhysicalGamepadCaptureBus
 import com.example.data.AppConfig
+import com.example.data.KeySequenceCodec
+import com.example.data.KeySequenceStep
 import com.example.data.SettingsRepository
 import com.example.ui.theme.DirectCyan
 import com.example.ui.theme.JetBrainsMonoFontFamily
@@ -98,17 +101,13 @@ fun VisualControllerMapperDialog(
     val currentMap = remember(config.physicalGamepadButtonMap) {
         SettingsRepository.parsePhysicalButtonMap(config.physicalGamepadButtonMap)
     }
+    val slotBindings = remember(config.physicalCustomKeyMap) {
+        SettingsRepository.parseSlotKeyBindings(config.physicalCustomKeyMap)
+    }
     val customKeyMap = remember(config.physicalCustomKeyMap) {
         SettingsRepository.parsePhysicalCustomKeyMap(config.physicalCustomKeyMap)
     }
-    val customKeysBySlot = remember(customKeyMap) {
-        val grouped = mutableMapOf<Int, MutableList<Int>>()
-        customKeyMap.forEach { (keyCode, slot) ->
-            grouped.getOrPut(slot) { mutableListOf() }.add(keyCode)
-        }
-        grouped.mapValues { it.value.sorted() }
-    }
-    val totalRemappedCount = currentMap.size + customKeyMap.size
+    val totalRemappedCount = currentMap.size + slotBindings.size
 
     val liveStdPressed by PhysicalGamepadCaptureBus.livePressedCodes.collectAsState()
     val liveCustomKeyCodes by PhysicalGamepadCaptureBus.liveCustomKeyCodes.collectAsState()
@@ -176,7 +175,7 @@ fun VisualControllerMapperDialog(
                     canvasWidth = fittedW,
                     canvasHeight = fittedH,
                     currentMap = currentMap,
-                    customKeysBySlot = customKeysBySlot,
+                    slotBindings = slotBindings,
                     liveSlots = liveEffectiveSlots,
                     onSelectSlot = { editingSourceCode = it }
                 )
@@ -404,10 +403,12 @@ fun VisualControllerMapperDialog(
                                     .testTag("visual_map_reset_all_btn")
                             ) {
                                 Text(
-                                    text = config.tr("Đặt lại", "Reset"),
+                                    text = stringResource(R.string.keybind_reset_preset),
                                     color = PadWarningColor,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = rSp(11.5f)
+                                    fontSize = rSp(11f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -421,7 +422,7 @@ fun VisualControllerMapperDialog(
                                 .testTag("visual_map_close_btn")
                         ) {
                             Text(
-                                text = config.tr("Xong", "Done"),
+                                text = stringResource(R.string.keybind_done),
                                 color = Color(0xFF04150B),
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = rSp(12f)
@@ -461,7 +462,7 @@ fun VisualControllerMapperDialog(
             sourceCode = activeEditCode,
             config = config,
             currentMap = currentMap,
-            customKeyMap = customKeyMap,
+            slotBindings = slotBindings,
             onApplyStandardMapping = { targetCode, swapWithExisting ->
                 SettingsRepository.updatePhysicalInputMapping(
                     sourceCode = activeEditCode,
@@ -469,14 +470,15 @@ fun VisualControllerMapperDialog(
                     swapWithExisting = swapWithExisting
                 )
             },
-            onBindCustomHardwareKey = { androidKeyCode ->
-                SettingsRepository.bindPhysicalCustomKey(
-                    androidKeyCode = androidKeyCode,
-                    targetSlot = activeEditCode
+            onSaveSlotSequence = { steps, replaceConflictSlot ->
+                SettingsRepository.updateSlotKeyBinding(
+                    targetSlot = activeEditCode,
+                    steps = steps,
+                    replaceConflictSlot = replaceConflictSlot
                 )
             },
-            onClearCustomKeysForSlot = {
-                SettingsRepository.clearPhysicalCustomKeysForSlot(activeEditCode)
+            onClearSlotAll = {
+                SettingsRepository.clearSlotAllBindings(activeEditCode)
             },
             onDismiss = { editingSourceCode = null }
         )
@@ -493,7 +495,7 @@ private fun RealControllerOverlayCanvas(
     canvasWidth: Dp,
     canvasHeight: Dp,
     currentMap: Map<Int, Int>,
-    customKeysBySlot: Map<Int, List<Int>>,
+    slotBindings: Map<Int, List<KeySequenceStep>>,
     liveSlots: Set<Int>,
     onSelectSlot: (Int) -> Unit
 ) {
@@ -501,13 +503,13 @@ private fun RealControllerOverlayCanvas(
     val h = canvasHeight
 
     fun badgeForSlot(code: Int): String? {
+        val seq = slotBindings[code]
+        if (!seq.isNullOrEmpty()) {
+            return KeySequenceCodec.formatCompactBadge(seq)
+        }
         val mapped = currentMap[code]
         if (mapped != null && mapped != code) {
             return SettingsRepository.getGamepadButtonShortLabel(mapped)
-        }
-        val ext = customKeysBySlot[code]?.firstOrNull()
-        if (ext != null) {
-            return SettingsRepository.getHardwareKeyShortLabel(ext)
         }
         return null
     }

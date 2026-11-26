@@ -236,7 +236,7 @@ internal fun SettingsGamepadTouchSection(
             // Nút mở Sơ đồ chỉnh nút tay cầm trực quan ngay trong Cài đặt chính (hỗ trợ bấm trực tiếp trên tay cầm thật & đảo chiều cần L/R)
             val remappedCount = remember(config.physicalGamepadButtonMap, config.physicalCustomKeyMap) {
                 SettingsRepository.parsePhysicalButtonMap(config.physicalGamepadButtonMap).size +
-                    SettingsRepository.parsePhysicalCustomKeyMap(config.physicalCustomKeyMap).size
+                    SettingsRepository.parseSlotKeyBindings(config.physicalCustomKeyMap).size
             }
             OutlinedButton(
                 onClick = { showVisualControllerMapper = true },

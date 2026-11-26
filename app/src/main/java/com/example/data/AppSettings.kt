@@ -2399,17 +2399,16 @@ object SettingsRepository {
         AppLogger.info("UI", "Hoán đổi Cần Trái ↔ Cần Phải (tay cầm thật): ${!swapped}")
     }
 
+    fun parseSlotKeyBindings(raw: String = _config.value.physicalCustomKeyMap): Map<Int, List<KeySequenceStep>> {
+        return KeySequenceCodec.parseSlotBindings(raw)
+    }
+
     fun parsePhysicalCustomKeyMap(raw: String = _config.value.physicalCustomKeyMap): Map<Int, Int> {
         if (raw.isBlank()) return emptyMap()
         val map = mutableMapOf<Int, Int>()
-        raw.split(",").forEach { pair ->
-            val parts = pair.trim().split(":")
-            if (parts.size == 2) {
-                val keyCode = parts[0].toIntOrNull()
-                val slot = parts[1].toIntOrNull()
-                if (keyCode != null && keyCode > 0 && slot != null && slot in 0..PHYS_INPUT_MAX_CODE) {
-                    map[keyCode] = slot
-                }
+        KeySequenceCodec.parseSlotBindings(raw).forEach { (slot, steps) ->
+            if (steps.size == 1 && KeySequenceCodec.isKeyboardCode(steps[0].code)) {
+                map[steps[0].code] = slot
             }
         }
         return map
@@ -2422,11 +2421,59 @@ object SettingsRepository {
             .joinToString(",") { "${it.key}:${it.value}" }
     }
 
+    fun updateSlotKeyBinding(
+        targetSlot: Int,
+        steps: List<KeySequenceStep>,
+        replaceConflictSlot: Int? = null
+    ) {
+        if (targetSlot !in 0..PHYS_INPUT_MAX_CODE) return
+        val current = KeySequenceCodec.parseSlotBindings(_config.value.physicalCustomKeyMap).toMutableMap()
+        if (replaceConflictSlot != null && replaceConflictSlot != targetSlot) {
+            current.remove(replaceConflictSlot)
+        }
+        val normalized = KeySequenceCodec.normalizeSteps(steps.filter { KeySequenceCodec.isValidCode(it.code) })
+        if (normalized.isEmpty()) {
+            current.remove(targetSlot)
+        } else {
+            current[targetSlot] = normalized
+        }
+        val serialized = KeySequenceCodec.serializeSlotBindings(current)
+        _config.update { it.copy(physicalCustomKeyMap = serialized) }
+        persist(_config.value)
+        AppLogger.info(
+            "UI",
+            "Cập nhật gán phím/chuỗi cho ${getGamepadButtonShortLabel(targetSlot)}: ${KeySequenceCodec.formatCompactBadge(normalized) ?: "trống"}"
+        )
+    }
+
+    fun clearSlotAllBindings(targetSlot: Int) {
+        if (targetSlot !in 0..PHYS_INPUT_MAX_CODE) return
+        val nextButtonMap = parsePhysicalButtonMap().toMutableMap()
+        nextButtonMap.remove(targetSlot)
+        val nextKeyBindings = KeySequenceCodec.parseSlotBindings(_config.value.physicalCustomKeyMap).toMutableMap()
+        nextKeyBindings.remove(targetSlot)
+        _config.update {
+            it.copy(
+                physicalGamepadButtonMap = serializePhysicalButtonMap(nextButtonMap),
+                physicalCustomKeyMap = KeySequenceCodec.serializeSlotBindings(nextKeyBindings)
+            )
+        }
+        persist(_config.value)
+        AppLogger.info("UI", "Xóa toàn bộ gán nút: ${getGamepadButtonShortLabel(targetSlot)}")
+    }
+
     fun bindPhysicalCustomKey(androidKeyCode: Int, targetSlot: Int) {
         if (androidKeyCode <= 0 || targetSlot !in 0..PHYS_INPUT_MAX_CODE) return
-        val current = parsePhysicalCustomKeyMap().toMutableMap()
-        current[androidKeyCode] = targetSlot
-        val serialized = serializePhysicalCustomKeyMap(current)
+        val current = KeySequenceCodec.parseSlotBindings(_config.value.physicalCustomKeyMap).toMutableMap()
+        // Gỡ phím đơn trùng nếu đã gán ở slot khác
+        val duplicateSlot = current.entries.firstOrNull { (slot, steps) ->
+            slot != targetSlot && steps.size == 1 && steps[0].code == androidKeyCode
+        }?.key
+        if (duplicateSlot != null) {
+            current.remove(duplicateSlot)
+        }
+        current[targetSlot] = listOf(KeySequenceStep(code = androidKeyCode, delayAfterTenths = 0))
+        val serialized = KeySequenceCodec.serializeSlotBindings(current)
         _config.update { it.copy(physicalCustomKeyMap = serialized) }
         persist(_config.value)
         AppLogger.info(
@@ -2436,10 +2483,10 @@ object SettingsRepository {
     }
 
     fun clearPhysicalCustomKeysForSlot(targetSlot: Int) {
-        val current = parsePhysicalCustomKeyMap().toMutableMap()
-        val removed = current.entries.removeAll { it.value == targetSlot }
+        val current = KeySequenceCodec.parseSlotBindings(_config.value.physicalCustomKeyMap).toMutableMap()
+        val removed = current.remove(targetSlot) != null
         if (!removed) return
-        val serialized = serializePhysicalCustomKeyMap(current)
+        val serialized = KeySequenceCodec.serializeSlotBindings(current)
         _config.update { it.copy(physicalCustomKeyMap = serialized) }
         persist(_config.value)
     }

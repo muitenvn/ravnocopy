@@ -155,4 +155,48 @@
     <string name="btn_confirm_exit">Thoát game</string>
     <string name="loading_stream">Đang kết nối vào Xbox Cloud...</string>
     <string name="loading_tip">Mẹo: VPN sẽ tự tắt ngay khi vào game để chơi mượt hơn.</string>
+
+    <!-- Visual Key & Sequence Mapper -->
+    <string name="keybind_button_title">Nút %1$s</string>
+    <string name="keybind_tab_keyboard_mouse">Bàn phím &amp; Chuột</string>
+    <string name="keybind_tab_gamepad">Tay cầm</string>
+    <string name="keybind_clear_all">Xóa hết</string>
+    <string name="keybind_clear_slot">Xóa gán nút này</string>
+    <string name="keybind_reset_preset">Đặt lại mẫu mặc định</string>
+    <string name="keybind_done">Xong</string>
+    <string name="keybind_cancel">Hủy</string>
+    <string name="keybind_esc_cancel_hint">Esc để hủy</string>
+    <string name="keybind_empty_slot">Trống</string>
+    <string name="keybind_sequence_hint">Bấm phím để thêm (tối đa 6 bước). Bấm ô để đổi hoặc xóa. Bấm mũi tên để chỉnh số giây.</string>
+    <string name="keybind_gamepad_sequence_hint">Chọn nút tay cầm hoặc bấm nút thật để thêm bước (tối đa 6). Bấm mũi tên để chỉnh số giây.</string>
+    <string name="keybind_remove_step">Xóa bước này</string>
+    <string name="keybind_seconds_short">%1$s giây</string>
+    <string name="keybind_seconds_unit">giây</string>
+    <string name="keybind_delay_from_to">Từ %1$s sang %2$s</string>
+    <string name="keybind_delay_note">0 = nhấn cùng lúc (phím gộp). Trên 0 = nhấn lần lượt. Mỗi lần bấm + / − là 0,1 giây.</string>
+    <string name="keybind_delay_input_hint">0 – 5</string>
+    <string name="keybind_delay_decrease">Giảm 0,1 giây</string>
+    <string name="keybind_delay_increase">Tăng 0,1 giây</string>
+    <string name="keybind_delay_arrow_cd">Số giây chờ: %1$s giây</string>
+    <string name="keybind_duplicate_warning">Phím %1$s đã gán cho %2$s. Gán tiếp sẽ thay phím cũ.</string>
+    <string name="keybind_replace_confirm">Thay phím cũ</string>
+    <string name="keybind_mouse_label">Chuột</string>
+    <string name="keybind_mouse_left">Chuột trái</string>
+    <string name="keybind_mouse_right">Chuột phải</string>
+    <string name="keybind_mouse_middle">Chuột giữa</string>
+    <string name="keybind_mouse_wheel_up">Cuộn lên</string>
+    <string name="keybind_mouse_wheel_down">Cuộn xuống</string>
+    <string name="keybind_mouse_side_1">Nút bên 1</string>
+    <string name="keybind_mouse_side_2">Nút bên 2</string>
+    <string name="keybind_key_backspace">Xóa</string>
+    <string name="keybind_capture_physical">Bắt phím vật lý</string>
+    <string name="keybind_capture_waiting">Đang chờ phím… (%1$ds) · Esc hủy</string>
+    <string name="keybind_key_cd">Phím %1$s</string>
+    <string name="keybind_slot_cd">Bước %1$d: %2$s</string>
+    <string name="keybind_add_step_cd">Thêm bước kế tiếp</string>
+    <string name="keybind_max_steps_reached">Đã đạt tối đa 6 bước</string>
+    <string name="keybind_swap_pair_title">Tự hoán đổi 2 chiều (A ↔ B)</string>
+    <string name="keybind_swap_pair_desc">Bật để đảo trục ngược mượt khi gán 1 nút tay cầm.</string>
+    <string name="keybind_on">BẬT</string>
+    <string name="keybind_off">TẮT</string>
 </resources>

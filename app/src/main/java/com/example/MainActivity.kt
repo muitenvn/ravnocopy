@@ -172,6 +172,11 @@ class MainActivity : ComponentActivity() {
         VpnManager.onAppForeground()
     }
 
+    override fun onPause() {
+        com.example.cloudplay.PhysicalGamepadCaptureBus.releaseAllInGameKeys()
+        super.onPause()
+    }
+
     override fun onStop() {
         com.example.cloudplay.PhysicalGamepadCaptureBus.releaseAllInGameKeys()
         com.example.cloudplay.NetworkOptimizer.setAppForeground(false)
@@ -210,6 +215,11 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent?): Boolean {
+        if (ev != null && isBrowserScreenActive && !com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi) {
+            if (com.example.cloudplay.PhysicalGamepadCaptureBus.handleInGameMouseEvent(ev)) {
+                return true
+            }
+        }
         if (ev != null && ev.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
             com.example.ui.components.GamepadUiNavigation.onTouchInteraction()
         }
@@ -219,6 +229,11 @@ class MainActivity : ComponentActivity() {
     override fun dispatchGenericMotionEvent(ev: android.view.MotionEvent?): Boolean {
         if (ev != null && !isBrowserScreenActive && com.example.cloudplay.PhysicalGamepadCaptureBus.handleGenericMotionEvent(ev)) {
             return true
+        }
+        if (ev != null && isBrowserScreenActive && !com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi) {
+            if (com.example.cloudplay.PhysicalGamepadCaptureBus.handleInGameMouseEvent(ev)) {
+                return true
+            }
         }
         if (ev != null && (!isBrowserScreenActive || com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi)) {
             if (com.example.ui.components.GamepadUiNavigation.handleGenericMotionEvent(ev)) {
@@ -230,13 +245,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus && isBrowserScreenActive) {
+        if (!hasFocus) {
+            com.example.cloudplay.PhysicalGamepadCaptureBus.releaseAllInGameKeys()
+        } else if (isBrowserScreenActive) {
             applyImmersiveFullscreen(true)
         }
     }
 
     fun applyImmersiveFullscreen(enable: Boolean) {
         if (!enable) {
+            com.example.cloudplay.PhysicalGamepadCaptureBus.releaseAllInGameKeys()
             com.example.ui.components.GamepadUiNavigation.shouldRouteToAppUi = true
         }
         if (!enable && !isBrowserScreenActive) return

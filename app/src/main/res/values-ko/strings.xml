@@ -155,4 +155,48 @@
     <string name="btn_confirm_exit">게임 종료</string>
     <string name="loading_stream">Xbox Cloud 연결 중...</string>
     <string name="loading_tip">팁: 게임이 시작되면 원활한 플레이를 위해 VPN이 자동으로 꺼집니다.</string>
+
+    <!-- Visual Key & Sequence Mapper -->
+    <string name="keybind_button_title">버튼 %1$s</string>
+    <string name="keybind_tab_keyboard_mouse">키보드 및 마우스</string>
+    <string name="keybind_tab_gamepad">컨트롤러</string>
+    <string name="keybind_clear_all">모두 지우기</string>
+    <string name="keybind_clear_slot">이 버튼 해제</string>
+    <string name="keybind_reset_preset">기본값으로 재설정</string>
+    <string name="keybind_done">완료</string>
+    <string name="keybind_cancel">취소</string>
+    <string name="keybind_esc_cancel_hint">Esc로 취소</string>
+    <string name="keybind_empty_slot">비어 있음</string>
+    <string name="keybind_sequence_hint">키를 눌러 추가(최대 6단계). 칸을 눌러 변경/삭제. 화살표를 눌러 초 단위를 조절하세요.</string>
+    <string name="keybind_gamepad_sequence_hint">컨트롤러 버튼을 선택하거나 직접 눌러 추가(최대 6단계). 화살표를 눌러 초를 조절하세요.</string>
+    <string name="keybind_remove_step">단계 삭제</string>
+    <string name="keybind_seconds_short">%1$s초</string>
+    <string name="keybind_seconds_unit">초</string>
+    <string name="keybind_delay_from_to">%1$s에서 %2$s로</string>
+    <string name="keybind_delay_note">0 = 동시에 누름(조합 키). 0 초과 = 순서대로 누름. + / − 한 번에 0.1초씩 변경됩니다.</string>
+    <string name="keybind_delay_input_hint">0 – 5</string>
+    <string name="keybind_delay_decrease">0.1초 감소</string>
+    <string name="keybind_delay_increase">0.1초 증가</string>
+    <string name="keybind_delay_arrow_cd">대기 시간: %1$s초</string>
+    <string name="keybind_duplicate_warning">키 %1$s는 이미 %2$s에 지정되어 있습니다. 계속하면 기존 지정이 교체됩니다.</string>
+    <string name="keybind_replace_confirm">교체하기</string>
+    <string name="keybind_mouse_label">마우스</string>
+    <string name="keybind_mouse_left">왼쪽 클릭</string>
+    <string name="keybind_mouse_right">오른쪽 클릭</string>
+    <string name="keybind_mouse_middle">가운데 클릭</string>
+    <string name="keybind_mouse_wheel_up">휠 위로</string>
+    <string name="keybind_mouse_wheel_down">휠 아래로</string>
+    <string name="keybind_mouse_side_1">측면 1</string>
+    <string name="keybind_mouse_side_2">측면 2</string>
+    <string name="keybind_key_backspace">삭제</string>
+    <string name="keybind_capture_physical">실제 키 입력</string>
+    <string name="keybind_capture_waiting">키 대기 중… (%1$ds) · Esc 취소</string>
+    <string name="keybind_key_cd">키 %1$s</string>
+    <string name="keybind_slot_cd">단계 %1$d: %2$s</string>
+    <string name="keybind_add_step_cd">새 단계 추가</string>
+    <string name="keybind_max_steps_reached">최대 6단계에 도달했습니다</string>
+    <string name="keybind_swap_pair_title">자동 맞바꾸기 (A ↔ B)</string>
+    <string name="keybind_swap_pair_desc">켜기: 단일 버튼 변경 시 반대 방향이나 버튼을 자동으로 맞바꿉니다.</string>
+    <string name="keybind_on">켜짐</string>
+    <string name="keybind_off">꺼짐</string>
 </resources>

@@ -155,4 +155,48 @@
     <string name="btn_confirm_exit">Выйти из игры</string>
     <string name="loading_stream">Подключение к Xbox Cloud...</string>
     <string name="loading_tip">Совет: VPN автоматически отключается после запуска игры для снижения пинга.</string>
+
+    <!-- Visual Key & Sequence Mapper -->
+    <string name="keybind_button_title">Кнопка %1$s</string>
+    <string name="keybind_tab_keyboard_mouse">Клавиатура и мышь</string>
+    <string name="keybind_tab_gamepad">Геймпад</string>
+    <string name="keybind_clear_all">Очистить всё</string>
+    <string name="keybind_clear_slot">Сбросить эту кнопку</string>
+    <string name="keybind_reset_preset">Сбросить по умолчанию</string>
+    <string name="keybind_done">Готово</string>
+    <string name="keybind_cancel">Отмена</string>
+    <string name="keybind_esc_cancel_hint">Esc — отмена</string>
+    <string name="keybind_empty_slot">Пусто</string>
+    <string name="keybind_sequence_hint">Нажмите клавишу, чтобы добавить (до 6 шагов). Нажмите ячейку для замены/удаления. Нажмите стрелку для секунд.</string>
+    <string name="keybind_gamepad_sequence_hint">Выберите или нажмите кнопку геймпада (до 6 шагов). Нажмите стрелку для настройки секунд.</string>
+    <string name="keybind_remove_step">Удалить шаг</string>
+    <string name="keybind_seconds_short">%1$s с</string>
+    <string name="keybind_seconds_unit">с</string>
+    <string name="keybind_delay_from_to">От %1$s к %2$s</string>
+    <string name="keybind_delay_note">0 = нажать вместе (комбинация). Выше 0 = по очереди. Шаг + / − равен 0,1 с.</string>
+    <string name="keybind_delay_input_hint">0 – 5</string>
+    <string name="keybind_delay_decrease">Уменьшить на 0,1 с</string>
+    <string name="keybind_delay_increase">Увеличить на 0,1 с</string>
+    <string name="keybind_delay_arrow_cd">Задержка: %1$s с</string>
+    <string name="keybind_duplicate_warning">Клавиша %1$s уже назначена на %2$s. Продолжение заменит старую.</string>
+    <string name="keybind_replace_confirm">Заменить</string>
+    <string name="keybind_mouse_label">Мышь</string>
+    <string name="keybind_mouse_left">ЛКМ</string>
+    <string name="keybind_mouse_right">ПКМ</string>
+    <string name="keybind_mouse_middle">СКМ</string>
+    <string name="keybind_mouse_wheel_up">Колесо вверх</string>
+    <string name="keybind_mouse_wheel_down">Колесо вниз</string>
+    <string name="keybind_mouse_side_1">Боковая 1</string>
+    <string name="keybind_mouse_side_2">Боковая 2</string>
+    <string name="keybind_key_backspace">Удал.</string>
+    <string name="keybind_capture_physical">Захват клавиши</string>
+    <string name="keybind_capture_waiting">Ожидание клавиши… (%1$ds) · Esc отмена</string>
+    <string name="keybind_key_cd">Клавиша %1$s</string>
+    <string name="keybind_slot_cd">Шаг %1$d: %2$s</string>
+    <string name="keybind_add_step_cd">Добавить шаг</string>
+    <string name="keybind_max_steps_reached">Достигнут максимум 6 шагов</string>
+    <string name="keybind_swap_pair_title">Автообмен пары (A ↔ B)</string>
+    <string name="keybind_swap_pair_desc">Вкл.: меняет противоположные направления или кнопки при одиночном назначении.</string>
+    <string name="keybind_on">ВКЛ</string>
+    <string name="keybind_off">ВЫКЛ</string>
 </resources>

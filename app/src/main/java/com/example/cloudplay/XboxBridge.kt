@@ -2584,7 +2584,118 @@ class XboxBridge(
                         }
                     };
 
+                    const activeSynthKeys = [];
+                    const activeSynthMouseBtns = [];
+
+                    function resolveInputTarget() {
+                        return document.querySelector('video') || document.activeElement || document.body || document;
+                    }
+
+                    window.__cpSynthKey = function(key, code, keyCode, pressed) {
+                        const isDown = !!pressed;
+                        const k = String(key || '');
+                        const c = String(code || k);
+                        const kc = Number(keyCode) || 0;
+                        const idx = activeSynthKeys.findIndex(function(item) { return item.code === c; });
+                        if (isDown) {
+                            if (idx !== -1) return;
+                            activeSynthKeys.push({ key: k, code: c, keyCode: kc });
+                        } else {
+                            if (idx === -1) return;
+                            activeSynthKeys.splice(idx, 1);
+                        }
+                        try {
+                            const target = resolveInputTarget();
+                            const evt = new KeyboardEvent(isDown ? 'keydown' : 'keyup', {
+                                key: k,
+                                code: c,
+                                keyCode: kc,
+                                which: kc,
+                                bubbles: true,
+                                cancelable: true,
+                                composed: true
+                            });
+                            target.dispatchEvent(evt);
+                            window.__lastRealUserInputAt = Date.now();
+                        } catch (_e) {}
+                    };
+
+                    window.__cpSynthMouse = function(mouseCode, pressed) {
+                        const mc = Number(mouseCode);
+                        const isDown = !!pressed;
+                        const target = resolveInputTarget();
+                        if (mc === -104 || mc === -105) {
+                            if (!isDown) return;
+                            try {
+                                const deltaY = (mc === -104) ? -120 : 120;
+                                target.dispatchEvent(new WheelEvent('wheel', {
+                                    deltaY: deltaY,
+                                    bubbles: true,
+                                    cancelable: true,
+                                    composed: true
+                                }));
+                                window.__lastRealUserInputAt = Date.now();
+                            } catch (_e) {}
+                            return;
+                        }
+                        const btnMap = { '-101': 0, '-102': 2, '-103': 1, '-106': 3, '-107': 4 };
+                        const btn = btnMap[String(mc)];
+                        if (btn === undefined) return;
+                        const idx = activeSynthMouseBtns.indexOf(mc);
+                        if (isDown) {
+                            if (idx !== -1) return;
+                            activeSynthMouseBtns.push(mc);
+                        } else {
+                            if (idx === -1) return;
+                            activeSynthMouseBtns.splice(idx, 1);
+                        }
+                        try {
+                            target.dispatchEvent(new MouseEvent(isDown ? 'mousedown' : 'mouseup', {
+                                button: btn,
+                                buttons: isDown ? (1 << btn) : 0,
+                                bubbles: true,
+                                cancelable: true,
+                                composed: true
+                            }));
+                            window.__lastRealUserInputAt = Date.now();
+                        } catch (_e) {}
+                    };
+
                     window.__cpCustomKeyReleaseAll = function() {
+                        // Nhả các phím/nút chuột tổng hợp theo thứ tự ngược lại
+                        for (let i = activeSynthKeys.length - 1; i >= 0; i--) {
+                            const item = activeSynthKeys[i];
+                            try {
+                                resolveInputTarget().dispatchEvent(new KeyboardEvent('keyup', {
+                                    key: item.key,
+                                    code: item.code,
+                                    keyCode: item.keyCode,
+                                    which: item.keyCode,
+                                    bubbles: true,
+                                    cancelable: true,
+                                    composed: true
+                                }));
+                            } catch (_e) {}
+                        }
+                        activeSynthKeys.length = 0;
+                        for (let i = activeSynthMouseBtns.length - 1; i >= 0; i--) {
+                            const mc = activeSynthMouseBtns[i];
+                            const btnMap = { '-101': 0, '-102': 2, '-103': 1, '-106': 3, '-107': 4 };
+                            const btn = btnMap[String(mc)];
+                            if (btn !== undefined) {
+                                try {
+                                    resolveInputTarget().dispatchEvent(new MouseEvent('mouseup', {
+                                        button: btn,
+                                        buttons: 0,
+                                        bubbles: true,
+                                        cancelable: true,
+                                        composed: true
+                                    }));
+                                } catch (_e) {}
+                            }
+                        }
+                        activeSynthMouseBtns.length = 0;
+
                         if (customKeyActiveCount === 0) return;
                         for (let i = 0; i < 25; i++) customKeySlots[i] = false;
                         customKeyActiveCount = 0;

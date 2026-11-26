@@ -155,4 +155,48 @@
     <string name="btn_confirm_exit">Quitter le jeu</string>
     <string name="loading_stream">Connexion à Xbox Cloud...</string>
     <string name="loading_tip">Astuce : Le VPN se coupe automatiquement dès que le jeu démarre.</string>
+
+    <!-- Visual Key & Sequence Mapper -->
+    <string name="keybind_button_title">Bouton %1$s</string>
+    <string name="keybind_tab_keyboard_mouse">Clavier et souris</string>
+    <string name="keybind_tab_gamepad">Manette</string>
+    <string name="keybind_clear_all">Tout effacer</string>
+    <string name="keybind_clear_slot">Effacer ce bouton</string>
+    <string name="keybind_reset_preset">Réinitialiser par défaut</string>
+    <string name="keybind_done">Terminé</string>
+    <string name="keybind_cancel">Annuler</string>
+    <string name="keybind_esc_cancel_hint">Échap pour annuler</string>
+    <string name="keybind_empty_slot">Vide</string>
+    <string name="keybind_sequence_hint">Appuyez sur une touche pour ajouter (6 étapes max.). Touchez une case pour modifier ou supprimer. Touchez une flèche pour régler les secondes.</string>
+    <string name="keybind_gamepad_sequence_hint">Choisissez un bouton de manette ou appuyez sur un vrai bouton (6 étapes max.). Touchez une flèche pour régler les secondes.</string>
+    <string name="keybind_remove_step">Supprimer l\'étape</string>
+    <string name="keybind_seconds_short">%1$s s</string>
+    <string name="keybind_seconds_unit">s</string>
+    <string name="keybind_delay_from_to">De %1$s à %2$s</string>
+    <string name="keybind_delay_note">0 = appui simultané (combinaison). Au-dessus de 0 = en séquence. Chaque + / − varie de 0,1 s.</string>
+    <string name="keybind_delay_input_hint">0 – 5</string>
+    <string name="keybind_delay_decrease">Diminuer de 0,1 s</string>
+    <string name="keybind_delay_increase">Augmenter de 0,1 s</string>
+    <string name="keybind_delay_arrow_cd">Délai : %1$s s</string>
+    <string name="keybind_duplicate_warning">La touche %1$s est déjà attribuée à %2$s. Continuer remplacera l\'ancienne.</string>
+    <string name="keybind_replace_confirm">Remplacer</string>
+    <string name="keybind_mouse_label">Souris</string>
+    <string name="keybind_mouse_left">Clic gauche</string>
+    <string name="keybind_mouse_right">Clic droit</string>
+    <string name="keybind_mouse_middle">Clic milieu</string>
+    <string name="keybind_mouse_wheel_up">Molette haut</string>
+    <string name="keybind_mouse_wheel_down">Molette bas</string>
+    <string name="keybind_mouse_side_1">Latéral 1</string>
+    <string name="keybind_mouse_side_2">Latéral 2</string>
+    <string name="keybind_key_backspace">Effacer</string>
+    <string name="keybind_capture_physical">Capturer touche</string>
+    <string name="keybind_capture_waiting">En attente… (%1$ds) · Échap annule</string>
+    <string name="keybind_key_cd">Touche %1$s</string>
+    <string name="keybind_slot_cd">Étape %1$d : %2$s</string>
+    <string name="keybind_add_step_cd">Ajouter une étape</string>
+    <string name="keybind_max_steps_reached">Maximum de 6 étapes atteint</string>
+    <string name="keybind_swap_pair_title">Échange automatique (A ↔ B)</string>
+    <string name="keybind_swap_pair_desc">Activé : échange proprement les directions ou boutons opposés.</string>
+    <string name="keybind_on">OUI</string>
+    <string name="keybind_off">NON</string>
 </resources>

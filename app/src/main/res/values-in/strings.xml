@@ -155,4 +155,48 @@
     <string name="btn_confirm_exit">Keluar Game</string>
     <string name="loading_stream">Menghubungkan ke Xbox Cloud...</string>
     <string name="loading_tip">Tips: VPN otomatis mati setelah game dimulai agar permainan lebih lancar.</string>
+
+    <!-- Visual Key & Sequence Mapper -->
+    <string name="keybind_button_title">Tombol %1$s</string>
+    <string name="keybind_tab_keyboard_mouse">Keyboard &amp; Mouse</string>
+    <string name="keybind_tab_gamepad">Kontroler</string>
+    <string name="keybind_clear_all">Hapus semua</string>
+    <string name="keybind_clear_slot">Hapus tombol ini</string>
+    <string name="keybind_reset_preset">Atur ulang default</string>
+    <string name="keybind_done">Selesai</string>
+    <string name="keybind_cancel">Batal</string>
+    <string name="keybind_esc_cancel_hint">Esc untuk batal</string>
+    <string name="keybind_empty_slot">Kosong</string>
+    <string name="keybind_sequence_hint">Ketuk tombol untuk menambah (maks. 6 langkah). Ketuk kotak untuk ubah/hapus. Ketuk panah untuk atur detik.</string>
+    <string name="keybind_gamepad_sequence_hint">Pilih atau tekan tombol kontroler (maks. 6 langkah). Ketuk panah untuk atur detik.</string>
+    <string name="keybind_remove_step">Hapus langkah</string>
+    <string name="keybind_seconds_short">%1$s dtk</string>
+    <string name="keybind_seconds_unit">dtk</string>
+    <string name="keybind_delay_from_to">Dari %1$s ke %2$s</string>
+    <string name="keybind_delay_note">0 = tekan bersamaan (kombinasi). Di atas 0 = berurutan. Setiap + / − berubah 0,1 detik.</string>
+    <string name="keybind_delay_input_hint">0 – 5</string>
+    <string name="keybind_delay_decrease">Kurangi 0,1 detik</string>
+    <string name="keybind_delay_increase">Tambah 0,1 detik</string>
+    <string name="keybind_delay_arrow_cd">Jeda: %1$s detik</string>
+    <string name="keybind_duplicate_warning">Tombol %1$s sudah dipasang ke %2$s. Lanjut akan mengganti yang lama.</string>
+    <string name="keybind_replace_confirm">Ganti lama</string>
+    <string name="keybind_mouse_label">Mouse</string>
+    <string name="keybind_mouse_left">Klik kiri</string>
+    <string name="keybind_mouse_right">Klik kanan</string>
+    <string name="keybind_mouse_middle">Klik tengah</string>
+    <string name="keybind_mouse_wheel_up">Gulir atas</string>
+    <string name="keybind_mouse_wheel_down">Gulir bawah</string>
+    <string name="keybind_mouse_side_1">Samping 1</string>
+    <string name="keybind_mouse_side_2">Samping 2</string>
+    <string name="keybind_key_backspace">Hapus</string>
+    <string name="keybind_capture_physical">Tangkap tombol</string>
+    <string name="keybind_capture_waiting">Menunggu tombol… (%1$ds) · Esc batal</string>
+    <string name="keybind_key_cd">Tombol %1$s</string>
+    <string name="keybind_slot_cd">Langkah %1$d: %2$s</string>
+    <string name="keybind_add_step_cd">Tambah langkah</string>
+    <string name="keybind_max_steps_reached">Batas maksimal 6 langkah tercapai</string>
+    <string name="keybind_swap_pair_title">Tukar otomatis (A ↔ B)</string>
+    <string name="keybind_swap_pair_desc">Aktif: menukar arah atau tombol berlawanan saat memetakan 1 tombol.</string>
+    <string name="keybind_on">AKTIF</string>
+    <string name="keybind_off">MATI</string>
 </resources>
