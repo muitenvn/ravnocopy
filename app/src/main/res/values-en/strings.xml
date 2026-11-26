@@ -199,26 +199,26 @@
     <string name="keybind_swap_pair_desc">On: cleanly swaps opposite direction/button for single gamepad remap.</string>
     <string name="keybind_on">ON</string>
     <string name="keybind_off">OFF</string>
-    <!-- Bypass & VPN Mode + Security -->
+    <!-- Bypass & Proxy Mode + Security -->
     <string name="vpn_mode_section_title">Connection Mode</string>
-    <string name="vpn_sub_selector_label">VPN Connection Type</string>
+    <string name="vpn_sub_selector_label">Proxy Connection Type</string>
     <string name="vpn_mode_bypass">Bypass</string>
-    <string name="vpn_mode_vpn">VPN</string>
+    <string name="vpn_mode_vpn">Proxy</string>
     <string name="vpn_sub_in_app_proxy">In-App Proxy</string>
     <string name="vpn_sub_external_vpn">External VPN</string>
     <string name="vpn_mode_bypass_desc">Direct region unlock in browser (lowest latency, no proxy server).</string>
     <string name="vpn_mode_vpn_proxy_desc">Isolated in-app proxy for Xbox domains only. Excludes login &amp; phone data.</string>
     <string name="vpn_mode_vpn_external_desc">Uses your device VPN app (Warp, Proton…). Managed by Android OS.</string>
     <string name="vpn_mode_switched_bypass_toast">✓ Mode: Bypass</string>
-    <string name="vpn_mode_switched_proxy_toast">✓ Mode: VPN (In-App Proxy)</string>
-    <string name="vpn_mode_switched_external_toast">✓ Mode: VPN (External VPN)</string>
-    <string name="vpn_security_confirm_title">Switch to VPN Mode?</string>
-    <string name="vpn_security_confirm_message">• In-App Proxy is isolated strictly inside Ravno: it cannot access phone data, excludes Microsoft login and local networks, pauses in the background, and automatically blocks &amp; disconnects any proxy that triggers SSL errors or external redirects.\n\n• External VPN apps run at the Android OS level, so Ravno cannot inspect or block their traffic.\n\n• Public proxy servers and third-party VPNs route traffic through external parties. By continuing, you acknowledge these risks and accept full responsibility for using VPN mode.</string>
-    <string name="vpn_security_confirm_accept">I accept, enable VPN</string>
+    <string name="vpn_mode_switched_proxy_toast">✓ Mode: Proxy (In-App Proxy)</string>
+    <string name="vpn_mode_switched_external_toast">✓ Mode: Proxy (External VPN)</string>
+    <string name="vpn_security_confirm_title">Switch to Proxy Mode?</string>
+    <string name="vpn_security_confirm_message">• In-App Proxy is isolated strictly inside Ravno: it cannot access phone data, excludes Microsoft login and local networks, pauses in the background, and automatically blocks &amp; disconnects any proxy that triggers SSL errors or external redirects.\n\n• External VPN apps run at the Android OS level, so Ravno cannot inspect or block their traffic.\n\n• Public proxy servers and third-party VPNs route traffic through external parties. By continuing, you acknowledge these risks and accept full responsibility for using Proxy mode.</string>
+    <string name="vpn_security_confirm_accept">I accept, enable Proxy</string>
     <string name="vpn_security_confirm_cancel">Cancel (Keep Bypass)</string>
-    <string name="vpn_security_killswitch_title">VPN Blocked for Security</string>
-    <string name="vpn_security_killswitch_ssl_msg">Proxy %1$s caused an SSL security certificate error (%2$s). Ravno blocked the connection, disconnected VPN, and quarantined this proxy.</string>
-    <string name="vpn_security_killswitch_external_msg">Proxy %1$s attempted to redirect outside trusted app domains (%2$s). Ravno blocked the route, disconnected VPN, and quarantined this proxy.</string>
+    <string name="vpn_security_killswitch_title">Proxy Blocked for Security</string>
+    <string name="vpn_security_killswitch_ssl_msg">Proxy %1$s caused an SSL security certificate error (%2$s). Ravno blocked the connection, disconnected Proxy, and quarantined this server.</string>
+    <string name="vpn_security_killswitch_external_msg">Proxy %1$s attempted to redirect outside trusted app domains (%2$s). Ravno blocked the route, disconnected Proxy, and quarantined this server.</string>
     <string name="vpn_security_killswitch_ok">Understood (Stay on Bypass)</string>
     <string name="vpn_server_security_blocked_badge">Security Blocked</string>
     <string name="vpn_server_security_blocked_toast">This proxy was blocked for security. Pick another server or unblock it.</string>
@@ -226,7 +226,17 @@
     <string name="vpn_security_isolation_banner">In-App Proxy routes Xbox domains only, excludes login &amp; auto-blocks unsafe redirects.</string>
     <string name="vpn_external_os_notice">External VPN runs at Android system level. Ravno cannot inspect or block external VPN traffic.</string>
     <string name="vpn_mode_bypass_cd">Select Bypass mode</string>
-    <string name="vpn_mode_vpn_cd">Select VPN mode</string>
+    <string name="vpn_mode_vpn_cd">Select Proxy mode</string>
     <string name="vpn_sub_in_app_proxy_cd">Use In-App Proxy</string>
     <string name="vpn_sub_external_vpn_cd">Use External VPN app</string>
+    <string name="vpn_proxy_scan_btn">Scan Real Proxies</string>
+    <string name="vpn_proxy_scanning">Scanning &amp; verifying real proxies…</string>
+    <string name="vpn_proxy_empty_title">No verified proxy servers yet</string>
+    <string name="vpn_proxy_empty_desc">Tap Scan Real Proxies to find, verify HTTP/SOCKS5 handshakes and save them on device, or add a custom proxy.</string>
+    <string name="vpn_proxy_saved_count">%1$d proxy servers saved on device</string>
+    <string name="vpn_github_sync_btn">Sync GitHub List</string>
+    <string name="vpn_external_status_on">Device VPN is ON</string>
+    <string name="vpn_external_status_off">Device VPN is OFF</string>
+    <string name="vpn_open_device_vpn_btn">Open Device VPN Settings</string>
+    <string name="vpn_open_device_vpn_unavailable">This device cannot open VPN settings directly. Please turn on your VPN app manually.</string>
 </resources>

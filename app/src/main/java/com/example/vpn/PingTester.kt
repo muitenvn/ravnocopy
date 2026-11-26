@@ -417,4 +417,153 @@ object PingTester {
     suspend fun isHostReachable(host: String, port: Int, timeoutMs: Int = 1000): Boolean = withContext(Dispatchers.IO) {
         measureSingleTcpRttWithPermit(host, port, timeoutMs.coerceIn(300, 1500)).first > 0
     }
+
+    data class ProxyHandshakeResult(
+        val ok: Boolean,
+        val rttMs: Int,
+        val statusDetail: String
+    )
+
+    /**
+     * Kiểm tra bắt tay Proxy thật (HTTP CONNECT hoặc SOCKS5 CONNECT tới máy chủ Xbox)
+     * dưới giới hạn `socketSemaphore` (tối đa 5 socket mở đồng thời).
+     * Tự động loại bỏ các cổng OpenVPN/SoftEther giả danh proxy hoặc proxy trả lỗi 403/407/502.
+     */
+    suspend fun verifyRealProxyEndpoint(
+        host: String,
+        port: Int,
+        protocol: String,
+        timeoutMs: Int = 2200,
+        targetHost: String = "www.xbox.com",
+        targetPort: Int = 443
+    ): ProxyHandshakeResult = withContext(Dispatchers.IO) {
+        val trimmedHost = host.trim()
+        if (trimmedHost.isBlank() || port !in 1..65535) {
+            return@withContext ProxyHandshakeResult(false, -1, "invalid_endpoint")
+        }
+        val safeTimeout = timeoutMs.coerceIn(500, 3500)
+        val normalizedProto = protocol.trim().lowercase(Locale.ROOT)
+        socketSemaphore.withPermit {
+            val currentOpen = activeOpenSockets.incrementAndGet()
+            peakOpenSockets.updateAndGet { peak -> maxOf(peak, currentOpen) }
+            val socket = Socket()
+            try {
+                socket.tcpNoDelay = true
+                socket.soTimeout = safeTimeout
+                val resolvedAddr = InetAddress.getByName(trimmedHost)
+                val startNano = System.nanoTime()
+                socket.connect(InetSocketAddress(resolvedAddr, port), safeTimeout)
+
+                val okAndDetail: Pair<Boolean, String> = if (normalizedProto == "socks5") {
+                    performSocks5ConnectHandshake(socket, targetHost, targetPort)
+                } else {
+                    performHttpConnectHandshake(socket, targetHost, targetPort)
+                }
+
+                val elapsedMs = ((System.nanoTime() - startNano) / 1_000_000.0).roundToInt().coerceAtLeast(1)
+                if (okAndDetail.first && elapsedMs <= safeTimeout) {
+                    ProxyHandshakeResult(true, elapsedMs, okAndDetail.second)
+                } else {
+                    ProxyHandshakeResult(false, -1, okAndDetail.second)
+                }
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (e: Exception) {
+                ProxyHandshakeResult(false, -1, e.javaClass.simpleName)
+            } finally {
+                try {
+                    socket.close()
+                } catch (_: Exception) {
+                }
+                activeOpenSockets.decrementAndGet()
+            }
+        }
+    }
+
+    private fun performHttpConnectHandshake(
+        socket: Socket,
+        targetHost: String,
+        targetPort: Int
+    ): Pair<Boolean, String> {
+        val out = socket.getOutputStream()
+        val req = "CONNECT $targetHost:$targetPort HTTP/1.1\r\n" +
+            "Host: $targetHost:$targetPort\r\n" +
+            "Proxy-Connection: keep-alive\r\n\r\n"
+        out.write(req.toByteArray(Charsets.US_ASCII))
+        out.flush()
+
+        val input = socket.getInputStream()
+        val lineBuf = StringBuilder(64)
+        var prev = -1
+        while (lineBuf.length < 160) {
+            val b = input.read()
+            if (b == -1) break
+            if (b == '\n'.code) {
+                if (prev == '\r'.code && lineBuf.isNotEmpty()) {
+                    lineBuf.setLength(lineBuf.length - 1)
+                }
+                break
+            }
+            lineBuf.append(b.toChar())
+            prev = b
+        }
+        val statusLine = lineBuf.toString().trim()
+        val isHttp200 = (statusLine.startsWith("HTTP/1.1 200") || statusLine.startsWith("HTTP/1.0 200"))
+        return isHttp200 to statusLine.ifBlank { "empty_http_response" }
+    }
+
+    private fun performSocks5ConnectHandshake(
+        socket: Socket,
+        targetHost: String,
+        targetPort: Int
+    ): Pair<Boolean, String> {
+        val out = socket.getOutputStream()
+        val input = socket.getInputStream()
+
+        // 1. Greeting: VER=5, NMETHODS=1, METHOD=0 (No Auth)
+        out.write(byteArrayOf(0x05, 0x01, 0x00))
+        out.flush()
+
+        val greetingResp = ByteArray(2)
+        if (!readExactBytes(input, greetingResp)) {
+            return false to "socks5_eof_greeting"
+        }
+        if (greetingResp[0].toInt() != 0x05 || greetingResp[1].toInt() != 0x00) {
+            return false to "socks5_auth_rejected_${greetingResp[1].toInt() and 0xFF}"
+        }
+
+        // 2. CONNECT request: VER=5, CMD=1(CONNECT), RSV=0, ATYP=3(DOMAIN)
+        val domainBytes = targetHost.toByteArray(Charsets.US_ASCII)
+        if (domainBytes.size > 255) return false to "socks5_host_too_long"
+        val req = ByteArray(4 + 1 + domainBytes.size + 2)
+        req[0] = 0x05
+        req[1] = 0x01
+        req[2] = 0x00
+        req[3] = 0x03
+        req[4] = domainBytes.size.toByte()
+        System.arraycopy(domainBytes, 0, req, 5, domainBytes.size)
+        req[5 + domainBytes.size] = ((targetPort shr 8) and 0xFF).toByte()
+        req[6 + domainBytes.size] = (targetPort and 0xFF).toByte()
+        out.write(req)
+        out.flush()
+
+        // 3. Read reply header: VER=5, REP=0(succeeded), RSV=0, ATYP
+        val replyHeader = ByteArray(4)
+        if (!readExactBytes(input, replyHeader)) {
+            return false to "socks5_eof_reply"
+        }
+        val ver = replyHeader[0].toInt() and 0xFF
+        val rep = replyHeader[1].toInt() and 0xFF
+        return (ver == 0x05 && rep == 0x00) to "socks5_rep_$rep"
+    }
+
+    private fun readExactBytes(input: java.io.InputStream, target: ByteArray): Boolean {
+        var offset = 0
+        while (offset < target.size) {
+            val read = input.read(target, offset, target.size - offset)
+            if (read <= 0) return false
+            offset += read
+        }
+        return true
+    }
 }

@@ -199,26 +199,26 @@
     <string name="keybind_swap_pair_desc">开启：重映射单个手柄键时自动互换对应方向或按键。</string>
     <string name="keybind_on">开启</string>
     <string name="keybind_off">关闭</string>
-    <!-- Bypass & VPN Mode + Security -->
+    <!-- Bypass & Proxy Mode + Security -->
     <string name="vpn_mode_section_title">连接模式</string>
-    <string name="vpn_sub_selector_label">VPN 连接方式</string>
+    <string name="vpn_sub_selector_label">Proxy 连接方式</string>
     <string name="vpn_mode_bypass">Bypass</string>
-    <string name="vpn_mode_vpn">VPN</string>
+    <string name="vpn_mode_vpn">Proxy</string>
     <string name="vpn_sub_in_app_proxy">应用内代理</string>
     <string name="vpn_sub_external_vpn">外部 VPN</string>
     <string name="vpn_mode_bypass_desc">在浏览器内直接解锁区域（最低延迟，不经过代理服务器）。</string>
     <string name="vpn_mode_vpn_proxy_desc">仅限应用内 Xbox 域名的隔离代理。排除登录与手机数据。</string>
     <string name="vpn_mode_vpn_external_desc">使用设备上的第三方 VPN 应用（Warp、Proton 等），由 Android 系统管理。</string>
     <string name="vpn_mode_switched_bypass_toast">✓ 模式：Bypass</string>
-    <string name="vpn_mode_switched_proxy_toast">✓ 模式：VPN（应用内代理）</string>
-    <string name="vpn_mode_switched_external_toast">✓ 模式：VPN（外部 VPN）</string>
-    <string name="vpn_security_confirm_title">切换到 VPN 模式？</string>
-    <string name="vpn_security_confirm_message">• 应用内代理严格隔离在 Ravno 内部：不会访问手机数据，排除微软登录页和局域网，退至后台自动暂停，并在检测到 SSL 证书错误或外部跳转时立即拦截、断开并隔离该代理。\n\n• 外部 VPN 应用运行在 Android 系统层级，Ravno 无法检查或拦截其流量。\n\n• 公共代理和第三方 VPN 会经过第三方节点。继续操作即表示您了解相关风险，并自行承担使用 VPN 模式的全部责任。</string>
+    <string name="vpn_mode_switched_proxy_toast">✓ 模式：Proxy（应用内代理）</string>
+    <string name="vpn_mode_switched_external_toast">✓ 模式：Proxy（外部 VPN）</string>
+    <string name="vpn_security_confirm_title">切换到 Proxy 模式？</string>
+    <string name="vpn_security_confirm_message">• 应用内代理严格隔离在 Ravno 内部：不会访问手机数据，排除微软登录页和局域网，退至后台自动暂停，并在检测到 SSL 证书错误或外部跳转时立即拦截、断开并隔离该代理。\n\n• 外部 VPN 应用运行在 Android 系统层级，Ravno 无法检查或拦截其流量。\n\n• 公共代理和第三方 VPN 会经过第三方节点。继续操作即表示您了解相关风险，并自行承担使用 Proxy 模式的全部责任。</string>
     <string name="vpn_security_confirm_accept">我已了解，责任自负</string>
     <string name="vpn_security_confirm_cancel">取消（保留 Bypass）</string>
-    <string name="vpn_security_killswitch_title">已出于安全原因拦截 VPN</string>
-    <string name="vpn_security_killswitch_ssl_msg">代理 %1$s 触发了 SSL 安全证书错误（%2$s）。应用已立即拦截连接、断开 VPN 并隔离该代理。</string>
-    <string name="vpn_security_killswitch_external_msg">代理 %1$s 试图跳转到受信任域名之外（%2$s）。应用已拦截该路径、断开 VPN 并隔离该代理。</string>
+    <string name="vpn_security_killswitch_title">已出于安全原因拦截 Proxy</string>
+    <string name="vpn_security_killswitch_ssl_msg">代理 %1$s 触发了 SSL 安全证书错误（%2$s）。应用已立即拦截连接、断开 Proxy 并隔离该服务器。</string>
+    <string name="vpn_security_killswitch_external_msg">代理 %1$s 试图跳转到受信任域名之外（%2$s）。应用已拦截该路径、断开 Proxy 并隔离该服务器。</string>
     <string name="vpn_security_killswitch_ok">知道了（保持 Bypass）</string>
     <string name="vpn_server_security_blocked_badge">安全已拦截</string>
     <string name="vpn_server_security_blocked_toast">该代理已因安全原因被拦截。请选择其他服务器或手动解除拦截。</string>
@@ -226,7 +226,17 @@
     <string name="vpn_security_isolation_banner">应用内代理仅路由 Xbox 域名，排除登录页并自动拦截不安全跳转。</string>
     <string name="vpn_external_os_notice">外部 VPN 运行在 Android 系统层，Ravno 无法控制或拦截其流量。</string>
     <string name="vpn_mode_bypass_cd">选择 Bypass 模式</string>
-    <string name="vpn_mode_vpn_cd">选择 VPN 模式</string>
+    <string name="vpn_mode_vpn_cd">选择 Proxy 模式</string>
     <string name="vpn_sub_in_app_proxy_cd">使用应用内代理</string>
     <string name="vpn_sub_external_vpn_cd">使用外部 VPN 应用</string>
+    <string name="vpn_proxy_scan_btn">查找可用代理</string>
+    <string name="vpn_proxy_scanning">正在扫描并验证真实代理…</string>
+    <string name="vpn_proxy_empty_title">暂无已验证的代理服务器</string>
+    <string name="vpn_proxy_empty_desc">点击“查找可用代理”以验证 HTTP/SOCKS5 连接并保存到设备，或手动添加自定义代理。</string>
+    <string name="vpn_proxy_saved_count">设备已保存 %1$d 个代理服务器</string>
+    <string name="vpn_github_sync_btn">同步 GitHub 列表</string>
+    <string name="vpn_external_status_on">系统 VPN 已开启</string>
+    <string name="vpn_external_status_off">系统 VPN 未开启</string>
+    <string name="vpn_open_device_vpn_btn">打开设备 VPN 设置</string>
+    <string name="vpn_open_device_vpn_unavailable">此设备不支持直接打开 VPN 设置，请手动开启您的 VPN 应用。</string>
 </resources>

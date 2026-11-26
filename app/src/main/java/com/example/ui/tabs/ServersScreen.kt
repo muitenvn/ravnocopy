@@ -167,12 +167,14 @@ fun ServersScreen(
     val usLabel = stringResource(R.string.cat_usa)
     val allLabel = stringResource(R.string.filter_all)
 
-    val allServers = remember(vpnState.customServers, vpnState.liveVerifiedServers) {
-        mutableStateListOf<ServerLocation>().apply {
-            val combined = (vpnState.customServers + DEFAULT_SERVERS + vpnState.liveVerifiedServers)
-                .distinctBy { it.addressPortKey.lowercase() }
-            addAll(combined)
-        }
+    val allServers = remember(
+        vpnState.engine,
+        vpnState.customServers,
+        vpnState.liveVerifiedServers,
+        vpnState.remoteBypassServers,
+        vpnState.remoteProxySeeds
+    ) {
+        VpnManager.getServersForEngine(vpnState.engine)
     }
 
     val serverPings = vpnState.serverPings
@@ -182,8 +184,9 @@ fun ServersScreen(
     val isSmartBypassEngine = vpnState.engine == com.example.vpn.VpnEngine.SMART_BYPASS
     val userNeedsVpn = VpnManager.needsVpnToPlay()
 
-    // Bước nâng cấp v1.3.0 + tự động chọn vùng mặc định bằng probe ngắn khi mở lần đầu / đổi GeoIP / hết hạn cache
+    // Bước nâng cấp v1.3.0 + đồng bộ danh sách máy chủ từ GitHub + tự động chọn vùng mặc định bằng probe ngắn
     LaunchedEffect(Unit) {
+        VpnManager.syncRemoteCatalogIfNeeded(context = context, force = false)
         if (!VpnManager.wasStartupMaintenanceRecentlyTriggered()) {
             VpnManager.ensureInitialOrGeoUpdatedOptimalServer(context = context, force = false)
             if (serverPings.isEmpty() && !isTestingAll) {
@@ -194,7 +197,9 @@ fun ServersScreen(
                     reason = "mở tab Máy chủ (chưa có dữ liệu ping)"
                 )
             }
-            VpnManager.autoSyncPublicProxiesIfNeeded(context = context, countryFilter = "ALL", force = false)
+            if (vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL) {
+                VpnManager.autoSyncPublicProxiesIfNeeded(context = context, countryFilter = "ALL", force = false)
+            }
         } else if (serverPings.isEmpty() && !isTestingAll) {
             VpnManager.testAllServers(
                 autoPickBest = false,
@@ -254,9 +259,7 @@ fun ServersScreen(
         )
     }
 
-    val allServersSnapshot = remember(allServers.size, vpnState.customServers, vpnState.liveVerifiedServers) {
-        allServers.toList()
-    }
+    val allServersSnapshot = allServers
     val (jpServerCount, krServerCount, usServerCount, customServerCount) = remember(allServersSnapshot) {
         var jp = 0
         var kr = 0
@@ -314,7 +317,7 @@ fun ServersScreen(
                 "CUSTOM" -> allServersSnapshot.filter { it.isCustom }
                 else -> allServersSnapshot.filter { it.countryCode.equals(selectedCategory, ignoreCase = true) }
             }.filter { srv ->
-                if (!config.hideUnreachableDynamicServers || srv.id == currentServer.id || !srv.id.startsWith("live_")) {
+                if (!config.hideUnreachableDynamicServers || srv.id == currentServer.id || !VpnManager.isDynamicLiveProxy(srv)) {
                     true
                 } else {
                     val m = serverMeasurements[srv.id]
@@ -1226,14 +1229,15 @@ fun ServersScreen(
                         isInAppProxyActive -> stringResource(R.string.vpn_security_isolation_banner)
                         else -> stringResource(R.string.vpn_mode_bypass_desc)
                     }
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
                             .background(noteBg, RoundedCornerShape(8.dp))
                             .border(1.dp, noteBorder, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 10.dp, vertical = 7.dp)
-                            .testTag("vpn_mode_security_note")
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                            .testTag("vpn_mode_security_note"),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
                             text = noteText,
@@ -1244,6 +1248,132 @@ fun ServersScreen(
                             maxLines = 3,
                             overflow = TextOverflow.Ellipsis
                         )
+                        if (isInAppProxyActive) {
+                            val savedProxyCount = vpnState.liveVerifiedServers.size + vpnState.customServers.size
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.vpn_proxy_saved_count, savedProxyCount),
+                                    color = TextSecondary,
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .defaultMinSize(minHeight = 36.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF16352A), RoundedCornerShape(8.dp))
+                                        .border(1.dp, XboxNeonGreen, RoundedCornerShape(8.dp))
+                                        .gamepadClickable(
+                                            enabled = !vpnState.isAutoSyncingLiveProxies,
+                                            cornerRadius = 8.dp
+                                        ) {
+                                            val cc = if (selectedCategory in listOf("JP", "KR", "US")) selectedCategory else "ALL"
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                context.getString(R.string.vpn_proxy_scanning),
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                            VpnManager.autoSyncPublicProxiesIfNeeded(
+                                                context = context,
+                                                countryFilter = cc,
+                                                force = true
+                                            )
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                        .testTag("vpn_proxy_scan_real_btn"),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (vpnState.isAutoSyncingLiveProxies) {
+                                            stringResource(R.string.vpn_proxy_scanning)
+                                        } else {
+                                            stringResource(R.string.vpn_proxy_scan_btn)
+                                        },
+                                        color = XboxNeonGreen,
+                                        fontFamily = SpaceGroteskFontFamily,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        } else if (isExternalVpnActive) {
+                            val extOn = vpnState.isExternalSystemVpnDetected
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(999.dp))
+                                        .background(
+                                            if (extOn) Color(0xFF16352A) else Color(0xFF332609),
+                                            RoundedCornerShape(999.dp)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (extOn) XboxNeonGreen else WarningAmber,
+                                            RoundedCornerShape(999.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        .testTag("vpn_external_status_badge")
+                                ) {
+                                    Text(
+                                        text = if (extOn) {
+                                            stringResource(R.string.vpn_external_status_on)
+                                        } else {
+                                            stringResource(R.string.vpn_external_status_off)
+                                        },
+                                        color = if (extOn) XboxNeonGreen else WarningAmber,
+                                        fontFamily = SpaceGroteskFontFamily,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .defaultMinSize(minHeight = 36.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF142019), RoundedCornerShape(8.dp))
+                                        .border(1.dp, WarningAmber, RoundedCornerShape(8.dp))
+                                        .gamepadClickable(cornerRadius = 8.dp) {
+                                            val opened = VpnManager.openDeviceVpnSettings(context)
+                                            if (!opened) {
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.vpn_open_device_vpn_unavailable),
+                                                    android.widget.Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                        .testTag("vpn_open_device_vpn_settings_btn"),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.vpn_open_device_vpn_btn),
+                                        color = WarningAmber,
+                                        fontFamily = SpaceGroteskFontFamily,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1349,7 +1479,7 @@ fun ServersScreen(
                     }
                 }
 
-                if (allServersSnapshot.any { it.id.startsWith("live_") }) {
+                if (allServersSnapshot.any { VpnManager.isDynamicLiveProxy(it) }) {
                     item(key = "toggle_hide_dead_live_proxies") {
                         val hideActive = config.hideUnreachableDynamicServers
                         Box(
@@ -1400,6 +1530,8 @@ fun ServersScreen(
                 }
 
                 item(key = "manual_sync_public_proxies_chip") {
+                    val isProxyEngine = vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL
+                    val isBusy = if (isProxyEngine) vpnState.isAutoSyncingLiveProxies else vpnState.isSyncingRemoteCatalog
                     Row(
                         modifier = Modifier
                             .defaultMinSize(minHeight = 36.dp)
@@ -1407,20 +1539,26 @@ fun ServersScreen(
                             .background(XboxSurface, RoundedCornerShape(999.dp))
                             .border(1.dp, XboxCardBorder, RoundedCornerShape(999.dp))
                             .gamepadClickable(
-                                enabled = !vpnState.isAutoSyncingLiveProxies,
+                                enabled = !isBusy,
                                 cornerRadius = 999.dp
                             ) {
-                                com.example.data.AppLogger.info("UI", "Bấm nút Cập nhật danh sách proxy công cộng (trên tab Máy chủ)")
-                                android.widget.Toast.makeText(
-                                    context,
-                                    config.tr("Đang cập nhật danh sách proxy công cộng...", "Refreshing public proxy list..."),
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                                VpnManager.autoSyncPublicProxiesIfNeeded(
-                                    context = context,
-                                    countryFilter = "ALL",
-                                    force = true
-                                )
+                                if (isProxyEngine) {
+                                    com.example.data.AppLogger.info("UI", "Bấm nút Tìm Proxy thật (trên tab Máy chủ)")
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        context.getString(R.string.vpn_proxy_scanning),
+                                        android.widget.Toast.LENGTH_SHORT
+                                    ).show()
+                                    val cc = if (selectedCategory in listOf("JP", "KR", "US")) selectedCategory else "ALL"
+                                    VpnManager.autoSyncPublicProxiesIfNeeded(
+                                        context = context,
+                                        countryFilter = cc,
+                                        force = true
+                                    )
+                                } else {
+                                    com.example.data.AppLogger.info("UI", "Bấm nút Tải danh sách GitHub (trên tab Máy chủ)")
+                                    VpnManager.syncRemoteCatalogIfNeeded(context = context, force = true)
+                                }
                             }
                             .padding(horizontal = 12.dp, vertical = 7.dp)
                             .testTag("manual_sync_public_proxies_chip"),
@@ -1434,10 +1572,12 @@ fun ServersScreen(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = if (vpnState.isAutoSyncingLiveProxies) {
-                                config.tr("Đang cập nhật...", "Updating...")
+                            text = if (isProxyEngine) {
+                                if (isBusy) stringResource(R.string.vpn_proxy_scanning)
+                                else stringResource(R.string.vpn_proxy_scan_btn)
                             } else {
-                                config.tr("Cập nhật danh sách", "Refresh List")
+                                if (isBusy) config.tr("Đang cập nhật...", "Updating...")
+                                else stringResource(R.string.vpn_github_sync_btn)
                             },
                             color = XboxNeonGreen,
                             fontFamily = SpaceGroteskFontFamily,
@@ -1474,6 +1614,94 @@ fun ServersScreen(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+        }
+
+        if (filteredServers.isEmpty() && vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL) {
+            item(key = "proxy_empty_state_card") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0D1511), RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFF16352A), RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                        .testTag("proxy_empty_state_card"),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.vpn_proxy_empty_title),
+                        color = TextPrimary,
+                        fontFamily = SpaceGroteskFontFamily,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(R.string.vpn_proxy_empty_desc),
+                        color = TextSecondary,
+                        fontFamily = SpaceGroteskFontFamily,
+                        fontSize = 12.5.sp
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .defaultMinSize(minHeight = 48.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(XboxNeonGreen, RoundedCornerShape(10.dp))
+                                .gamepadClickable(
+                                    enabled = !vpnState.isAutoSyncingLiveProxies,
+                                    cornerRadius = 10.dp
+                                ) {
+                                    VpnManager.autoSyncPublicProxiesIfNeeded(
+                                        context = context,
+                                        countryFilter = "ALL",
+                                        force = true
+                                    )
+                                }
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                                .testTag("proxy_empty_scan_btn"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (vpnState.isAutoSyncingLiveProxies) {
+                                    stringResource(R.string.vpn_proxy_scanning)
+                                } else {
+                                    stringResource(R.string.vpn_proxy_scan_btn)
+                                },
+                                color = Color(0xFF03140B),
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .defaultMinSize(minHeight = 48.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFF142019), RoundedCornerShape(10.dp))
+                                .border(1.dp, XboxCardBorder, RoundedCornerShape(10.dp))
+                                .gamepadClickable(cornerRadius = 10.dp) { showCustomDialog = true }
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                                .testTag("proxy_empty_add_custom_btn"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = config.tr("Thêm proxy riêng", "Add custom proxy"),
+                                color = TextPrimary,
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -1528,7 +1756,6 @@ fun ServersScreen(
                 if (server.isCustom) {
                     {
                         VpnManager.removeCustomServer(server.id)
-                        allServers.removeAll { it.id == server.id }
                         Unit
                     }
                 } else null

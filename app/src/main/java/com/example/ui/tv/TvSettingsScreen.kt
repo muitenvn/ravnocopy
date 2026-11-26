@@ -565,6 +565,32 @@ internal fun TvSettingsScreen(
                                     testTag = "tv_setting_vpn_sub_engine_row"
                                 )
                             }
+                            if (vpnState.engine == VpnEngine.EXTERNAL_VPN) {
+                                item(key = "tv_set_open_device_vpn") {
+                                    val extOn = vpnState.isExternalSystemVpnDetected
+                                    TvSettingActionRow(
+                                        title = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_open_device_vpn_btn),
+                                        subtitle = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_external_os_notice),
+                                        actionLabel = androidx.compose.ui.res.stringResource(
+                                            if (extOn) com.example.R.string.vpn_external_status_on
+                                            else com.example.R.string.vpn_external_status_off
+                                        ),
+                                        scale = scale,
+                                        titleColor = if (extOn) TvAccent else Color(0xFFE3B341),
+                                        onMoveLeftToCategory = moveFocusToCategory,
+                                        onClick = {
+                                            if (!VpnManager.openDeviceVpnSettings(context)) {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(com.example.R.string.vpn_open_device_vpn_unavailable),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        },
+                                        testTag = "tv_setting_open_device_vpn_row"
+                                    )
+                                }
+                            }
                         }
 
                         item(key = "tv_set_vpn_delay") {

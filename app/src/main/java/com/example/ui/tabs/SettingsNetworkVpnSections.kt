@@ -218,6 +218,55 @@ internal fun SettingsNetworkVpnSection(
                         }
                     }
                 }
+                if (vpnState.engine == VpnEngine.EXTERNAL_VPN) {
+                    val extOn = vpnState.isExternalSystemVpnDetected
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFF142019))
+                            .border(1.dp, if (extOn) XboxNeonGreen else Color(0xFFE3B341), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(
+                                if (extOn) com.example.R.string.vpn_external_status_on
+                                else com.example.R.string.vpn_external_status_off
+                            ),
+                            color = if (extOn) XboxNeonGreen else Color(0xFFE3B341),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.5.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Surface(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, Color(0xFFE3B341), RoundedCornerShape(8.dp))
+                                .gamepadClickable(cornerRadius = 8.dp) {
+                                    if (!VpnManager.openDeviceVpnSettings(context)) {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(com.example.R.string.vpn_open_device_vpn_unavailable),
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                                .testTag("settings_open_device_vpn_btn"),
+                            color = Color(0xFF2A2208),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_open_device_vpn_btn),
+                                color = Color(0xFFE3B341),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
 

@@ -199,26 +199,26 @@
     <string name="keybind_swap_pair_desc">Вкл.: меняет противоположные направления или кнопки при одиночном назначении.</string>
     <string name="keybind_on">ВКЛ</string>
     <string name="keybind_off">ВЫКЛ</string>
-    <!-- Bypass & VPN Mode + Security -->
+    <!-- Bypass & Proxy Mode + Security -->
     <string name="vpn_mode_section_title">Режим подключения</string>
-    <string name="vpn_sub_selector_label">Тип подключения VPN</string>
+    <string name="vpn_sub_selector_label">Тип подключения Proxy</string>
     <string name="vpn_mode_bypass">Bypass</string>
-    <string name="vpn_mode_vpn">VPN</string>
+    <string name="vpn_mode_vpn">Proxy</string>
     <string name="vpn_sub_in_app_proxy">Прокси в приложении</string>
     <string name="vpn_sub_external_vpn">Внешний VPN</string>
     <string name="vpn_mode_bypass_desc">Прямой обход региона в браузере (минимальная задержка, без прокси).</string>
     <string name="vpn_mode_vpn_proxy_desc">Изолированный прокси только для доменов Xbox. Без входа и данных телефона.</string>
     <string name="vpn_mode_vpn_external_desc">Использует стороннее VPN-приложение (Warp, Proton…). Управляется Android.</string>
     <string name="vpn_mode_switched_bypass_toast">✓ Режим: Bypass</string>
-    <string name="vpn_mode_switched_proxy_toast">✓ Режим: VPN (Прокси в приложении)</string>
-    <string name="vpn_mode_switched_external_toast">✓ Режим: VPN (Внешний VPN)</string>
-    <string name="vpn_security_confirm_title">Переключиться в режим VPN?</string>
-    <string name="vpn_security_confirm_message">• Прокси в приложении строго изолирован внутри Ravno: нет доступа к данным телефона, исключён вход Microsoft и локальные сети, приостанавливается в фоне и автоматически блокирует и отключает прокси при ошибке SSL или внешнем перенаправлении.\n\n• Внешние VPN работают на уровне ОС Android — Ravno не может проверять или блокировать их трафик.\n\n• Публичные прокси и сторонние VPN пропускают трафик через третьи стороны. Продолжая, вы понимаете риски и берёте на себя полную ответственность.</string>
+    <string name="vpn_mode_switched_proxy_toast">✓ Режим: Proxy (Прокси в приложении)</string>
+    <string name="vpn_mode_switched_external_toast">✓ Режим: Proxy (Внешний VPN)</string>
+    <string name="vpn_security_confirm_title">Переключиться в режим Proxy?</string>
+    <string name="vpn_security_confirm_message">• Прокси в приложении строго изолирован внутри Ravno: нет доступа к данным телефона, исключён вход Microsoft и локальные сети, приостанавливается в фоне и автоматически блокирует и отключает прокси при ошибке SSL или внешнем перенаправлении.\n\n• Внешние VPN работают на уровне ОС Android — Ravno не может проверять или блокировать их трафик.\n\n• Публичные прокси и сторонние VPN пропускают трафик через третьи стороны. Продолжая, вы понимаете риски и берёте на себя полную ответственность в режиме Proxy.</string>
     <string name="vpn_security_confirm_accept">Понимаю, на мой риск</string>
     <string name="vpn_security_confirm_cancel">Отмена (Оставить Bypass)</string>
-    <string name="vpn_security_killswitch_title">VPN заблокирован для безопасности</string>
-    <string name="vpn_security_killswitch_ssl_msg">Прокси %1$s вызвал ошибку SSL-сертификата (%2$s). Ravno заблокировал соединение, отключил VPN и поместил прокси в карантин.</string>
-    <string name="vpn_security_killswitch_external_msg">Прокси %1$s попытался перенаправить за пределы доверенных доменов (%2$s). Ravno заблокировал маршрут, отключил VPN и поместил прокси в карантин.</string>
+    <string name="vpn_security_killswitch_title">Proxy заблокирован для безопасности</string>
+    <string name="vpn_security_killswitch_ssl_msg">Прокси %1$s вызвал ошибку SSL-сертификата (%2$s). Ravno заблокировал соединение, отключил Proxy и поместил сервер в карантин.</string>
+    <string name="vpn_security_killswitch_external_msg">Прокси %1$s попытался перенаправить за пределы доверенных доменов (%2$s). Ravno заблокировал маршрут, отключил Proxy и поместил сервер в карантин.</string>
     <string name="vpn_security_killswitch_ok">Понятно (Остаться на Bypass)</string>
     <string name="vpn_server_security_blocked_badge">Заблокирован</string>
     <string name="vpn_server_security_blocked_toast">Этот прокси заблокирован по соображениям безопасности. Выберите другой сервер или разблокируйте его.</string>
@@ -226,7 +226,17 @@
     <string name="vpn_security_isolation_banner">Прокси работает только для доменов Xbox, исключает вход и блокирует небезопасные переходы.</string>
     <string name="vpn_external_os_notice">Внешний VPN работает на уровне Android. Ravno не может контролировать или блокировать его трафик.</string>
     <string name="vpn_mode_bypass_cd">Выбрать режим Bypass</string>
-    <string name="vpn_mode_vpn_cd">Выбрать режим VPN</string>
+    <string name="vpn_mode_vpn_cd">Выбрать режим Proxy</string>
     <string name="vpn_sub_in_app_proxy_cd">Использовать прокси в приложении</string>
     <string name="vpn_sub_external_vpn_cd">Использовать внешний VPN</string>
+    <string name="vpn_proxy_scan_btn">Найти реальные прокси</string>
+    <string name="vpn_proxy_scanning">Поиск и проверка реальных прокси…</string>
+    <string name="vpn_proxy_empty_title">Пока нет проверенных прокси</string>
+    <string name="vpn_proxy_empty_desc">Нажмите «Найти реальные прокси», чтобы проверить HTTP/SOCKS5 и сохранить их на устройстве, или добавьте свой прокси.</string>
+    <string name="vpn_proxy_saved_count">На устройстве сохранено прокси: %1$d</string>
+    <string name="vpn_github_sync_btn">Загрузить список GitHub</string>
+    <string name="vpn_external_status_on">Системный VPN ВКЛ</string>
+    <string name="vpn_external_status_off">Системный VPN ВЫКЛ</string>
+    <string name="vpn_open_device_vpn_btn">Открыть настройки VPN Android</string>
+    <string name="vpn_open_device_vpn_unavailable">Устройство не поддерживает быстрый переход к настройкам VPN. Включите VPN-приложение вручную.</string>
 </resources>

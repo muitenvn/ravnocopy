@@ -888,9 +888,10 @@ class ExampleRobolectricTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         SettingsRepository.init(context)
 
-        // 1. Kiểm tra 60 máy chủ VPN mặc định khớp mã vùng GeoIP
-        assertEquals(60, com.example.vpn.DEFAULT_SERVERS.size)
+        // 1. Kiểm tra 9 máy chủ Bypass dự phòng offline mặc định (3 JP, 3 KR, 3 US) khớp mã vùng GeoIP
+        assertEquals(9, com.example.vpn.DEFAULT_SERVERS.size)
         com.example.vpn.DEFAULT_SERVERS.forEach { server ->
+            assertEquals(com.example.vpn.ServerKind.BYPASS, server.kind)
             assertEquals(
                 "Server ${server.id} GeoIP seed must match countryCode",
                 server.countryCode,

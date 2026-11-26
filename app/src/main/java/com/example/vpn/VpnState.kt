@@ -14,6 +14,11 @@ enum class VpnEngine {
     EXTERNAL_VPN     // External VPN Assistant: Use with Warp, Proton, Kiwi, etc. with auto-detect and zero-reload handoff
 }
 
+enum class ServerKind {
+    BYPASS,
+    PROXY
+}
+
 enum class VpnSecurityViolationType {
     SSL_TAMPERING,
     EXTERNAL_REDIRECT_OR_SCHEME
@@ -77,7 +82,8 @@ data class ServerLocation(
     val isVerified: Boolean = true,
     val unlockStatus: RegionUnlockStatus = RegionUnlockStatus.UNTESTED,
     val trustScore: Int = 96,
-    val safetyBadge: String = "Đã kiểm tra kết nối"
+    val safetyBadge: String = "Đã kiểm tra kết nối",
+    val kind: ServerKind = ServerKind.BYPASS
 ) {
     val addressPortKey: String
         get() = ServerUnlockRecord.keyFor(ip, port)
@@ -152,9 +158,10 @@ data class ServerLocation(
     }
 }
 
-// Danh sách 60 máy chủ mặc định đã kiểm tra kết nối cổng chính (JP: 28, KR: 18, US: 14)
+// 9 máy chủ Bypass dự phòng gọn nhẹ tích hợp sẵn (3 JP, 3 KR, 3 US).
+// Danh sách Bypass đầy đủ & danh sách Proxy được tự động tải từ GitHub (docs/servers.json) và lưu vào máy.
 val DEFAULT_SERVERS = listOf(
-    // === NHẬT BẢN (JAPAN) - 28 MÁY CHỦ TOKYO / TSUKUBA / OSAKA ===
+    // === NHẬT BẢN (JAPAN) - 3 MÁY CHỦ BYPASS DỰ PHÒNG ===
     ServerLocation(
         id = "jp_tsukuba_softether_7",
         name = "Japan Tsukuba #7",
@@ -164,8 +171,9 @@ val DEFAULT_SERVERS = listOf(
         protocol = "http",
         azureEndpoint = "japaneast.cloudapp.azure.com",
         description = "Đại học Tsukuba Node • AS4713 Tokyo (Khuyên dùng #1)",
-        speedMbps = 450,
-        countryCode = "JP"
+        speedMbps = 0,
+        countryCode = "JP",
+        kind = ServerKind.BYPASS
     ),
     ServerLocation(
         id = "jp_tsukuba_softether_8",
@@ -176,8 +184,9 @@ val DEFAULT_SERVERS = listOf(
         protocol = "http",
         azureEndpoint = "japaneast.cloudapp.azure.com",
         description = "Đại học Tsukuba Backbone • AS4713 Tokyo (Khuyên dùng #2)",
-        speedMbps = 420,
-        countryCode = "JP"
+        speedMbps = 0,
+        countryCode = "JP",
+        kind = ServerKind.BYPASS
     ),
     ServerLocation(
         id = "jp_tsukuba_softether_9",
@@ -188,311 +197,12 @@ val DEFAULT_SERVERS = listOf(
         protocol = "http",
         azureEndpoint = "japaneast.cloudapp.azure.com",
         description = "Đại học Tsukuba Transit • AS4713 Tokyo (Khuyên dùng #3)",
-        speedMbps = 410,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tokyo_linode_1",
-        name = "Japan Tokyo Fiber #1",
-        flag = "🇯🇵",
-        ip = "219.100.37.10",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Tokyo Academic Fiber • Tokyo, Nhật Bản",
-        speedMbps = 380,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tokyo_bay_2",
-        name = "Japan Tokyo Bay #2",
-        flag = "🇯🇵",
-        ip = "219.100.37.98",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Tokyo Bay Backbone • Tokyo, Nhật Bản",
-        speedMbps = 360,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_gotemba_fiber_3",
-        name = "Japan Tsukuba Core #3",
-        flag = "🇯🇵",
-        ip = "219.100.37.162",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Tsukuba Core • Nhật Bản",
-        speedMbps = 390,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tokyo_ali_4",
-        name = "Japan Tokyo Express #4",
-        flag = "🇯🇵",
-        ip = "219.100.37.178",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Tokyo Express • Tokyo, Nhật Bản",
-        speedMbps = 500,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_softether_5",
-        name = "Japan Tsukuba #5",
-        flag = "🇯🇵",
-        ip = "219.100.37.179",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Academic • AS4713 Tokyo (Dự phòng #5)",
-        speedMbps = 350,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_softether_6",
-        name = "Japan Tsukuba #6",
-        flag = "🇯🇵",
-        ip = "219.100.37.206",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Fiber • AS4713 Tokyo (Dự phòng #6)",
-        speedMbps = 350,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_osaka_west_10",
-        name = "Japan Tsukuba Direct #10",
-        flag = "🇯🇵",
-        ip = "219.100.37.225",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Kanto Direct Relay • AS4713 Tokyo (Dự phòng #10)",
-        speedMbps = 340,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tokyo_cloud_11",
-        name = "Japan Tokyo CloudDC #11",
-        flag = "🇯🇵",
-        ip = "219.100.37.53",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Tokyo Central Cloud Backbone (Dự phòng #11)",
-        speedMbps = 340,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_chiba_edge_12",
-        name = "Japan Chiba Edge #12",
-        flag = "🇯🇵",
-        ip = "219.100.37.56",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Ibaraki / Chiba Research Gateway (Dự phòng #12)",
-        speedMbps = 330,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_13",
-        name = "Japan Tsukuba #13",
-        flag = "🇯🇵",
-        ip = "219.100.37.63",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Gateway #13 • AS4713 Tokyo (:443)",
-        speedMbps = 330,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_14",
-        name = "Japan Tsukuba #14",
-        flag = "🇯🇵",
-        ip = "219.100.37.87",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Gateway #14 • AS4713 Tokyo (:443)",
-        speedMbps = 320,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_15",
-        name = "Japan Tsukuba #15",
-        flag = "🇯🇵",
-        ip = "219.100.37.111",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Gateway #15 • AS4713 Tokyo (:443)",
-        speedMbps = 320,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_softbank_16",
-        name = "Japan SoftBank Fiber #16",
-        flag = "🇯🇵",
-        ip = "126.130.164.3",
-        port = 1557,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Tokyo SoftBank BB High-Speed Relay (:1557)",
-        speedMbps = 360,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_17",
-        name = "Japan Tsukuba Optical #17",
-        flag = "🇯🇵",
-        ip = "219.100.37.14",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Optical #17 • AS4713 Tokyo (:443)",
-        speedMbps = 410,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_18",
-        name = "Japan Tsukuba Optical #18",
-        flag = "🇯🇵",
-        ip = "219.100.37.21",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Optical #18 • AS4713 Tokyo (:443)",
-        speedMbps = 400,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_19",
-        name = "Japan Tsukuba Optical #19",
-        flag = "🇯🇵",
-        ip = "219.100.37.24",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Optical #19 • AS4713 Tokyo (:443)",
-        speedMbps = 400,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_20",
-        name = "Japan Tsukuba Core #20",
-        flag = "🇯🇵",
-        ip = "219.100.37.50",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Core #20 • AS4713 Tokyo (:443)",
-        speedMbps = 430,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_21",
-        name = "Japan Tsukuba Core #21",
-        flag = "🇯🇵",
-        ip = "219.100.37.60",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Core #21 • AS4713 Tokyo (:443)",
-        speedMbps = 390,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_22",
-        name = "Japan Tsukuba Core #22",
-        flag = "🇯🇵",
-        ip = "219.100.37.90",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Core #22 • AS4713 Tokyo (:443)",
-        speedMbps = 395,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_23",
-        name = "Japan Tsukuba Metro #23",
-        flag = "🇯🇵",
-        ip = "219.100.37.128",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Metro #23 • AS4713 Tokyo (:443)",
-        speedMbps = 360,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_24",
-        name = "Japan Tsukuba Metro #24",
-        flag = "🇯🇵",
-        ip = "219.100.37.175",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Metro #24 • AS4713 Tokyo (:443)",
-        speedMbps = 420,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_25",
-        name = "Japan Tsukuba Metro #25",
-        flag = "🇯🇵",
-        ip = "219.100.37.183",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Metro #25 • AS4713 Tokyo (:443)",
-        speedMbps = 385,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tsukuba_26",
-        name = "Japan Tsukuba Metro #26",
-        flag = "🇯🇵",
-        ip = "219.100.37.209",
-        port = 443,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Đại học Tsukuba Metro #26 • AS4713 Tokyo (:443)",
-        speedMbps = 415,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_tokyo_ntt_27",
-        name = "Japan Tokyo NTT Fiber #27",
-        flag = "🇯🇵",
-        ip = "14.10.120.193",
-        port = 7551,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Tokyo NTT OCN Backbone • Nhật Bản",
-        speedMbps = 310,
-        countryCode = "JP"
-    ),
-    ServerLocation(
-        id = "jp_kddi_fiber_28",
-        name = "Japan Tokyo KDDI #28",
-        flag = "🇯🇵",
-        ip = "106.161.41.4",
-        port = 1468,
-        protocol = "http",
-        azureEndpoint = "japaneast.cloudapp.azure.com",
-        description = "Tokyo KDDI Hikari • Tokyo, Nhật Bản",
-        speedMbps = 650,
-        countryCode = "JP"
+        speedMbps = 0,
+        countryCode = "JP",
+        kind = ServerKind.BYPASS
     ),
 
-    // === HÀN QUỐC (SOUTH KOREA) - 18 MÁY CHỦ SEOUL / INCHEON / BUSAN ===
+    // === HÀN QUỐC (SOUTH KOREA) - 3 MÁY CHỦ BYPASS DỰ PHÒNG ===
     ServerLocation(
         id = "kr_seoul_kt_1",
         name = "South Korea Incheon SSL #1",
@@ -502,8 +212,9 @@ val DEFAULT_SERVERS = listOf(
         protocol = "http",
         azureEndpoint = "koreacentral.cloudapp.azure.com",
         description = "Incheon Korea Telecom SSL Backbone (Khuyên dùng #1)",
-        speedMbps = 420,
-        countryCode = "KR"
+        speedMbps = 0,
+        countryCode = "KR",
+        kind = ServerKind.BYPASS
     ),
     ServerLocation(
         id = "kr_incheon_5",
@@ -514,8 +225,9 @@ val DEFAULT_SERVERS = listOf(
         protocol = "http",
         azureEndpoint = "koreacentral.cloudapp.azure.com",
         description = "Incheon Gyeonggi Fiber Gateway (Khuyên dùng #2)",
-        speedMbps = 700,
-        countryCode = "KR"
+        speedMbps = 0,
+        countryCode = "KR",
+        kind = ServerKind.BYPASS
     ),
     ServerLocation(
         id = "kr_seoul_kt_2",
@@ -525,192 +237,13 @@ val DEFAULT_SERVERS = listOf(
         port = 1980,
         protocol = "http",
         azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Seoul SK/KT Fiber Backbone • Cổng :1980 (Khuyên dùng #3)",
-        speedMbps = 380,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_seoul_hanaro_3",
-        name = "South Korea Hanaro SSL #3",
-        flag = "🇰🇷",
-        ip = "222.117.16.150",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Seoul Hanaro Telecom High-Speed SSL Relay (:995)",
-        speedMbps = 350,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_seoul_hanaro_4",
-        name = "South Korea Seoul #4",
-        flag = "🇰🇷",
-        ip = "222.102.95.219",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Seoul Metro Optical Line (:995)",
-        speedMbps = 340,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_busan_6",
-        name = "South Korea Busan #6",
-        flag = "🇰🇷",
-        ip = "121.168.25.111",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Busan South Coast Fiber Relay (:995)",
-        speedMbps = 360,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_suwon_7",
-        name = "South Korea Suwon #7",
-        flag = "🇰🇷",
-        ip = "211.192.121.223",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Suwon Gyeonggi Fiber Node (:995)",
-        speedMbps = 350,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_daegu_8",
-        name = "South Korea Daegu #8",
-        flag = "🇰🇷",
-        ip = "121.142.148.62",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Daegu KT Optical Relay (:995)",
-        speedMbps = 340,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_seoul_9",
-        name = "South Korea Seoul #9",
-        flag = "🇰🇷",
-        ip = "118.34.210.174",
-        port = 1819,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Seoul LG U+ Direct Node (:1819)",
-        speedMbps = 330,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_gyeonggi_10",
-        name = "South Korea Gyeonggi SSL #10",
-        flag = "🇰🇷",
-        ip = "39.122.7.147",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Gyeonggi Optical Backbone SSL (:995)",
-        speedMbps = 360,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_seoul_sk_11",
-        name = "South Korea Seoul SK #11",
-        flag = "🇰🇷",
-        ip = "222.109.162.197",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Seoul SK Broadband SSL",
-        speedMbps = 410,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_pangyo_12",
-        name = "South Korea Pangyo #12",
-        flag = "🇰🇷",
-        ip = "121.129.47.69",
-        port = 1594,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Pangyo Techno Valley Fiber Relay",
-        speedMbps = 340,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_postech_13",
-        name = "South Korea POSTECH SSL #13",
-        flag = "🇰🇷",
-        ip = "141.223.28.225",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Pohang Academic Research Backbone",
-        speedMbps = 380,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_daejeon_14",
-        name = "South Korea Daejeon SSL #14",
-        flag = "🇰🇷",
-        ip = "220.86.66.156",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Daejeon Central Fiber SSL",
-        speedMbps = 450,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_seongnam_15",
-        name = "South Korea Seongnam SSL #15",
-        flag = "🇰🇷",
-        ip = "121.131.135.200",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Seongnam KT Metro SSL Gateway (:995)",
-        speedMbps = 350,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_gwangju_16",
-        name = "South Korea Gwangju SSL #16",
-        flag = "🇰🇷",
-        ip = "218.147.105.171",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Gwangju Honam Optical Backbone (:995)",
-        speedMbps = 330,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_ulsan_17",
-        name = "South Korea Ulsan SSL #17",
-        flag = "🇰🇷",
-        ip = "122.252.106.28",
-        port = 995,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Ulsan East Coast Fiber SSL (:995)",
-        speedMbps = 320,
-        countryCode = "KR"
-    ),
-    ServerLocation(
-        id = "kr_anyang_18",
-        name = "South Korea Anyang #18",
-        flag = "🇰🇷",
-        ip = "183.104.99.71",
-        port = 1252,
-        protocol = "http",
-        azureEndpoint = "koreacentral.cloudapp.azure.com",
-        description = "Anyang Gyeonggi Direct Fiber (:1252)",
-        speedMbps = 320,
-        countryCode = "KR"
+        description = "Seoul SK/KT Fiber Backbone (Khuyên dùng #3)",
+        speedMbps = 0,
+        countryCode = "KR",
+        kind = ServerKind.BYPASS
     ),
 
-    // === HOA KỲ (UNITED STATES) - 14 MÁY CHỦ DỰ PHÒNG ===
+    // === HOA KỲ (UNITED STATES) - 3 MÁY CHỦ BYPASS DỰ PHÒNG ===
     ServerLocation(
         id = "us_california_1",
         name = "United States Silicon Valley #1",
@@ -719,9 +252,10 @@ val DEFAULT_SERVERS = listOf(
         port = 80,
         protocol = "http",
         azureEndpoint = "westus.cloudapp.azure.com",
-        description = "California Google Cloud Backbone • Cổng :80",
-        speedMbps = 500,
-        countryCode = "US"
+        description = "California Cloud Backbone",
+        speedMbps = 0,
+        countryCode = "US",
+        kind = ServerKind.BYPASS
     ),
     ServerLocation(
         id = "us_west_oregon_2",
@@ -731,9 +265,10 @@ val DEFAULT_SERVERS = listOf(
         port = 443,
         protocol = "http",
         azureEndpoint = "westus2.cloudapp.azure.com",
-        description = "Oregon Google Cloud Backbone • Cổng :443",
-        speedMbps = 600,
-        countryCode = "US"
+        description = "Oregon Cloud Backbone",
+        speedMbps = 0,
+        countryCode = "US",
+        kind = ServerKind.BYPASS
     ),
     ServerLocation(
         id = "us_central_iowa_3",
@@ -743,141 +278,10 @@ val DEFAULT_SERVERS = listOf(
         port = 8080,
         protocol = "http",
         azureEndpoint = "centralus.cloudapp.azure.com",
-        description = "Clemson Research Backbone • Cổng :8080",
-        speedMbps = 400,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_virginia_4",
-        name = "United States Virginia #4",
-        flag = "🇺🇸",
-        ip = "68.71.254.6",
-        port = 4145,
-        protocol = "socks5",
-        azureEndpoint = "eastus.cloudapp.azure.com",
-        description = "East Coast SOCKS5 Relay • Cổng :4145",
-        speedMbps = 350,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_nevada_5",
-        name = "United States West Coast #5",
-        flag = "🇺🇸",
-        ip = "68.71.241.33",
-        port = 4145,
-        protocol = "socks5",
-        azureEndpoint = "westus.cloudapp.azure.com",
-        description = "Western Data Hub SOCKS5 • Cổng :4145",
-        speedMbps = 350,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_texas_6",
-        name = "United States South Central #6",
-        flag = "🇺🇸",
-        ip = "68.71.251.134",
-        port = 4145,
-        protocol = "socks5",
-        azureEndpoint = "southcentralus.cloudapp.azure.com",
-        description = "South Central SOCKS5 Gateway • Cổng :4145",
-        speedMbps = 350,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_oregon_edge_7",
-        name = "United States Oregon Direct #7",
-        flag = "🇺🇸",
-        ip = "34.43.46.91",
-        port = 80,
-        protocol = "http",
-        azureEndpoint = "westus2.cloudapp.azure.com",
-        description = "Oregon Google Edge Relay • Cổng :80",
-        speedMbps = 580,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_seattle_8",
-        name = "United States Pacific NW #8",
-        flag = "🇺🇸",
-        ip = "143.246.138.227",
-        port = 80,
-        protocol = "http",
-        azureEndpoint = "westus2.cloudapp.azure.com",
-        description = "Pacific Northwest Backbone • Cổng :80",
-        speedMbps = 360,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_sanfrancisco_9",
-        name = "United States San Francisco #9",
-        flag = "🇺🇸",
-        ip = "167.99.3.26",
-        port = 6826,
-        protocol = "http",
-        azureEndpoint = "westus.cloudapp.azure.com",
-        description = "San Francisco Cloud Relay • Cổng :6826",
-        speedMbps = 380,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_sanfrancisco_socks_10",
-        name = "United States Bay Area SOCKS5 #10",
-        flag = "🇺🇸",
-        ip = "167.99.3.26",
-        port = 8282,
-        protocol = "socks5",
-        azureEndpoint = "westus.cloudapp.azure.com",
-        description = "Bay Area Low-Jitter SOCKS5 • Cổng :8282",
-        speedMbps = 380,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_midwest_11",
-        name = "United States Midwest SOCKS5 #11",
-        flag = "🇺🇸",
-        ip = "69.55.49.177",
-        port = 38182,
-        protocol = "socks5",
-        azureEndpoint = "centralus.cloudapp.azure.com",
-        description = "Midwest Fiber SOCKS5 Gateway • Cổng :38182",
-        speedMbps = 320,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_newyork_12",
-        name = "United States New York Metro #12",
-        flag = "🇺🇸",
-        ip = "159.65.230.46",
-        port = 8888,
-        protocol = "http",
-        azureEndpoint = "eastus.cloudapp.azure.com",
-        description = "New York Cloud Backbone • Cổng :8888",
-        speedMbps = 360,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_newjersey_13",
-        name = "United States East SOCKS5 #13",
-        flag = "🇺🇸",
-        ip = "67.207.92.87",
-        port = 1088,
-        protocol = "socks5",
-        azureEndpoint = "eastus.cloudapp.azure.com",
-        description = "East Coast Cloud SOCKS5 • Cổng :1088",
-        speedMbps = 340,
-        countryCode = "US"
-    ),
-    ServerLocation(
-        id = "us_chicago_14",
-        name = "United States Chicago Hub #14",
-        flag = "🇺🇸",
-        ip = "167.99.8.113",
-        port = 8006,
-        protocol = "http",
-        azureEndpoint = "centralus.cloudapp.azure.com",
-        description = "Chicago Central Cloud Hub • Cổng :8006",
-        speedMbps = 350,
-        countryCode = "US"
+        description = "Clemson Research Backbone",
+        speedMbps = 0,
+        countryCode = "US",
+        kind = ServerKind.BYPASS
     )
 )
 
@@ -967,7 +371,13 @@ data class VpnConnectionState(
     val lastAutoSelectTimestampMs: Long = 0L,
     val preferredVpnSubEngine: VpnEngine = VpnEngine.PROXY_TUNNEL,
     val securityBlockedServerKeys: Set<String> = emptySet(),
-    val securityBlockAlert: VpnSecurityAlert? = null
+    val securityBlockAlert: VpnSecurityAlert? = null,
+    val remoteBypassServers: List<ServerLocation> = emptyList(),
+    val remoteProxySeeds: List<ServerLocation> = emptyList(),
+    val isSyncingRemoteCatalog: Boolean = false,
+    val remoteCatalogSourceLabel: String? = null,
+    val lastRemoteCatalogSyncMs: Long = 0L,
+    val isExternalSystemVpnDetected: Boolean = false
 ) {
     val isVpnModeSelected: Boolean
         get() = engine != VpnEngine.SMART_BYPASS

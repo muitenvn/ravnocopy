@@ -48,6 +48,7 @@ import com.example.vpn.EndpointPingMeasurement
 import com.example.vpn.GeoIpDetector
 import com.example.vpn.PingTester
 import com.example.vpn.RegionUnlockStatus
+import com.example.vpn.ServerKind
 import com.example.vpn.ServerLocation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -80,18 +81,34 @@ internal fun CustomProxyDialog(
     }
     val canSave = trimmedHost.isNotBlank() && !isPrivateIp
 
+    var lastTestVerified by remember { mutableStateOf(false) }
+
     val triggerTest: () -> Unit = {
         if (!isTesting && trimmedHost.isNotBlank()) {
             isTesting = true
             testResult = null
+            lastTestVerified = false
             scope.launch(Dispatchers.IO) {
                 val p = port.toIntOrNull() ?: 8080
-                val ok = !GeoIpDetector.isPrivateOrLoopbackIp(trimmedHost) &&
-                    PingTester.isHostReachable(trimmedHost, p, 1500)
-                testResult = if (ok) {
-                    if (isEn) "✓ Connection successful!" else "✓ Kết nối thành công!"
+                if (GeoIpDetector.isPrivateOrLoopbackIp(trimmedHost)) {
+                    testResult = if (isEn) "✕ Private/loopback IP is not allowed" else "✕ Không cho phép IP nội bộ / loopback"
                 } else {
-                    if (isEn) "✕ Could not reach this IP/Port" else "✕ Không thể kết nối tới IP/Port này"
+                    val normProto = protocol.trim().lowercase().let { if (it == "socks5") "socks5" else "http" }
+                    val res = PingTester.verifyRealProxyEndpoint(trimmedHost, p, normProto, 2200)
+                    lastTestVerified = res.ok
+                    testResult = if (res.ok) {
+                        if (isEn) {
+                            "✓ Real ${normProto.uppercase()} proxy verified (${res.rttMs}ms)"
+                        } else {
+                            "✓ Proxy ${normProto.uppercase()} thật hoạt động (${res.rttMs}ms)"
+                        }
+                    } else {
+                        if (isEn) {
+                            "✕ Proxy handshake failed (${res.statusDetail})"
+                        } else {
+                            "✕ Kiểm tra proxy thất bại (${res.statusDetail})"
+                        }
+                    }
                 }
                 isTesting = false
             }
@@ -122,7 +139,8 @@ internal fun CustomProxyDialog(
                 speedMbps = speed,
                 countryCode = cc,
                 isCustom = true,
-                isVerified = false
+                isVerified = lastTestVerified,
+                kind = ServerKind.PROXY
             )
             onAddServer(server)
         }

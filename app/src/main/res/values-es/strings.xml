@@ -199,26 +199,26 @@
     <string name="keybind_swap_pair_desc">Activado: intercambia direcciones o botones opuestos al reasignar 1 botón.</string>
     <string name="keybind_on">SÍ</string>
     <string name="keybind_off">NO</string>
-    <!-- Bypass & VPN Mode + Security -->
+    <!-- Bypass & Proxy Mode + Security -->
     <string name="vpn_mode_section_title">Modo de conexión</string>
-    <string name="vpn_sub_selector_label">Tipo de conexión VPN</string>
+    <string name="vpn_sub_selector_label">Tipo de conexión Proxy</string>
     <string name="vpn_mode_bypass">Bypass</string>
-    <string name="vpn_mode_vpn">VPN</string>
+    <string name="vpn_mode_vpn">Proxy</string>
     <string name="vpn_sub_in_app_proxy">Proxy en la app</string>
     <string name="vpn_sub_external_vpn">VPN externa</string>
     <string name="vpn_mode_bypass_desc">Desbloqueo regional directo en el navegador (menor latencia, sin proxy).</string>
     <string name="vpn_mode_vpn_proxy_desc">Proxy aislado solo para dominios Xbox. Excluye inicio de sesión y datos del teléfono.</string>
     <string name="vpn_mode_vpn_external_desc">Usa tu app VPN del dispositivo (Warp, Proton…). Gestionado por Android.</string>
     <string name="vpn_mode_switched_bypass_toast">✓ Modo: Bypass</string>
-    <string name="vpn_mode_switched_proxy_toast">✓ Modo: VPN (Proxy en la app)</string>
-    <string name="vpn_mode_switched_external_toast">✓ Modo: VPN (VPN externa)</string>
-    <string name="vpn_security_confirm_title">¿Cambiar al modo VPN?</string>
-    <string name="vpn_security_confirm_message">• El Proxy en la app está aislado estrictamente dentro de Ravno: no accede a datos del teléfono, excluye el inicio de sesión de Microsoft y redes locales, se pausa en segundo plano y bloquea y desconecta automáticamente cualquier proxy con errores SSL o redirecciones externas.\n\n• Las apps de VPN externa funcionan a nivel del sistema Android, por lo que Ravno no puede inspeccionar ni bloquear su tráfico.\n\n• Los servidores proxy públicos y VPN de terceros envían tráfico a través de terceros. Al continuar, aceptas estos riesgos bajo tu total responsabilidad.</string>
+    <string name="vpn_mode_switched_proxy_toast">✓ Modo: Proxy (Proxy en la app)</string>
+    <string name="vpn_mode_switched_external_toast">✓ Modo: Proxy (VPN externa)</string>
+    <string name="vpn_security_confirm_title">¿Cambiar al modo Proxy?</string>
+    <string name="vpn_security_confirm_message">• El Proxy en la app está aislado estrictamente dentro de Ravno: no accede a datos del teléfono, excluye el inicio de sesión de Microsoft y redes locales, se pausa en segundo plano y bloquea y desconecta automáticamente cualquier proxy con errores SSL o redirecciones externas.\n\n• Las apps de VPN externa funcionan a nivel del sistema Android, por lo que Ravno no puede inspeccionar ni bloquear su tráfico.\n\n• Los servidores proxy públicos y VPN de terceros envían tráfico a través de terceros. Al continuar, aceptas estos riesgos bajo tu total responsabilidad en el modo Proxy.</string>
     <string name="vpn_security_confirm_accept">Entiendo, bajo mi responsabilidad</string>
     <string name="vpn_security_confirm_cancel">Cancelar (Seguir en Bypass)</string>
-    <string name="vpn_security_killswitch_title">VPN bloqueada por seguridad</string>
-    <string name="vpn_security_killswitch_ssl_msg">El proxy %1$s provocó un error de certificado SSL (%2$s). Ravno bloqueó la conexión, desconectó la VPN y puso este proxy en cuarentena.</string>
-    <string name="vpn_security_killswitch_external_msg">El proxy %1$s intentó redirigir fuera de los dominios confiables (%2$s). Ravno bloqueó la ruta, desconectó la VPN y puso este proxy en cuarentena.</string>
+    <string name="vpn_security_killswitch_title">Proxy bloqueado por seguridad</string>
+    <string name="vpn_security_killswitch_ssl_msg">El proxy %1$s provocó un error de certificado SSL (%2$s). Ravno bloqueó la conexión, desconectó el Proxy y puso este servidor en cuarentena.</string>
+    <string name="vpn_security_killswitch_external_msg">El proxy %1$s intentó redirigir fuera de los dominios confiables (%2$s). Ravno bloqueó la ruta, desconectó el Proxy y puso este servidor en cuarentena.</string>
     <string name="vpn_security_killswitch_ok">Entendido (Seguir en Bypass)</string>
     <string name="vpn_server_security_blocked_badge">Bloqueado por seguridad</string>
     <string name="vpn_server_security_blocked_toast">Este proxy fue bloqueado por seguridad. Elige otro servidor o desbloquéalo.</string>
@@ -226,7 +226,17 @@
     <string name="vpn_security_isolation_banner">El proxy en la app solo enruta dominios Xbox, excluye el inicio de sesión y bloquea redirecciones inseguras.</string>
     <string name="vpn_external_os_notice">La VPN externa funciona a nivel de Android. Ravno no puede inspeccionar ni bloquear su tráfico.</string>
     <string name="vpn_mode_bypass_cd">Seleccionar modo Bypass</string>
-    <string name="vpn_mode_vpn_cd">Seleccionar modo VPN</string>
+    <string name="vpn_mode_vpn_cd">Seleccionar modo Proxy</string>
     <string name="vpn_sub_in_app_proxy_cd">Usar proxy en la app</string>
     <string name="vpn_sub_external_vpn_cd">Usar app VPN externa</string>
+    <string name="vpn_proxy_scan_btn">Buscar proxies reales</string>
+    <string name="vpn_proxy_scanning">Buscando y verificando proxies reales…</string>
+    <string name="vpn_proxy_empty_title">Aún no hay proxies verificados</string>
+    <string name="vpn_proxy_empty_desc">Toca Buscar proxies reales para verificar conexiones HTTP/SOCKS5 y guardarlas en el dispositivo, o agrega un proxy propio.</string>
+    <string name="vpn_proxy_saved_count">%1$d proxies guardados en el dispositivo</string>
+    <string name="vpn_github_sync_btn">Sincronizar lista GitHub</string>
+    <string name="vpn_external_status_on">VPN del dispositivo ACTIVA</string>
+    <string name="vpn_external_status_off">VPN del dispositivo INACTIVA</string>
+    <string name="vpn_open_device_vpn_btn">Abrir ajustes VPN del dispositivo</string>
+    <string name="vpn_open_device_vpn_unavailable">Este dispositivo no puede abrir ajustes VPN directamente. Activa tu app VPN manualmente.</string>
 </resources>
