@@ -101,49 +101,134 @@ internal fun SettingsNetworkVpnSection(
             )
         }
 
-        // 2.2 Chế độ mở khóa vùng (Giữ rõ ràng ở Tầng 1 Cơ bản)
-        SettingsCard(title = if (isEn) "Region Unlock Mode" else "Chế độ mở khóa vùng") {
-            listOf(
-                Triple(
-                    VpnEngine.SMART_BYPASS,
-                    config.tr("Chỉ mở khóa lúc vào game 🇯🇵 (Khuyên dùng)", "Unlock on Launch Only 🇯🇵 (Recommended)"),
-                    config.tr("Chỉ đi qua máy chủ trung gian lúc mới mở game", "Uses proxy only during game launch")
-                ),
-                Triple(
-                    VpnEngine.PROXY_TUNNEL,
-                    config.tr("Máy chủ trung gian", "Intermediate Server"),
-                    config.tr("Kết nối qua máy chủ Nhật / Hàn / Mỹ", "Connects via JP/KR/US servers")
-                ),
-                Triple(
-                    VpnEngine.EXTERNAL_VPN,
-                    config.tr("Ứng dụng VPN ngoài", "External VPN App"),
-                    config.tr("Dùng kèm app VPN riêng trên máy", "Use with your own VPN app")
-                )
-            ).forEach { (engine, title, desc) ->
-                val isSelected = vpnState.engine == engine
+        // 2.2 Chế độ kết nối (Bypass / VPN — giữ nguyên đồng bộ toàn app)
+        val context = LocalContext.current
+        var showVpnConfirmDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+        val isBypassSelected = !vpnState.isVpnModeSelected
+        val isVpnSelected = vpnState.isVpnModeSelected
+
+        SettingsCard(title = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_section_title)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(XboxSurface, RoundedCornerShape(10.dp))
+                    .border(1.dp, XboxCardBorder, RoundedCornerShape(10.dp))
+                    .padding(3.dp)
+                    .testTag("settings_connection_mode_bar"),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Surface(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .border(1.dp, if (isSelected) XboxNeonGreen else XboxCardBorder, RoundedCornerShape(10.dp))
-                        .gamepadClickable(cornerRadius = 10.dp) { VpnManager.setEngine(engine) },
-                    color = if (isSelected) XboxSurfaceVariant else Color.Transparent
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .gamepadClickable(cornerRadius = 8.dp) {
+                            VpnManager.activateBypassMode(context)
+                        }
+                        .testTag("settings_mode_bypass_btn"),
+                    color = if (isBypassSelected) XboxNeonGreen else Color.Transparent,
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(text = title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                            Text(text = desc, color = TextSecondary, fontSize = 10.sp)
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass),
+                            color = if (isBypassSelected) Color(0xFF03140B) else TextSecondary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.5.sp,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .gamepadClickable(cornerRadius = 8.dp) {
+                            if (isBypassSelected) {
+                                showVpnConfirmDialog = true
+                            }
                         }
-                        if (isSelected) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = XboxNeonGreen, modifier = Modifier.size(18.dp))
+                        .testTag("settings_mode_vpn_btn"),
+                    color = if (isVpnSelected) XboxNeonGreen else Color.Transparent,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_vpn),
+                            color = if (isVpnSelected) Color(0xFF03140B) else TextSecondary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.5.sp,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+
+            if (isBypassSelected) {
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass_desc),
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+            } else {
+                listOf(
+                    Triple(
+                        VpnEngine.PROXY_TUNNEL,
+                        androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_in_app_proxy),
+                        androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_vpn_proxy_desc)
+                    ),
+                    Triple(
+                        VpnEngine.EXTERNAL_VPN,
+                        androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn),
+                        androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_vpn_external_desc)
+                    )
+                ).forEach { (engine, title, desc) ->
+                    val isSelected = vpnState.engine == engine
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .border(1.dp, if (isSelected) XboxNeonGreen else XboxCardBorder, RoundedCornerShape(10.dp))
+                            .gamepadClickable(cornerRadius = 10.dp) { VpnManager.activateVpnMode(context, engine) }
+                            .testTag("settings_vpn_sub_${engine.name.lowercase()}"),
+                        color = if (isSelected) XboxSurfaceVariant else Color.Transparent
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                Text(text = desc, color = TextSecondary, fontSize = 10.5.sp)
+                            }
+                            if (isSelected) {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = XboxNeonGreen, modifier = Modifier.size(18.dp))
+                            }
                         }
                     }
                 }
             }
+        }
+
+        if (showVpnConfirmDialog) {
+            com.example.ui.components.VpnModeSwitchConfirmDialog(
+                onConfirm = {
+                    showVpnConfirmDialog = false
+                    VpnManager.activateVpnMode(context)
+                },
+                onDismiss = { showVpnConfirmDialog = false }
+            )
         }
     }
 }

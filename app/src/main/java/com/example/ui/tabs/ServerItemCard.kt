@@ -74,6 +74,8 @@ internal fun ServerCard(
     isTooFarForAutoSelect: Boolean = false,
     @Suppress("UNUSED_PARAMETER") precomputedSubtitle: String? = null,
     isEn: Boolean = false,
+    isSecurityBlocked: Boolean = false,
+    onUnblockSecurity: (() -> Unit)? = null,
     onClick: () -> Unit,
     onDelete: (() -> Unit)? = null
 ) {
@@ -128,10 +130,21 @@ internal fun ServerCard(
             .fillMaxWidth()
             .defaultMinSize(minHeight = 56.dp)
             .clip(SERVER_CARD_SHAPE)
-            .background(if (isSelected) SELECTED_CARD_BG else DEFAULT_CARD_BG, SERVER_CARD_SHAPE)
+            .background(
+                when {
+                    isSecurityBlocked -> Color(0xFF211111)
+                    isSelected -> SELECTED_CARD_BG
+                    else -> DEFAULT_CARD_BG
+                },
+                SERVER_CARD_SHAPE
+            )
             .border(
                 width = 1.dp,
-                color = if (isSelected) XboxNeonGreen else XboxCardBorder,
+                color = when {
+                    isSecurityBlocked -> JapanRed
+                    isSelected -> XboxNeonGreen
+                    else -> XboxCardBorder
+                },
                 shape = SERVER_CARD_SHAPE
             )
             .gamepadClickable(cornerRadius = 12.dp, onClick = onClick)
@@ -183,22 +196,39 @@ internal fun ServerCard(
                             .padding(horizontal = 7.dp, vertical = 2.dp)
                     )
 
-                    // Unlock status pill
-                    Text(
-                        text = unlockLabel,
-                        color = unlockBadgeTextColor,
-                        fontFamily = SpaceGroteskFontFamily,
-                        fontSize = 10.5.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        softWrap = false,
-                        maxLines = 1,
-                        modifier = Modifier
-                            .background(unlockBadgeBgColor, BADGE_SHAPE)
-                            .border(1.dp, unlockBadgeBorderColor, BADGE_SHAPE)
-                            .padding(horizontal = 7.dp, vertical = 2.dp)
-                    )
+                    // Security blocked badge or unlock status pill
+                    if (isSecurityBlocked) {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_server_security_blocked_badge),
+                            color = JapanRed,
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            softWrap = false,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .background(Color(0xFF331A19), BADGE_SHAPE)
+                                .border(1.dp, JapanRed, BADGE_SHAPE)
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
+                                .testTag("server_security_blocked_badge_${server.id}")
+                        )
+                    } else {
+                        Text(
+                            text = unlockLabel,
+                            color = unlockBadgeTextColor,
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            softWrap = false,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .background(unlockBadgeBgColor, BADGE_SHAPE)
+                                .border(1.dp, unlockBadgeBorderColor, BADGE_SHAPE)
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
+                        )
+                    }
 
-                    if (isRecommended) {
+                    if (!isSecurityBlocked && isRecommended) {
                         Text(
                             text = if (isEn) "★ Best" else "★ Tối ưu",
                             color = XboxNeonGreen,
@@ -274,7 +304,24 @@ internal fun ServerCard(
                 softWrap = false
             )
 
-            if (onDelete != null) {
+            if (isSecurityBlocked && onUnblockSecurity != null) {
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_security_unblock_action),
+                    color = WarningAmber,
+                    fontFamily = SpaceGroteskFontFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier
+                        .clip(BADGE_SHAPE)
+                        .background(Color(0xFF2A2208), BADGE_SHAPE)
+                        .border(1.dp, WarningAmber, BADGE_SHAPE)
+                        .gamepadClickable(cornerRadius = 999.dp, onClick = onUnblockSecurity)
+                        .padding(horizontal = 9.dp, vertical = 5.dp)
+                        .testTag("unblock_security_server_${server.id}")
+                )
+            } else if (onDelete != null) {
                 IconButton(
                     onClick = onDelete,
                     modifier = Modifier

@@ -199,4 +199,34 @@
     <string name="keybind_swap_pair_desc">オン：単一ボタン変更時に対になる方向・ボタンを自動で入れ替えます。</string>
     <string name="keybind_on">ON</string>
     <string name="keybind_off">OFF</string>
+    <!-- Bypass & VPN Mode + Security -->
+    <string name="vpn_mode_section_title">接続モード</string>
+    <string name="vpn_sub_selector_label">VPN 接続方式</string>
+    <string name="vpn_mode_bypass">Bypass</string>
+    <string name="vpn_mode_vpn">VPN</string>
+    <string name="vpn_sub_in_app_proxy">アプリ内プロキシ</string>
+    <string name="vpn_sub_external_vpn">外部 VPN</string>
+    <string name="vpn_mode_bypass_desc">ブラウザ内で直接リージョン解除（最低遅延・プロキシ不要）。</string>
+    <string name="vpn_mode_vpn_proxy_desc">Xbox ドメイン専用の隔離プロキシ。ログインや端末データは除外。</string>
+    <string name="vpn_mode_vpn_external_desc">端末の VPN アプリ（Warp、Proton など）を使用。Android OS 管理。</string>
+    <string name="vpn_mode_switched_bypass_toast">✓ モード: Bypass</string>
+    <string name="vpn_mode_switched_proxy_toast">✓ モード: VPN（アプリ内プロキシ）</string>
+    <string name="vpn_mode_switched_external_toast">✓ モード: VPN（外部 VPN）</string>
+    <string name="vpn_security_confirm_title">VPN モードに切り替えますか？</string>
+    <string name="vpn_security_confirm_message">• アプリ内プロキシは Ravno 内に厳密に隔離され、端末データにはアクセスせず、Microsoft ログインやローカル通信を除外し、バックグラウンド時に一時停止します。SSL エラーや外部リダイレクトを検知すると即座に遮断・切断・隔離します。\n\n• 外部 VPN アプリは Android OS レベルで動作するため、Ravno から通信を検査・遮断することはできません。\n\n• 公開プロキシや外部 VPN は第三者を経由します。続行するとリスクを理解し、すべて自己責任で VPN モードを使用することに同意したことになります。</string>
+    <string name="vpn_security_confirm_accept">理解しました（自己責任）</string>
+    <string name="vpn_security_confirm_cancel">キャンセル（Bypass 維持）</string>
+    <string name="vpn_security_killswitch_title">セキュリティ保護のため VPN を遮断</string>
+    <string name="vpn_security_killswitch_ssl_msg">プロキシ %1$s で SSL 証明書エラー（%2$s）が発生しました。接続を遮断し、VPN を切断してこのプロキシを隔離しました。</string>
+    <string name="vpn_security_killswitch_external_msg">プロキシ %1$s が信頼されたドメイン外へリダイレクトを試みました（%2$s）。経路を遮断し、VPN を切断してこのプロキシを隔離しました。</string>
+    <string name="vpn_security_killswitch_ok">了解（Bypass を維持）</string>
+    <string name="vpn_server_security_blocked_badge">セキュリティ遮断</string>
+    <string name="vpn_server_security_blocked_toast">このプロキシはセキュリティ上の理由で遮断されました。別のサーバーを選ぶか解除してください。</string>
+    <string name="vpn_security_unblock_action">解除</string>
+    <string name="vpn_security_isolation_banner">アプリ内プロキシは Xbox ドメイン専用で、ログインを除外し危険な転送を自動遮断します。</string>
+    <string name="vpn_external_os_notice">外部 VPN は Android システム側で動作します。Ravno は外部 VPN の通信を制御・遮断できません。</string>
+    <string name="vpn_mode_bypass_cd">Bypass モードを選択</string>
+    <string name="vpn_mode_vpn_cd">VPN モードを選択</string>
+    <string name="vpn_sub_in_app_proxy_cd">アプリ内プロキシを使用</string>
+    <string name="vpn_sub_external_vpn_cd">外部 VPN アプリを使用</string>
 </resources>

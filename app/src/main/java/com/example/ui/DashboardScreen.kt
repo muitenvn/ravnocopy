@@ -609,7 +609,7 @@ fun DashboardScreen(
                                             featuredGames = allGames,
                                             onConnectVpn = { handleConnect() },
                                             onDisconnectVpn = { VpnManager.disconnect(context) },
-                                            onSwitchEngine = { VpnManager.setEngine(it) },
+                                            onSwitchEngine = { VpnManager.setEngine(it, context) },
                                             onLaunchGame = {
                                                 onLaunchUrl(
                                                     SettingsRepository.formatXboxUrlWithLocale(

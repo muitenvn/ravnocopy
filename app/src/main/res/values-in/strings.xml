@@ -199,4 +199,34 @@
     <string name="keybind_swap_pair_desc">Aktif: menukar arah atau tombol berlawanan saat memetakan 1 tombol.</string>
     <string name="keybind_on">AKTIF</string>
     <string name="keybind_off">MATI</string>
+    <!-- Bypass & VPN Mode + Security -->
+    <string name="vpn_mode_section_title">Mode Koneksi</string>
+    <string name="vpn_sub_selector_label">Jenis Koneksi VPN</string>
+    <string name="vpn_mode_bypass">Bypass</string>
+    <string name="vpn_mode_vpn">VPN</string>
+    <string name="vpn_sub_in_app_proxy">Proxy Dalam App</string>
+    <string name="vpn_sub_external_vpn">VPN Eksternal</string>
+    <string name="vpn_mode_bypass_desc">Buka wilayah langsung di browser (latensi terendah, tanpa server proxy).</string>
+    <string name="vpn_mode_vpn_proxy_desc">Proxy terisolasi khusus domain Xbox. Mengecualikan login &amp; data ponsel.</string>
+    <string name="vpn_mode_vpn_external_desc">Memakai aplikasi VPN perangkat (Warp, Proton…). Dikelola OS Android.</string>
+    <string name="vpn_mode_switched_bypass_toast">✓ Mode: Bypass</string>
+    <string name="vpn_mode_switched_proxy_toast">✓ Mode: VPN (Proxy Dalam App)</string>
+    <string name="vpn_mode_switched_external_toast">✓ Mode: VPN (VPN Eksternal)</string>
+    <string name="vpn_security_confirm_title">Beralih ke Mode VPN?</string>
+    <string name="vpn_security_confirm_message">• Proxy Dalam App diisolasi ketat hanya di dalam Ravno: tidak mengakses data ponsel, mengecualikan login Microsoft dan jaringan lokal, otomatis jeda di latar belakang, serta langsung memblokir &amp; memutus proxy jika terjadi kesalahan SSL atau pengalihan eksternal.\n\n• Aplikasi VPN Eksternal berjalan di tingkat sistem Android, sehingga Ravno tidak dapat memeriksa atau memblokir lalu lintasnya.\n\n• Proxy publik dan VPN pihak ketiga meneruskan lalu lintas melalui pihak luar. Dengan melanjutkan, Anda memahami risiko dan menanggung tanggung jawab penuh saat menggunakan mode VPN.</string>
+    <string name="vpn_security_confirm_accept">Saya paham, tanggung jawab sendiri</string>
+    <string name="vpn_security_confirm_cancel">Batal (Tetap Bypass)</string>
+    <string name="vpn_security_killswitch_title">VPN Diblokir Demi Keamanan</string>
+    <string name="vpn_security_killswitch_ssl_msg">Proxy %1$s memicu kesalahan sertifikat SSL (%2$s). Ravno memblokir koneksi, memutus VPN, dan mengkarantina proxy ini.</string>
+    <string name="vpn_security_killswitch_external_msg">Proxy %1$s mencoba mengalihkan ke luar domain tepercaya (%2$s). Ravno memblokir rute tersebut, memutus VPN, dan mengkarantina proxy ini.</string>
+    <string name="vpn_security_killswitch_ok">Mengerti (Tetap di Bypass)</string>
+    <string name="vpn_server_security_blocked_badge">Diblokir Keamanan</string>
+    <string name="vpn_server_security_blocked_toast">Proxy ini diblokir demi keamanan. Pilih server lain atau buka blokirnya.</string>
+    <string name="vpn_security_unblock_action">Buka blokir</string>
+    <string name="vpn_security_isolation_banner">Proxy Dalam App hanya untuk domain Xbox, mengecualikan login &amp; memblokir pengalihan tidak aman.</string>
+    <string name="vpn_external_os_notice">VPN Eksternal berjalan di tingkat sistem Android. Ravno tidak dapat mengontrol atau memblokir lalu lintasnya.</string>
+    <string name="vpn_mode_bypass_cd">Pilih mode Bypass</string>
+    <string name="vpn_mode_vpn_cd">Pilih mode VPN</string>
+    <string name="vpn_sub_in_app_proxy_cd">Gunakan Proxy Dalam App</string>
+    <string name="vpn_sub_external_vpn_cd">Gunakan aplikasi VPN Eksternal</string>
 </resources>

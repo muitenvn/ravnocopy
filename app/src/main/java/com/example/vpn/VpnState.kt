@@ -14,6 +14,20 @@ enum class VpnEngine {
     EXTERNAL_VPN     // External VPN Assistant: Use with Warp, Proton, Kiwi, etc. with auto-detect and zero-reload handoff
 }
 
+enum class VpnSecurityViolationType {
+    SSL_TAMPERING,
+    EXTERNAL_REDIRECT_OR_SCHEME
+}
+
+@Immutable
+data class VpnSecurityAlert(
+    val serverKey: String,
+    val serverName: String,
+    val violationType: VpnSecurityViolationType,
+    val detail: String,
+    val timestampMs: Long = System.currentTimeMillis()
+)
+
 enum class RegionUnlockStatus(val labelVi: String, val labelEn: String) {
     UNLOCKED("Đã mở khóa", "Unlocked"),
     FAILED("Không mở khóa", "Unlock Failed"),
@@ -950,5 +964,11 @@ data class VpnConnectionState(
     val isTestingPings: Boolean = false,
     val activeStreamServerId: String? = null,
     val userManuallySelectedServer: Boolean = false,
-    val lastAutoSelectTimestampMs: Long = 0L
-)
+    val lastAutoSelectTimestampMs: Long = 0L,
+    val preferredVpnSubEngine: VpnEngine = VpnEngine.PROXY_TUNNEL,
+    val securityBlockedServerKeys: Set<String> = emptySet(),
+    val securityBlockAlert: VpnSecurityAlert? = null
+) {
+    val isVpnModeSelected: Boolean
+        get() = engine != VpnEngine.SMART_BYPASS
+}

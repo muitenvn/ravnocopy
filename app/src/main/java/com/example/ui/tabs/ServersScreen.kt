@@ -160,6 +160,7 @@ fun ServersScreen(
     var selectedCategory by remember { mutableStateOf("ALL") }
     var showCustomDialog by remember { mutableStateOf(false) }
     var detailServer by remember { mutableStateOf<ServerLocation?>(null) }
+    var showVpnConfirmDialog by remember { mutableStateOf(false) }
 
     val jpLabel = stringResource(R.string.cat_japan)
     val krLabel = stringResource(R.string.cat_korea)
@@ -1002,87 +1003,245 @@ fun ServersScreen(
                     }
                 }
 
-                // 2. Segmented 2-Option Bar for VPN Mode: Tự tắt khi vào game | Luôn bật
-                val isAutoOff = config.autoBypassEnabled
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(XboxSurface, RoundedCornerShape(12.dp))
-                        .border(1.dp, XboxCardBorder, RoundedCornerShape(12.dp))
-                        .padding(3.dp)
-                        .testTag("v130_smart_routing_algorithm_card"),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // 2. Segmented 2-Option Bar for Connection Mode: Mục 1 Bypass | Mục 2 VPN (Proxy trong app / VPN ngoài)
+                val isBypassSelected = !vpnState.isVpnModeSelected
+                val isVpnSelected = vpnState.isVpnModeSelected
+                val isInAppProxyActive = vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL
+                val isExternalVpnActive = vpnState.engine == com.example.vpn.VpnEngine.EXTERNAL_VPN
+
+                val bypassLabel = stringResource(R.string.vpn_mode_bypass)
+                val vpnLabel = stringResource(R.string.vpn_mode_vpn)
+                val inAppProxyLabel = stringResource(R.string.vpn_sub_in_app_proxy)
+                val externalVpnLabel = stringResource(R.string.vpn_sub_external_vpn)
+                val bypassCd = stringResource(R.string.vpn_mode_bypass_cd)
+                val vpnCd = stringResource(R.string.vpn_mode_vpn_cd)
+                val inAppProxyCd = stringResource(R.string.vpn_sub_in_app_proxy_cd)
+                val externalVpnCd = stringResource(R.string.vpn_sub_external_vpn_cd)
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .defaultMinSize(minHeight = 38.dp)
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(
-                                if (isAutoOff) XboxNeonGreen else Color.Transparent,
-                                RoundedCornerShape(9.dp)
-                            )
-                            .gamepadClickable(cornerRadius = 9.dp) {
-                                if (!isAutoOff) {
-                                    SettingsRepository.updateAutoBypass(true)
-                                    VpnManager.runV130SmartRoutingUpgradeStep(context = context, force = true)
-                                }
-                                android.widget.Toast.makeText(
-                                    context,
-                                    config.tr("✓ Chế độ: Tự tắt khi vào game", "✓ Mode: Auto-Off in game"),
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                            .padding(horizontal = 8.dp, vertical = 8.dp)
-                            .testTag("mode_auto_off_distance_first_chip"),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(XboxSurface, RoundedCornerShape(12.dp))
+                            .border(1.dp, XboxCardBorder, RoundedCornerShape(12.dp))
+                            .padding(3.dp)
+                            .testTag("connection_mode_segmented_bar"),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = config.tr("Tự tắt khi vào game", "Auto-off in game"),
-                            color = if (isAutoOff) Color(0xFF03140B) else TextSecondary,
-                            fontFamily = SpaceGroteskFontFamily,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .defaultMinSize(minHeight = 44.dp)
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(
+                                    if (isBypassSelected) XboxNeonGreen else Color.Transparent,
+                                    RoundedCornerShape(9.dp)
+                                )
+                                .gamepadClickable(cornerRadius = 9.dp) {
+                                    if (!isBypassSelected) {
+                                        VpnManager.activateBypassMode(context)
+                                    }
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        context.getString(R.string.vpn_mode_switched_bypass_toast),
+                                        android.widget.Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                .padding(horizontal = 8.dp, vertical = 8.dp)
+                                .semantics { contentDescription = bypassCd }
+                                .testTag("mode_bypass_chip"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = bypassLabel,
+                                color = if (isBypassSelected) Color(0xFF03140B) else TextSecondary,
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .defaultMinSize(minHeight = 44.dp)
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(
+                                    if (isVpnSelected) XboxNeonGreen else Color.Transparent,
+                                    RoundedCornerShape(9.dp)
+                                )
+                                .gamepadClickable(cornerRadius = 9.dp) {
+                                    if (isBypassSelected) {
+                                        showVpnConfirmDialog = true
+                                    } else {
+                                        val toastRes = if (isExternalVpnActive) {
+                                            R.string.vpn_mode_switched_external_toast
+                                        } else {
+                                            R.string.vpn_mode_switched_proxy_toast
+                                        }
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            context.getString(toastRes),
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                                .padding(horizontal = 8.dp, vertical = 8.dp)
+                                .semantics { contentDescription = vpnCd }
+                                .testTag("mode_vpn_chip"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = vpnLabel,
+                                color = if (isVpnSelected) Color(0xFF03140B) else TextSecondary,
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
 
+                    // Sub-selector when VPN mode is selected: Proxy trong app | VPN ngoài
+                    if (isVpnSelected) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFF0D1511), RoundedCornerShape(10.dp))
+                                .border(1.dp, XboxCardBorder, RoundedCornerShape(10.dp))
+                                .padding(3.dp)
+                                .testTag("vpn_sub_mode_bar"),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .defaultMinSize(minHeight = 40.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isInAppProxyActive) Color(0xFF16352A) else Color.Transparent,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isInAppProxyActive) XboxNeonGreen else Color.Transparent,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .gamepadClickable(cornerRadius = 8.dp) {
+                                        VpnManager.activateVpnMode(context, com.example.vpn.VpnEngine.PROXY_TUNNEL)
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            context.getString(R.string.vpn_mode_switched_proxy_toast),
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                                    .semantics { contentDescription = inAppProxyCd }
+                                    .testTag("vpn_sub_in_app_proxy_chip"),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = inAppProxyLabel,
+                                    color = if (isInAppProxyActive) XboxNeonGreen else TextSecondary,
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .defaultMinSize(minHeight = 40.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isExternalVpnActive) Color(0xFF16352A) else Color.Transparent,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isExternalVpnActive) XboxNeonGreen else Color.Transparent,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .gamepadClickable(cornerRadius = 8.dp) {
+                                        VpnManager.activateVpnMode(context, com.example.vpn.VpnEngine.EXTERNAL_VPN)
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            context.getString(R.string.vpn_mode_switched_external_toast),
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                                    .semantics { contentDescription = externalVpnCd }
+                                    .testTag("vpn_sub_external_vpn_chip"),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = externalVpnLabel,
+                                    color = if (isExternalVpnActive) XboxNeonGreen else TextSecondary,
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+
+                    // Mode & security isolation note
+                    val noteBg = when {
+                        isExternalVpnActive -> Color(0xFF2A2208)
+                        isInAppProxyActive -> Color(0xFF0E2118)
+                        else -> XboxSurface
+                    }
+                    val noteBorder = when {
+                        isExternalVpnActive -> Color(0xFF4A3B0E)
+                        isInAppProxyActive -> Color(0xFF1E4A34)
+                        else -> XboxCardBorder
+                    }
+                    val noteColor = when {
+                        isExternalVpnActive -> WarningAmber
+                        isInAppProxyActive -> XboxNeonGreen
+                        else -> TextSecondary
+                    }
+                    val noteText = when {
+                        isExternalVpnActive -> stringResource(R.string.vpn_external_os_notice)
+                        isInAppProxyActive -> stringResource(R.string.vpn_security_isolation_banner)
+                        else -> stringResource(R.string.vpn_mode_bypass_desc)
+                    }
                     Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .defaultMinSize(minHeight = 38.dp)
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(
-                                if (!isAutoOff) XboxNeonGreen else Color.Transparent,
-                                RoundedCornerShape(9.dp)
-                            )
-                            .gamepadClickable(cornerRadius = 9.dp) {
-                                if (isAutoOff) {
-                                    SettingsRepository.updateAutoBypass(false)
-                                    VpnManager.runV130SmartRoutingUpgradeStep(context = context, force = true)
-                                }
-                                android.widget.Toast.makeText(
-                                    context,
-                                    config.tr("✓ Chế độ: Luôn bật VPN", "✓ Mode: Always on"),
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                            .padding(horizontal = 8.dp, vertical = 8.dp)
-                            .testTag("mode_keep_vpn_ping_first_chip"),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(noteBg, RoundedCornerShape(8.dp))
+                            .border(1.dp, noteBorder, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 10.dp, vertical = 7.dp)
+                            .testTag("vpn_mode_security_note")
                     ) {
                         Text(
-                            text = config.tr("Luôn bật", "Always on"),
-                            color = if (!isAutoOff) Color(0xFF03140B) else TextSecondary,
+                            text = noteText,
+                            color = noteColor,
                             fontFamily = SpaceGroteskFontFamily,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            softWrap = false,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 3,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
@@ -1345,8 +1504,25 @@ fun ServersScreen(
             val distanceKm = meta?.distanceKm
             val isTooFarForAutoSelect = meta?.isTooFarForAutoSelect ?: false
 
-            val onClickStable = remember(server, onSelectServer) {
-                { onSelectServer(server) }
+            val isSecurityBlocked = VpnManager.isServerSecurityBlocked(server, vpnState.securityBlockedServerKeys)
+
+            val onClickStable = remember(server, onSelectServer, isSecurityBlocked, vpnState.engine) {
+                {
+                    if (isSecurityBlocked && vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL) {
+                        android.widget.Toast.makeText(
+                            context,
+                            context.getString(R.string.vpn_server_security_blocked_toast),
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        onSelectServer(server)
+                    }
+                }
+            }
+            val onUnblockStable: (() -> Unit)? = remember(server.addressPortKey, isSecurityBlocked) {
+                if (isSecurityBlocked) {
+                    { VpnManager.unblockSecurityBlockedServer(server.addressPortKey) }
+                } else null
             }
             val onDeleteStable: (() -> Unit)? = remember(server.id, server.isCustom) {
                 if (server.isCustom) {
@@ -1361,7 +1537,7 @@ fun ServersScreen(
             ServerCard(
                 server = server,
                 isSelected = isSelected,
-                isRecommended = isRecommended,
+                isRecommended = isRecommended && !isSecurityBlocked,
                 pingMs = ping,
                 measurement = measurement,
                 hasTriedPing = hasTriedPing,
@@ -1373,6 +1549,8 @@ fun ServersScreen(
                 isTooFarForAutoSelect = isTooFarForAutoSelect,
                 precomputedSubtitle = meta?.subtitleText,
                 isEn = isEn,
+                isSecurityBlocked = isSecurityBlocked,
+                onUnblockSecurity = onUnblockStable,
                 onClick = onClickStable,
                 onDelete = onDeleteStable
             )
@@ -1381,6 +1559,26 @@ fun ServersScreen(
         item {
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showVpnConfirmDialog) {
+        com.example.ui.components.VpnModeSwitchConfirmDialog(
+            onConfirm = {
+                showVpnConfirmDialog = false
+                VpnManager.activateVpnMode(context)
+                val toastRes = if (VpnManager.state.value.engine == com.example.vpn.VpnEngine.EXTERNAL_VPN) {
+                    R.string.vpn_mode_switched_external_toast
+                } else {
+                    R.string.vpn_mode_switched_proxy_toast
+                }
+                android.widget.Toast.makeText(
+                    context,
+                    context.getString(toastRes),
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            },
+            onDismiss = { showVpnConfirmDialog = false }
+        )
     }
 
     if (showCustomDialog) {

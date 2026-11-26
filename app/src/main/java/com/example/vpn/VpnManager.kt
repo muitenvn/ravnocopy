@@ -220,6 +220,7 @@ object VpnManager {
         lastObservedNetworkKey = initialNetStatus.activeNetworkKey
         lastObservedHasVpnTransport = initialNetStatus.hasVpnTransport
         lastStartupMaintenanceAtMs = System.currentTimeMillis()
+        loadPersistedEngineAndSecurityPrefs(appCtx)
 
         // Nạp JSON danh sách máy chủ & lịch sử mở khóa trên Dispatchers.IO.
         // Nếu VPN đang bật thì giữ luồng kiểm tra tức thì; nếu VPN đang tắt thì nhường 750ms đầu cho UI & Snapshot Thư viện.
@@ -912,6 +913,226 @@ object VpnManager {
     private const val PREF_LAST_AUTO_SELECT_TS = "last_auto_select_timestamp_ms"
     private const val PREF_LAST_AUTO_SELECT_NET_TYPE = "last_auto_select_network_type"
     private const val PREF_LAST_AUTO_SELECT_COUNTRY = "last_auto_select_user_country"
+    private const val PREF_SELECTED_VPN_ENGINE = "selected_vpn_engine_v2"
+    private const val PREF_PREFERRED_VPN_SUB_ENGINE = "preferred_vpn_sub_engine_v2"
+    private const val PREF_SECURITY_BLOCKED_SERVERS = "security_blocked_proxy_keys_v1"
+
+    /** Danh sách tên miền Xbox cốt lõi được phép đi qua Proxy trong app (khi thiết bị hỗ trợ reverse bypass) */
+    private val IN_APP_PROXY_XBOX_DOMAINS = listOf(
+        "xbox.com",
+        "*.xbox.com",
+        "*.xboxlive.com",
+        "*.xboxservices.com",
+        "*.gamepass.com",
+        "*.playfabapi.com"
+    )
+
+    /** Các tên miền và địa chỉ nội bộ luôn loại trừ khỏi Proxy trong app để bảo vệ đăng nhập và mạng cục bộ */
+    private val IN_APP_PROXY_SENSITIVE_BYPASS_RULES = listOf(
+        "<local>",
+        "localhost",
+        "127.0.0.1",
+        "[::1]",
+        "10.*",
+        "192.168.*",
+        "172.16.*",
+        "172.17.*",
+        "172.18.*",
+        "172.19.*",
+        "172.20.*",
+        "172.21.*",
+        "172.22.*",
+        "172.23.*",
+        "172.24.*",
+        "172.25.*",
+        "172.26.*",
+        "172.27.*",
+        "172.28.*",
+        "172.29.*",
+        "172.30.*",
+        "172.31.*",
+        "login.live.com",
+        "*.login.live.com",
+        "login.microsoftonline.com",
+        "*.login.microsoftonline.com",
+        "account.microsoft.com",
+        "account.live.com",
+        "commerce.microsoft.com",
+        "paymentinstruments.mp.microsoft.com",
+        "*.msauth.net",
+        "*.msftauth.net"
+    )
+
+    /** Các tên miền HTTPS tin cậy được phép điều hướng khung chính khi Proxy trong app đang hoạt động */
+    private val ALLOWED_IN_APP_PROXY_NAV_DOMAINS = listOf(
+        "xbox.com",
+        "xboxlive.com",
+        "xboxservices.com",
+        "gamepass.com",
+        "playfabapi.com",
+        "live.com",
+        "live.net",
+        "microsoft.com",
+        "microsoftonline.com",
+        "msauth.net",
+        "msftauth.net",
+        "msftidentity.com",
+        "microsoftazuread-sso.com",
+        "microsoftonline-p.com"
+    )
+
+    fun isServerSecurityBlocked(
+        server: ServerLocation,
+        blockedKeys: Set<String> = _state.value.securityBlockedServerKeys
+    ): Boolean {
+        return server.addressPortKey.lowercase() in blockedKeys
+    }
+
+    fun isInAppProxySecurityGuardActive(): Boolean {
+        val st = _state.value
+        return st.engine == VpnEngine.PROXY_TUNNEL &&
+            (st.mode == NetworkMode.VPN_JAPAN || isWebViewProxyOverrideActive)
+    }
+
+    /**
+     * Kiểm tra URL điều hướng khung chính có nằm trong phạm vi HTTPS tin cậy của ứng dụng hay không.
+     * Mọi giao thức ngoài HTTPS (http, file, content, intent, market, tel, sms...) hoặc tên miền lạ đều bị chặn.
+     */
+    fun isUrlAllowedUnderInAppProxy(url: String?): Boolean {
+        if (url.isNullOrBlank()) return false
+        val trimmed = url.trim()
+        if (trimmed.equals("about:blank", ignoreCase = true)) return true
+        val parsed = runCatching { android.net.Uri.parse(trimmed) }.getOrNull() ?: return false
+        val scheme = parsed.scheme?.lowercase() ?: return false
+        if (scheme != "https") return false
+        val host = parsed.host?.lowercase()?.trimEnd('.') ?: return false
+        if (host.isBlank()) return false
+        return ALLOWED_IN_APP_PROXY_NAV_DOMAINS.any { domain ->
+            host == domain || host.endsWith(".$domain")
+        }
+    }
+
+    private fun loadPersistedEngineAndSecurityPrefs(context: Context) {
+        try {
+            val sp = context.getSharedPreferences("cloudplay_servers", Context.MODE_PRIVATE)
+            val savedEngineName = sp.getString(PREF_SELECTED_VPN_ENGINE, VpnEngine.SMART_BYPASS.name)
+            val parsedEngine = runCatching {
+                VpnEngine.valueOf(savedEngineName ?: VpnEngine.SMART_BYPASS.name)
+            }.getOrDefault(VpnEngine.SMART_BYPASS)
+
+            val savedSubName = sp.getString(PREF_PREFERRED_VPN_SUB_ENGINE, VpnEngine.PROXY_TUNNEL.name)
+            val parsedSub = runCatching {
+                VpnEngine.valueOf(savedSubName ?: VpnEngine.PROXY_TUNNEL.name)
+            }.getOrDefault(VpnEngine.PROXY_TUNNEL).let { sub ->
+                if (sub == VpnEngine.PROXY_TUNNEL || sub == VpnEngine.EXTERNAL_VPN) sub else VpnEngine.PROXY_TUNNEL
+            }
+
+            val blockedSet = sp.getStringSet(PREF_SECURITY_BLOCKED_SERVERS, emptySet())
+                ?.map { it.trim().lowercase() }
+                ?.filter { it.isNotBlank() }
+                ?.toSet()
+                ?: emptySet()
+
+            _state.value = _state.value.copy(
+                engine = parsedEngine,
+                preferredVpnSubEngine = parsedSub,
+                securityBlockedServerKeys = blockedSet
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to load persisted engine/security prefs", e)
+        }
+    }
+
+    private fun persistEnginePrefs(engine: VpnEngine, preferredSub: VpnEngine) {
+        val ctx = appContext ?: return
+        try {
+            ctx.getSharedPreferences("cloudplay_servers", Context.MODE_PRIVATE)
+                .edit()
+                .putString(PREF_SELECTED_VPN_ENGINE, engine.name)
+                .putString(PREF_PREFERRED_VPN_SUB_ENGINE, preferredSub.name)
+                .apply()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to persist engine prefs", e)
+        }
+    }
+
+    private fun persistSecurityBlockedKeys(keys: Set<String>) {
+        val ctx = appContext ?: return
+        try {
+            ctx.getSharedPreferences("cloudplay_servers", Context.MODE_PRIVATE)
+                .edit()
+                .putStringSet(PREF_SECURITY_BLOCKED_SERVERS, HashSet(keys))
+                .apply()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to persist security blocked keys", e)
+        }
+    }
+
+    /**
+     * Cầu dao bảo mật (Kill-Switch): Khi phát hiện Proxy trong app gây lỗi SSL hoặc cố chuyển hướng/tác động ra ngoài,
+     * lập tức ngắt Proxy, dừng dịch vụ, khóa vĩnh viễn máy chủ proxy đó và đưa ứng dụng về chế độ Bypass an toàn.
+     */
+    fun triggerSecurityKillSwitch(
+        context: Context,
+        violationType: VpnSecurityViolationType,
+        detail: String
+    ) {
+        val curState = _state.value
+        val offendingServer = curState.currentServer
+        val serverKey = offendingServer.addressPortKey.lowercase()
+        val safeDetail = detail.trim().take(120).ifBlank { "unknown" }
+
+        isProxyPausedForExternal = false
+        isProxyPausedForBackground = false
+        clearWebViewProxy()
+        XboxCloudVpnService.stopVpn(context)
+
+        val updatedBlocked = if (curState.engine == VpnEngine.PROXY_TUNNEL && serverKey.isNotBlank()) {
+            curState.securityBlockedServerKeys + serverKey
+        } else {
+            curState.securityBlockedServerKeys
+        }
+        persistSecurityBlockedKeys(updatedBlocked)
+        persistEnginePrefs(VpnEngine.SMART_BYPASS, curState.preferredVpnSubEngine)
+
+        val nextMode = if (needsVpnToPlay()) NetworkMode.DISCONNECTED else NetworkMode.DIRECT_NETWORK
+        val alert = VpnSecurityAlert(
+            serverKey = serverKey,
+            serverName = offendingServer.name,
+            violationType = violationType,
+            detail = safeDetail
+        )
+        _state.value = curState.copy(
+            mode = nextMode,
+            engine = VpnEngine.SMART_BYPASS,
+            isConnecting = false,
+            isBypassActiveInBrowser = false,
+            securityBlockedServerKeys = updatedBlocked,
+            securityBlockAlert = alert,
+            lastError = safeDetail
+        )
+        com.example.data.AppLogger.error(
+            "VPN_SECURITY",
+            "KILL-SWITCH kích hoạt (${violationType.name}): đã chặn và ngắt proxy ${offendingServer.name} ($serverKey) • chi tiết=$safeDetail"
+        )
+    }
+
+    fun dismissSecurityBlockAlert() {
+        if (_state.value.securityBlockAlert != null) {
+            _state.value = _state.value.copy(securityBlockAlert = null)
+        }
+    }
+
+    fun unblockSecurityBlockedServer(serverKey: String) {
+        val normalized = serverKey.trim().lowercase()
+        if (normalized.isBlank()) return
+        val cur = _state.value.securityBlockedServerKeys
+        if (normalized !in cur) return
+        val updated = cur - normalized
+        _state.value = _state.value.copy(securityBlockedServerKeys = updated)
+        persistSecurityBlockedKeys(updated)
+        com.example.data.AppLogger.info("VPN_SECURITY", "Người dùng đã gỡ chặn bảo mật cho máy chủ $normalized")
+    }
 
     fun getLastSessionPingForServer(
         server: ServerLocation,
@@ -1032,10 +1253,12 @@ object VpnManager {
             else -> 0.0
         }
 
+        val securityBlockPenalty = if (isServerSecurityBlocked(server)) 100000.0 else 0.0
+
         val tieBreaker = ((distanceKm ?: 4000).coerceAtLeast(0).toDouble() * DISTANCE_TIE_BREAKER_PER_KM) +
             (if (isDynamicLiveProxy(server)) 0.5 else 0.0)
 
-        return baseRttScore + freezePenalty + frameDropPenalty + unlockPenalty + reachabilityPenalty + tieBreaker
+        return baseRttScore + freezePenalty + frameDropPenalty + unlockPenalty + reachabilityPenalty + securityBlockPenalty + tieBreaker
     }
 
     /**
@@ -2367,22 +2590,54 @@ object VpnManager {
         }
     }
 
+    fun activateBypassMode(context: Context? = null) {
+        setEngine(VpnEngine.SMART_BYPASS, context)
+    }
+
+    fun activateVpnMode(context: Context? = null, subEngine: VpnEngine? = null) {
+        val targetSub = when (subEngine) {
+            VpnEngine.PROXY_TUNNEL, VpnEngine.EXTERNAL_VPN -> subEngine
+            else -> _state.value.preferredVpnSubEngine.takeIf {
+                it == VpnEngine.PROXY_TUNNEL || it == VpnEngine.EXTERNAL_VPN
+            } ?: VpnEngine.PROXY_TUNNEL
+        }
+        setEngine(targetSub, context)
+    }
+
     fun setEngine(engine: VpnEngine, context: Context? = null) {
         val oldEngine = _state.value.engine
         val wasConnected = _state.value.mode == NetworkMode.VPN_JAPAN
-        _state.value = _state.value.copy(engine = engine)
-        if (oldEngine != engine) {
-            com.example.data.AppLogger.info("UI", "Đổi chế độ VPN: ${oldEngine.name} -> ${engine.name}")
+        val nextPreferredSub = if (engine == VpnEngine.PROXY_TUNNEL || engine == VpnEngine.EXTERNAL_VPN) {
+            engine
+        } else {
+            _state.value.preferredVpnSubEngine
         }
+
+        if (engine != VpnEngine.PROXY_TUNNEL) {
+            isProxyPausedForBackground = false
+            isProxyPausedForExternal = false
+            clearWebViewProxy()
+        }
+
+        _state.value = _state.value.copy(
+            engine = engine,
+            preferredVpnSubEngine = nextPreferredSub
+        )
+        persistEnginePrefs(engine, nextPreferredSub)
+
+        if (oldEngine != engine) {
+            com.example.data.AppLogger.info("UI", "Đổi chế độ kết nối: ${oldEngine.name} -> ${engine.name}")
+        }
+        val effectiveCtx = context ?: appContext
         if (engine == VpnEngine.PROXY_TUNNEL && _state.value.serverPings.isEmpty()) {
             testAllServers(
                 autoPickBest = false,
-                context = context ?: appContext,
-                reason = "đổi sang chế độ Proxy Tunnel"
+                context = effectiveCtx,
+                reason = "đổi sang chế độ Proxy trong app"
             )
         }
-        if (wasConnected && context != null) {
-            connect(context, _state.value.currentServer)
+        if (wasConnected && effectiveCtx != null) {
+            connect(effectiveCtx, _state.value.currentServer)
         }
     }
 
@@ -2431,6 +2686,18 @@ object VpnManager {
 
     fun onAppForeground() {
         isAppInForeground = true
+        if (isProxyPausedForBackground) {
+            isProxyPausedForBackground = false
+            val st = _state.value
+            if (st.engine == VpnEngine.PROXY_TUNNEL &&
+                st.mode == NetworkMode.VPN_JAPAN &&
+                !isProxyPausedForExternal &&
+                !isServerSecurityBlocked(st.currentServer)
+            ) {
+                applyMultiServerProxy(st.currentServer)
+                com.example.data.AppLogger.info("VPN_SECURITY", "Khôi phục Proxy trong app khi quay lại ứng dụng")
+            }
+        }
         if (latencyMonitoringRequested && pingJob?.isActive != true) {
             startLatencyMonitoring()
         }
@@ -2451,6 +2718,11 @@ object VpnManager {
 
     fun onAppBackground() {
         isAppInForeground = false
+        if (_state.value.engine == VpnEngine.PROXY_TUNNEL && isWebViewProxyOverrideActive) {
+            isProxyPausedForBackground = true
+            clearWebViewProxy()
+            com.example.data.AppLogger.info("VPN_SECURITY", "Tự động ngắt Proxy khi ứng dụng xuống nền (cách ly chỉ trong app)")
+        }
         pingJob?.cancel()
         pingJob = null
     }
@@ -2832,23 +3104,32 @@ object VpnManager {
             val isEnNow = com.example.data.SettingsRepository.config.value.isEnglishUI()
             when (_state.value.engine) {
                 VpnEngine.PROXY_TUNNEL -> {
-                    val isAlive = withContext(Dispatchers.IO) {
-                        PingTester.isHostReachable(server.ip, server.port, 1000)
+                    val isBlockedBySecurity = isServerSecurityBlocked(server)
+                    val isAlive = if (isBlockedBySecurity) {
+                        false
+                    } else {
+                        withContext(Dispatchers.IO) {
+                            PingTester.isHostReachable(server.ip, server.port, 1000)
+                        }
                     }
                     var targetServer = server
 
-                    if (!isAlive && !server.isCustom) {
-                        Log.w(TAG, "Server ${server.name} unreachable, finding best working backup...")
+                    if (isBlockedBySecurity || (!isAlive && !server.isCustom)) {
+                        Log.w(TAG, "Server ${server.name} unreachable or security-blocked, finding best working backup...")
                         com.example.data.AppLogger.warn(
                             "VPN",
-                            "Máy chủ ${server.name} (${server.ip}:${server.port}) không phản hồi, đang tìm máy chủ dự phòng..."
+                            if (isBlockedBySecurity) {
+                                "Máy chủ ${server.name} đang bị chặn bảo mật -> tìm máy chủ sạch dự phòng..."
+                            } else {
+                                "Máy chủ ${server.name} (${server.ip}:${server.port}) không phản hồi, đang tìm máy chủ dự phòng..."
+                            }
                         )
                         _state.value = _state.value.copy(
                             statusMessage = if (isEnNow) "Checking proxy route..." else "Đang kiểm tra đường truyền proxy..."
                         )
 
                         val workingBackup = findFirstResponsiveServer(server.countryCode)
-                        if (workingBackup != null) {
+                        if (workingBackup != null && !isServerSecurityBlocked(workingBackup)) {
                             targetServer = workingBackup
                             com.example.data.AppLogger.success(
                                 "VPN",
@@ -2863,17 +3144,20 @@ object VpnManager {
                             Log.w(TAG, "Proxy ports blocked or unreachable. Auto-falling back to Smart Bypass mode.")
                             com.example.data.AppLogger.warn(
                                 "VPN",
-                                "Tất cả cổng proxy vùng ${server.countryCode} không phản hồi -> tự chuyển sang chế độ SMART_BYPASS"
+                                "Tất cả cổng proxy sạch vùng ${server.countryCode} không phản hồi -> tự chuyển sang chế độ SMART_BYPASS"
                             )
+                            persistEnginePrefs(VpnEngine.SMART_BYPASS, _state.value.preferredVpnSubEngine)
                             _state.value = _state.value.copy(
                                 engine = VpnEngine.SMART_BYPASS,
-                                statusMessage = if (isEnNow) "Auto-switched to Smart Bypass (anti-throttle)" else "Tự động chuyển Smart Bypass (chống nghẽn mạng)"
+                                statusMessage = if (isEnNow) "Auto-switched to Bypass (safe fallback)" else "Tự động chuyển sang Bypass an toàn"
                             )
                             clearWebViewProxy()
                         }
                     }
 
-                    applyMultiServerProxy(targetServer)
+                    if (_state.value.engine == VpnEngine.PROXY_TUNNEL) {
+                        applyMultiServerProxy(targetServer)
+                    }
 
                     val targetGeo = GeoIpResult(
                         ip = targetServer.ip,
@@ -3072,8 +3356,10 @@ object VpnManager {
 
     private suspend fun findFirstResponsiveServer(countryCode: String): ServerLocation? = withContext(Dispatchers.IO) {
         val records = _state.value.unlockRecords
+        val blockedKeys = _state.value.securityBlockedServerKeys
         val rawCandidates = getAllServers().filter {
             it.countryCode.equals(countryCode, ignoreCase = true) &&
+                !isServerSecurityBlocked(it, blockedKeys) &&
                 getServerUnlockStatus(it, records) != RegionUnlockStatus.FAILED &&
                 getServerUnlockStatus(it, records) != RegionUnlockStatus.WRONG_REGION
         }
@@ -3251,17 +3537,27 @@ object VpnManager {
      * Chromium will automatically failover to subsequent rules if primary connection fails!
      */
     private fun applyMultiServerProxy(primaryServer: ServerLocation) {
+        if (isServerSecurityBlocked(primaryServer)) {
+            com.example.data.AppLogger.warn(
+                "VPN_SECURITY",
+                "Từ chối áp dụng Proxy cho máy chủ đang bị chặn bảo mật: ${primaryServer.name}"
+            )
+            clearWebViewProxy()
+            return
+        }
         if (WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)) {
             try {
                 val builder = ProxyConfig.Builder()
                 builder.addProxyRule(ruleFor(primaryServer))
 
-                // Add up to 3 backup servers from the same region (excluding FAILED / WRONG_REGION) for auto-fallback in Chromium
+                // Add up to 3 backup servers from the same region (excluding FAILED / WRONG_REGION / security-blocked)
                 val records = _state.value.unlockRecords
+                val blockedKeys = _state.value.securityBlockedServerKeys
                 val backups = sortServersByUnlockAndPing(
                     getAllServers().filter {
                         it.id != primaryServer.id &&
                             it.countryCode == primaryServer.countryCode &&
+                            !isServerSecurityBlocked(it, blockedKeys) &&
                             getServerUnlockStatus(it, records) != RegionUnlockStatus.FAILED &&
                             getServerUnlockStatus(it, records) != RegionUnlockStatus.WRONG_REGION
                     },
@@ -3273,10 +3569,22 @@ object VpnManager {
                     builder.addProxyRule(ruleFor(backup))
                 }
 
+                // Khóa phạm vi tên miền: chỉ tên miền Xbox đi qua Proxy trong app; loại trừ hoàn toàn đăng nhập & mạng nội bộ.
+                if (WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE_REVERSE_BYPASS)) {
+                    builder.setReverseBypassEnabled(true)
+                    IN_APP_PROXY_XBOX_DOMAINS.forEach { domainRule ->
+                        builder.addBypassRule(domainRule)
+                    }
+                } else {
+                    IN_APP_PROXY_SENSITIVE_BYPASS_RULES.forEach { bypassRule ->
+                        builder.addBypassRule(bypassRule)
+                    }
+                }
+
                 val proxyConfig = builder.build()
                 isWebViewProxyOverrideActive = true
                 ProxyController.getInstance().setProxyOverride(proxyConfig, proxyExecutor) {
-                    Log.d(TAG, "WebView proxy applied: ${ruleFor(primaryServer)} with ${backups.size} fallbacks")
+                    Log.d(TAG, "WebView isolated proxy applied: ${ruleFor(primaryServer)} with ${backups.size} fallbacks")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to apply WebView proxy", e)
@@ -3290,6 +3598,9 @@ object VpnManager {
 
     @Volatile
     private var isWebViewProxyOverrideActive: Boolean = false
+
+    @Volatile
+    private var isProxyPausedForBackground: Boolean = false
 
     private fun clearWebViewProxy() {
         if (!isWebViewProxyOverrideActive) return

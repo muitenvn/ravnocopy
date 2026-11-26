@@ -199,4 +199,34 @@
     <string name="keybind_swap_pair_desc">Bật để đảo trục ngược mượt khi gán 1 nút tay cầm.</string>
     <string name="keybind_on">BẬT</string>
     <string name="keybind_off">TẮT</string>
+    <!-- Bypass & VPN Mode + Security -->
+    <string name="vpn_mode_section_title">Chế độ kết nối</string>
+    <string name="vpn_sub_selector_label">Kiểu kết nối VPN</string>
+    <string name="vpn_mode_bypass">Bypass</string>
+    <string name="vpn_mode_vpn">VPN</string>
+    <string name="vpn_sub_in_app_proxy">Proxy trong app</string>
+    <string name="vpn_sub_external_vpn">VPN ngoài</string>
+    <string name="vpn_mode_bypass_desc">Mở khóa vùng trực tiếp trong trình duyệt (độ trễ thấp nhất, không qua proxy).</string>
+    <string name="vpn_mode_vpn_proxy_desc">Proxy cách ly chỉ trong app cho tên miền Xbox. Loại trừ đăng nhập &amp; dữ liệu máy.</string>
+    <string name="vpn_mode_vpn_external_desc">Dùng ứng dụng VPN riêng trên máy (Warp, Proton…). Do hệ điều hành Android quản lý.</string>
+    <string name="vpn_mode_switched_bypass_toast">✓ Chế độ: Bypass</string>
+    <string name="vpn_mode_switched_proxy_toast">✓ Chế độ: VPN (Proxy trong app)</string>
+    <string name="vpn_mode_switched_external_toast">✓ Chế độ: VPN (VPN ngoài)</string>
+    <string name="vpn_security_confirm_title">Chuyển sang chế độ VPN?</string>
+    <string name="vpn_security_confirm_message">• Proxy trong app được cách ly tuyệt đối trong Ravno: không truy cập dữ liệu điện thoại, loại trừ trang đăng nhập Microsoft và mạng nội bộ, tự ngắt khi ẩn app, và tự động chặn đường dẫn + khóa ngay máy chủ proxy nếu phát hiện lỗi chứng chỉ SSL hoặc chuyển hướng ra ngoài.\n\n• Ứng dụng VPN ngoài chạy ở cấp hệ điều hành Android nên Ravno không thể kiểm soát hay chặn lưu lượng của ứng dụng đó.\n\n• Máy chủ proxy công cộng và VPN bên thứ ba vẫn đi qua trung gian bên ngoài. Khi tiếp tục, bạn hiểu rõ rủi ro và tự chịu hoàn toàn trách nhiệm khi sử dụng chế độ VPN.</string>
+    <string name="vpn_security_confirm_accept">Tôi hiểu, tự chịu trách nhiệm</string>
+    <string name="vpn_security_confirm_cancel">Hủy (Giữ Bypass)</string>
+    <string name="vpn_security_killswitch_title">Đã chặn VPN để bảo vệ an toàn</string>
+    <string name="vpn_security_killswitch_ssl_msg">Máy chủ proxy %1$s phát sinh lỗi chứng chỉ bảo mật SSL (%2$s). Ứng dụng đã chặn kết nối, ngắt VPN và khóa máy chủ này.</string>
+    <string name="vpn_security_killswitch_external_msg">Máy chủ proxy %1$s cố chuyển hướng ra ngoài phạm vi tin cậy của ứng dụng (%2$s). Ứng dụng đã chặn đường dẫn đó, ngắt VPN và khóa máy chủ này.</string>
+    <string name="vpn_security_killswitch_ok">Đã hiểu (Dùng Bypass)</string>
+    <string name="vpn_server_security_blocked_badge">Đã chặn bảo mật</string>
+    <string name="vpn_server_security_blocked_toast">Máy chủ proxy này đã bị chặn vì lý do bảo mật. Hãy chọn máy chủ khác hoặc gỡ chặn.</string>
+    <string name="vpn_security_unblock_action">Gỡ chặn</string>
+    <string name="vpn_security_isolation_banner">Proxy chỉ chạy trong app cho tên miền Xbox, loại trừ đăng nhập và tự chặn chuyển hướng lạ.</string>
+    <string name="vpn_external_os_notice">VPN ngoài chạy ở cấp hệ điều hành Android. Ứng dụng không thể kiểm soát hay chặn lưu lượng VPN ngoài.</string>
+    <string name="vpn_mode_bypass_cd">Chọn chế độ Bypass</string>
+    <string name="vpn_mode_vpn_cd">Chọn chế độ VPN</string>
+    <string name="vpn_sub_in_app_proxy_cd">Dùng Proxy trong app</string>
+    <string name="vpn_sub_external_vpn_cd">Dùng ứng dụng VPN ngoài</string>
 </resources>

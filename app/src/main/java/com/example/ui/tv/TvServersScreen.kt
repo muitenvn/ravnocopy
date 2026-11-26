@@ -74,6 +74,7 @@ internal fun TvServersScreen(
     var selectedCategory by rememberSaveable { mutableStateOf("ALL") }
     var showCustomDialog by remember { mutableStateOf(false) }
     var detailServer by remember { mutableStateOf<ServerLocation?>(null) }
+    var showVpnConfirmDialog by remember { mutableStateOf(false) }
 
     val allServers = remember(vpnState.customServers, vpnState.liveVerifiedServers) {
         mutableStateListOf<ServerLocation>().apply {
@@ -263,7 +264,10 @@ internal fun TvServersScreen(
             }
         }
 
-        // 2. Country / Category Filter Chips
+        // 2. Mode Switcher (Bypass | VPN) + Country / Category Filter Chips
+        val isVpnMode = vpnState.isVpnModeSelected
+        val isProxySub = vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL
+        val isExternalSub = vpnState.engine == com.example.vpn.VpnEngine.EXTERNAL_VPN
         val categories = listOf(
             "ALL" to config.tr("Tất cả (${allServers.size})", "All (${allServers.size})"),
             "JP" to config.tr("🇯🇵 Nhật Bản", "🇯🇵 Japan"),
@@ -275,6 +279,69 @@ internal fun TvServersScreen(
             horizontalArrangement = Arrangement.spacedBy((8.dp * scale).coerceAtLeast(6.dp)),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            item(key = "tv_srv_mode_bypass") {
+                TvChip(
+                    text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass),
+                    selected = !isVpnMode,
+                    scale = scale,
+                    onClick = {
+                        VpnManager.activateBypassMode(context)
+                        Toast.makeText(
+                            context,
+                            context.getString(com.example.R.string.vpn_mode_switched_bypass_toast),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    modifier = Modifier.testTag("tv_server_mode_bypass_chip")
+                )
+            }
+            item(key = "tv_srv_mode_vpn") {
+                TvChip(
+                    text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_vpn),
+                    selected = isVpnMode,
+                    scale = scale,
+                    onClick = {
+                        if (!isVpnMode) {
+                            showVpnConfirmDialog = true
+                        }
+                    },
+                    modifier = Modifier.testTag("tv_server_mode_vpn_chip")
+                )
+            }
+            if (isVpnMode) {
+                item(key = "tv_srv_sub_proxy") {
+                    TvChip(
+                        text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_in_app_proxy),
+                        selected = isProxySub,
+                        scale = scale * 0.94f,
+                        onClick = {
+                            VpnManager.activateVpnMode(context, com.example.vpn.VpnEngine.PROXY_TUNNEL)
+                            Toast.makeText(
+                                context,
+                                context.getString(com.example.R.string.vpn_mode_switched_proxy_toast),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        modifier = Modifier.testTag("tv_server_sub_proxy_chip")
+                    )
+                }
+                item(key = "tv_srv_sub_external") {
+                    TvChip(
+                        text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn),
+                        selected = isExternalSub,
+                        scale = scale * 0.94f,
+                        onClick = {
+                            VpnManager.activateVpnMode(context, com.example.vpn.VpnEngine.EXTERNAL_VPN)
+                            Toast.makeText(
+                                context,
+                                context.getString(com.example.R.string.vpn_mode_switched_external_toast),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        modifier = Modifier.testTag("tv_server_sub_external_chip")
+                    )
+                }
+            }
             items(categories, key = { "tv_srv_cat_${it.first}" }) { (code, label) ->
                 TvChip(
                     text = label,
@@ -330,6 +397,22 @@ internal fun TvServersScreen(
                 )
             }
         }
+    }
+
+    if (showVpnConfirmDialog) {
+        com.example.ui.components.VpnModeSwitchConfirmDialog(
+            onConfirm = {
+                showVpnConfirmDialog = false
+                VpnManager.activateVpnMode(context)
+                val toastRes = if (VpnManager.state.value.engine == com.example.vpn.VpnEngine.EXTERNAL_VPN) {
+                    com.example.R.string.vpn_mode_switched_external_toast
+                } else {
+                    com.example.R.string.vpn_mode_switched_proxy_toast
+                }
+                Toast.makeText(context, context.getString(toastRes), Toast.LENGTH_SHORT).show()
+            },
+            onDismiss = { showVpnConfirmDialog = false }
+        )
     }
 
     if (showCustomDialog) {

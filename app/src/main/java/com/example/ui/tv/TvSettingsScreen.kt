@@ -135,6 +135,7 @@ internal fun TvSettingsScreen(
     var activeRemapSourceBtn by remember { mutableStateOf<Int?>(null) }
     var showVisualControllerMapper by remember { mutableStateOf(false) }
     var activeShortcutTargetAction by remember { mutableStateOf<String?>(null) }
+    var showVpnConfirmDialog by remember { mutableStateOf(false) }
 
     val gamepadDetector = remember(context) { GamepadDetector(context) }
     DisposableEffect(gamepadDetector) {
@@ -507,27 +508,63 @@ internal fun TvSettingsScreen(
                         }
 
                         item(key = "tv_set_vpn_engine") {
-                            val engines = listOf(
-                                VpnEngine.SMART_BYPASS to config.tr("Chỉ lúc vào game 🇯🇵", "Launch Only 🇯🇵"),
-                                VpnEngine.PROXY_TUNNEL to config.tr("Máy chủ trung gian", "Proxy Tunnel"),
-                                VpnEngine.EXTERNAL_VPN to config.tr("VPN ngoài", "External VPN")
+                            val isVpnSelected = vpnState.isVpnModeSelected
+                            val modeOptions = listOf(
+                                androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass),
+                                androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_vpn)
                             )
-                            val curIdx = engines.indexOfFirst { it.first == vpnState.engine }.coerceAtLeast(0)
                             TvSettingSegmentRow(
-                                title = config.tr("Chế độ mở khóa vùng", "Region Unlock Mode"),
-                                subtitle = config.tr(
-                                    "Khuyên dùng 'Chỉ lúc vào game' để không làm tăng ping khi đang chơi.",
-                                    "Recommended: 'Launch Only' so in-game ping stays direct."
-                                ),
-                                options = engines.map { it.second },
-                                selectedIndex = curIdx,
+                                title = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_section_title),
+                                subtitle = if (isVpnSelected) {
+                                    if (vpnState.engine == VpnEngine.EXTERNAL_VPN) {
+                                        androidx.compose.ui.res.stringResource(com.example.R.string.vpn_external_os_notice)
+                                    } else {
+                                        androidx.compose.ui.res.stringResource(com.example.R.string.vpn_security_isolation_banner)
+                                    }
+                                } else {
+                                    androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass_desc)
+                                },
+                                options = modeOptions,
+                                selectedIndex = if (isVpnSelected) 1 else 0,
                                 onSelect = { idx ->
-                                    engines.getOrNull(idx)?.let { (eng, _) -> VpnManager.setEngine(eng) }
+                                    if (idx == 0) {
+                                        VpnManager.activateBypassMode(context)
+                                    } else if (!isVpnSelected) {
+                                        showVpnConfirmDialog = true
+                                    }
                                 },
                                 scale = scale,
                                 onMoveLeftToCategory = moveFocusToCategory,
                                 testTag = "tv_setting_vpn_engine_row"
                             )
+                        }
+
+                        if (vpnState.isVpnModeSelected) {
+                            item(key = "tv_set_vpn_sub_engine") {
+                                val subEngines = listOf(
+                                    VpnEngine.PROXY_TUNNEL to androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_in_app_proxy),
+                                    VpnEngine.EXTERNAL_VPN to androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn)
+                                )
+                                val subIdx = subEngines.indexOfFirst { it.first == vpnState.engine }.coerceAtLeast(0)
+                                TvSettingSegmentRow(
+                                    title = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_selector_label),
+                                    subtitle = if (vpnState.engine == VpnEngine.EXTERNAL_VPN) {
+                                        androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_vpn_external_desc)
+                                    } else {
+                                        androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_vpn_proxy_desc)
+                                    },
+                                    options = subEngines.map { it.second },
+                                    selectedIndex = subIdx,
+                                    onSelect = { idx ->
+                                        subEngines.getOrNull(idx)?.let { (eng, _) ->
+                                            VpnManager.activateVpnMode(context, eng)
+                                        }
+                                    },
+                                    scale = scale,
+                                    onMoveLeftToCategory = moveFocusToCategory,
+                                    testTag = "tv_setting_vpn_sub_engine_row"
+                                )
+                            }
                         }
 
                         item(key = "tv_set_vpn_delay") {
@@ -1605,6 +1642,16 @@ internal fun TvSettingsScreen(
             },
             onDismiss = { showClearCookiesConfirmDialog = false },
             testTagPrefix = "tv_clear_cookies_dialog"
+        )
+    }
+
+    if (showVpnConfirmDialog) {
+        com.example.ui.components.VpnModeSwitchConfirmDialog(
+            onConfirm = {
+                showVpnConfirmDialog = false
+                VpnManager.activateVpnMode(context)
+            },
+            onDismiss = { showVpnConfirmDialog = false }
         )
     }
 

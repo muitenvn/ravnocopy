@@ -199,4 +199,34 @@
     <string name="keybind_swap_pair_desc">เปิด: สลับทิศทางหรือปุ่มตรงข้ามให้อัตโนมัติเมื่อตั้งค่า 1 ปุ่ม</string>
     <string name="keybind_on">เปิด</string>
     <string name="keybind_off">ปิด</string>
+    <!-- Bypass & VPN Mode + Security -->
+    <string name="vpn_mode_section_title">โหมดการเชื่อมต่อ</string>
+    <string name="vpn_sub_selector_label">ประเภทการเชื่อมต่อ VPN</string>
+    <string name="vpn_mode_bypass">Bypass</string>
+    <string name="vpn_mode_vpn">VPN</string>
+    <string name="vpn_sub_in_app_proxy">พร็อกซีในแอป</string>
+    <string name="vpn_sub_external_vpn">VPN ภายนอก</string>
+    <string name="vpn_mode_bypass_desc">ปลดล็อกภูมิภาคโดยตรงในเบราว์เซอร์ (ความหน่วงต่ำสุด ไม่ผ่านพร็อกซี)</string>
+    <string name="vpn_mode_vpn_proxy_desc">พร็อกซีแยกเฉพาะในแอปสำหรับโดเมน Xbox ยกเว้นหน้าเข้าสู่ระบบและข้อมูลเครื่อง</string>
+    <string name="vpn_mode_vpn_external_desc">ใช้แอป VPN ในเครื่อง (Warp, Proton…) ควบคุมโดยระบบ Android</string>
+    <string name="vpn_mode_switched_bypass_toast">✓ โหมด: Bypass</string>
+    <string name="vpn_mode_switched_proxy_toast">✓ โหมด: VPN (พร็อกซีในแอป)</string>
+    <string name="vpn_mode_switched_external_toast">✓ โหมด: VPN (VPN ภายนอก)</string>
+    <string name="vpn_security_confirm_title">สลับเป็นโหมด VPN หรือไม่?</string>
+    <string name="vpn_security_confirm_message">• พร็อกซีในแอปถูกแยกอย่างเข้มงวดเฉพาะภายใน Ravno: ไม่เข้าถึงข้อมูลในโทรศัพท์ ยกเว้นหน้าเข้าสู่ระบบ Microsoft และเครือข่ายภายใน หยุดชั่วคราวเมื่อย่อแอป และจะบล็อกพร้อมตัดการเชื่อมต่อทันทีหากพบข้อผิดพลาด SSL หรือการเปลี่ยนเส้นทางภายนอก\n\n• แอป VPN ภายนอกทำงานในระดับระบบ Android ทำให้ Ravno ไม่สามารถตรวจสอบหรือบล็อกการรับส่งข้อมูลได้\n\n• พร็อกซีสาธารณะและ VPN บุคคลที่สามส่งข้อมูลผ่านตัวกลางภายนอก หากดำเนินการต่อ คุณรับทราบความเสี่ยงและรับผิดชอบด้วยตนเองทั้งหมดในการใช้โหมด VPN</string>
+    <string name="vpn_security_confirm_accept">รับทราบและรับผิดชอบเอง</string>
+    <string name="vpn_security_confirm_cancel">ยกเลิก (ใช้ Bypass ต่อ)</string>
+    <string name="vpn_security_killswitch_title">บล็อก VPN เพื่อความปลอดภัย</string>
+    <string name="vpn_security_killswitch_ssl_msg">พร็อกซี %1$s เกิดข้อผิดพลาดใบรับรอง SSL (%2$s) แอปได้บล็อกการเชื่อมต่อ ตัด VPN และกักกันพร็อกซีนี้แล้ว</string>
+    <string name="vpn_security_killswitch_external_msg">พร็อกซี %1$s พยายามเปลี่ยนเส้นทางออกนอกโดเมนที่เชื่อถือได้ (%2$s) แอปได้บล็อกเส้นทาง ตัด VPN และกักกันพร็อกซีนี้แล้ว</string>
+    <string name="vpn_security_killswitch_ok">เข้าใจแล้ว (ใช้ Bypass ต่อ)</string>
+    <string name="vpn_server_security_blocked_badge">บล็อกเพื่อความปลอดภัย</string>
+    <string name="vpn_server_security_blocked_toast">พร็อกซีนี้ถูกบล็อกเพื่อความปลอดภัย โปรดเลือกเซิร์ฟเวอร์อื่นหรือปลดบล็อก</string>
+    <string name="vpn_security_unblock_action">ปลดบล็อก</string>
+    <string name="vpn_security_isolation_banner">พร็อกซีในแอปใช้เฉพาะโดเมน Xbox ยกเว้นหน้าเข้าสู่ระบบและบล็อกการเปลี่ยนเส้นทางที่ไม่ปลอดภัย</string>
+    <string name="vpn_external_os_notice">VPN ภายนอกทำงานระดับระบบ Android แอปไม่สามารถตรวจสอบหรือบล็อกทราฟฟิกของ VPN ภายนอกได้</string>
+    <string name="vpn_mode_bypass_cd">เลือกโหมด Bypass</string>
+    <string name="vpn_mode_vpn_cd">เลือกโหมด VPN</string>
+    <string name="vpn_sub_in_app_proxy_cd">ใช้พร็อกซีในแอป</string>
+    <string name="vpn_sub_external_vpn_cd">ใช้แอป VPN ภายนอก</string>
 </resources>

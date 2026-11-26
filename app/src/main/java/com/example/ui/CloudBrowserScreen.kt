@@ -1487,6 +1487,19 @@ fun CloudBrowserScreen(
                             val isMainFrame = request?.isForMainFrame == true
                             val targetUrl = request?.url?.toString()
                             if (isMainFrame && targetUrl != null) {
+                                // Bảo vệ tuyệt đối khi Proxy trong app đang bật: chặn ngay mọi chuyển hướng ngoài tên miền tin cậy hoặc giao thức lạ
+                                if (VpnManager.isInAppProxySecurityGuardActive() &&
+                                    !VpnManager.isUrlAllowedUnderInAppProxy(targetUrl)
+                                ) {
+                                    val safeBlockedTarget = com.example.data.AppLogger.safeUrlHostPath(targetUrl)
+                                    VpnManager.triggerSecurityKillSwitch(
+                                        context = context,
+                                        violationType = com.example.vpn.VpnSecurityViolationType.EXTERNAL_REDIRECT_OR_SCHEME,
+                                        detail = safeBlockedTarget
+                                    )
+                                    view?.stopLoading()
+                                    return true
+                                }
                                 val isClassicAutoExitActive = config.autoExitPreviewHandlerEnabled &&
                                     config.xboxWebUiMode == com.example.data.XboxWebUiMode.CLASSIC &&
                                     !classicBounceLoopStopped
@@ -1606,6 +1619,28 @@ fun CloudBrowserScreen(
                                     "WEBVIEW",
                                     "Lỗi HTTP $statusCode khi tải ${if (isMainFrame) "trang chính" else "API phiên chơi"} ($safeHp)"
                                 )
+                            }
+                        }
+
+                        override fun onReceivedSslError(
+                            view: WebView?,
+                            handler: android.webkit.SslErrorHandler?,
+                            error: android.net.http.SslError?
+                        ) {
+                            handler?.cancel()
+                            val safeUrl = com.example.data.AppLogger.safeUrlHostPath(error?.url)
+                            val errCode = error?.primaryError ?: -1
+                            com.example.data.AppLogger.error(
+                                "VPN_SECURITY",
+                                "Từ chối chứng chỉ SSL không hợp lệ ($safeUrl, code=$errCode)"
+                            )
+                            if (VpnManager.isInAppProxySecurityGuardActive()) {
+                                VpnManager.triggerSecurityKillSwitch(
+                                    context = context,
+                                    violationType = com.example.vpn.VpnSecurityViolationType.SSL_TAMPERING,
+                                    detail = "$safeUrl (SSL #$errCode)"
+                                )
+                                view?.stopLoading()
                             }
                         }
                     }

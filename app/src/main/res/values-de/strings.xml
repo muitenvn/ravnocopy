@@ -199,4 +199,34 @@
     <string name="keybind_swap_pair_desc">Ein: tauscht gegenüberliegende Richtungen oder Tasten sauber aus.</string>
     <string name="keybind_on">EIN</string>
     <string name="keybind_off">AUS</string>
+    <!-- Bypass & VPN Mode + Security -->
+    <string name="vpn_mode_section_title">Verbindungsmodus</string>
+    <string name="vpn_sub_selector_label">VPN-Verbindungstyp</string>
+    <string name="vpn_mode_bypass">Bypass</string>
+    <string name="vpn_mode_vpn">VPN</string>
+    <string name="vpn_sub_in_app_proxy">In-App-Proxy</string>
+    <string name="vpn_sub_external_vpn">Externes VPN</string>
+    <string name="vpn_mode_bypass_desc">Direkte Regionsfreischaltung im Browser (geringste Latenz, kein Proxy).</string>
+    <string name="vpn_mode_vpn_proxy_desc">Isolierter In-App-Proxy nur für Xbox-Domains. Ohne Login- &amp; Gerätedaten.</string>
+    <string name="vpn_mode_vpn_external_desc">Nutzt Ihre eigene VPN-App (Warp, Proton…). Vom Android-System verwaltet.</string>
+    <string name="vpn_mode_switched_bypass_toast">✓ Modus: Bypass</string>
+    <string name="vpn_mode_switched_proxy_toast">✓ Modus: VPN (In-App-Proxy)</string>
+    <string name="vpn_mode_switched_external_toast">✓ Modus: VPN (Externes VPN)</string>
+    <string name="vpn_security_confirm_title">In den VPN-Modus wechseln?</string>
+    <string name="vpn_security_confirm_message">• Der In-App-Proxy ist streng in Ravno isoliert: kein Zugriff auf Gerätedaten, schließt Microsoft-Login und lokale Netzwerke aus, pausiert im Hintergrund und blockiert &amp; trennt Proxys automatisch bei SSL-Fehlern oder externen Weiterleitungen.\n\n• Externe VPN-Apps laufen auf Android-Systemebene; Ravno kann deren Datenverkehr nicht prüfen oder blockieren.\n\n• Öffentliche Proxys und Drittanbieter-VPNs leiten Daten über Dritte. Wenn Sie fortfahren, erkennen Sie die Risiken an und tragen die volle eigene Verantwortung.</string>
+    <string name="vpn_security_confirm_accept">Verstanden, eigene Verantwortung</string>
+    <string name="vpn_security_confirm_cancel">Abbrechen (Bypass behalten)</string>
+    <string name="vpn_security_killswitch_title">VPN aus Sicherheitsgründen blockiert</string>
+    <string name="vpn_security_killswitch_ssl_msg">Proxy %1$s verursachte einen SSL-Zertifikatsfehler (%2$s). Ravno hat die Verbindung blockiert, VPN getrennt und diesen Proxy gesperrt.</string>
+    <string name="vpn_security_killswitch_external_msg">Proxy %1$s versuchte eine Weiterleitung außerhalb vertrauenswürdiger Domains (%2$s). Ravno hat den Pfad blockiert, VPN getrennt und diesen Proxy gesperrt.</string>
+    <string name="vpn_security_killswitch_ok">Verstanden (Bei Bypass bleiben)</string>
+    <string name="vpn_server_security_blocked_badge">Sicherheitsgesperrt</string>
+    <string name="vpn_server_security_blocked_toast">Dieser Proxy wurde aus Sicherheitsgründen gesperrt. Wählen Sie einen anderen Server oder entsperren Sie ihn.</string>
+    <string name="vpn_security_unblock_action">Entsperren</string>
+    <string name="vpn_security_isolation_banner">In-App-Proxy nur für Xbox-Domains, schließt Login aus &amp; blockiert unsichere Weiterleitungen.</string>
+    <string name="vpn_external_os_notice">Externes VPN läuft auf Android-Systemebene. Ravno kann dessen Datenverkehr nicht prüfen oder blockieren.</string>
+    <string name="vpn_mode_bypass_cd">Bypass-Modus wählen</string>
+    <string name="vpn_mode_vpn_cd">VPN-Modus wählen</string>
+    <string name="vpn_sub_in_app_proxy_cd">In-App-Proxy verwenden</string>
+    <string name="vpn_sub_external_vpn_cd">Externe VPN-App verwenden</string>
 </resources>

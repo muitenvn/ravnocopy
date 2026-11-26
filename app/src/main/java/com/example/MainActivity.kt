@@ -528,5 +528,14 @@ fun MainContent(
             )
         }
     }
+
+    val vpnSecurityState by VpnManager.state.collectAsState()
+    val activeSecurityAlert = vpnSecurityState.securityBlockAlert
+    if (activeSecurityAlert != null) {
+        com.example.ui.components.VpnSecurityKillSwitchDialog(
+            alert = activeSecurityAlert,
+            onDismiss = { VpnManager.dismissSecurityBlockAlert() }
+        )
+    }
 }
 
