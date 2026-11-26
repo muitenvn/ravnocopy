@@ -1,0 +1,103 @@
+name: Hunt & Verify Bypass Servers (Experimental)
+
+on:
+  workflow_run:
+    workflows:
+      - "Build & Release Android APK"
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      hunt_minutes:
+        description: 'Thời gian tìm & kiểm tra máy chủ Bypass (phút, tối đa 10)'
+        required: false
+        default: '9'
+      dry_run:
+        description: 'Chạy thử không ghi đè docs/servers.json (true/false)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hunt-bypass-servers
+  cancel-in-progress: true
+
+jobs:
+  hunt:
+    name: Hunt Safe & Fast Bypass Servers (10m Budget)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch || 'main' }}
+          fetch-depth: 1
+
+      - name: Set up Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Offline Self-Test on Hunter Script
+        run: python3 scripts/hunt_bypass_servers.py --self-test
+
+      - name: Continuously Hunt & Verify Bypass Servers (~9-10 minutes)
+        env:
+          INPUT_MINUTES: ${{ github.event.inputs.hunt_minutes || '9' }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          MINUTES="${INPUT_MINUTES:-9}"
+          if ! [[ "$MINUTES" =~ ^[0-9]+$ ]] || [ "$MINUTES" -lt 1 ]; then
+            MINUTES=9
+          fi
+          if [ "$MINUTES" -gt 10 ]; then
+            MINUTES=10
+          fi
+          MAX_SECONDS=$((MINUTES * 60))
+          if [ "$MAX_SECONDS" -gt 570 ]; then
+            MAX_SECONDS=570
+          fi
+          EXTRA_ARGS=""
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
+            EXTRA_ARGS="--dry-run"
+          fi
+          echo "Starting continuous Bypass hunt for ${MAX_SECONDS}s (dry_run=${INPUT_DRY_RUN})..."
+          python3 scripts/hunt_bypass_servers.py \
+            --output docs/servers.json \
+            --max-seconds "$MAX_SECONDS" \
+            --min-servers 15 \
+            --workers 24 \
+            --summary-file "$GITHUB_STEP_SUMMARY" \
+            $EXTRA_ARGS
+
+      - name: Validate Updated Catalog JSON
+        run: |
+          python3 -c '
+          import json
+          with open("docs/servers.json", "r", encoding="utf-8") as f:
+              data = json.load(f)
+          servers = data.get("bypassServers", [])
+          assert data.get("schemaVersion") == 1, "Invalid schemaVersion"
+          assert isinstance(servers, list) and len(servers) >= 15, f"Too few bypassServers: {len(servers)}"
+          assert data.get("proxyServers") == [], "proxyServers must stay empty"
+          print(f"Validated docs/servers.json cleanly: {len(servers)} verified Bypass servers.")
+          '
+
+      - name: Commit & Push Updated Bypass Catalog to GitHub
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          if git diff --quiet docs/servers.json; then
+            echo "No changes to docs/servers.json; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/servers.json
+          COUNT=$(python3 -c 'import json; print(len(json.load(open("docs/servers.json"))["bypassServers"]))')
+          git commit -m "chore(bypass): update ${COUNT} verified bypass servers [skip ci]"
+          git pull --rebase --autostash origin "${{ github.event.repository.default_branch || 'main' }}" || true
+          git push origin "HEAD:${{ github.event.repository.default_branch || 'main' }}"

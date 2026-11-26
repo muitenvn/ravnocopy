@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AppConfig
 import com.example.ui.components.gamepadClickable
-import com.example.ui.tabs.CustomProxyDialog
 import com.example.ui.tabs.ServerDetailDialog
 import com.example.ui.theme.JetBrainsMonoFontFamily
 import com.example.ui.theme.SpaceGroteskFontFamily
@@ -72,18 +71,10 @@ internal fun TvServersScreen(
     val isEn = config.isEnglishUI()
 
     var selectedCategory by rememberSaveable { mutableStateOf("ALL") }
-    var showCustomDialog by remember { mutableStateOf(false) }
     var detailServer by remember { mutableStateOf<ServerLocation?>(null) }
-    var showVpnConfirmDialog by remember { mutableStateOf(false) }
 
-    val allServers = remember(
-        vpnState.engine,
-        vpnState.customServers,
-        vpnState.liveVerifiedServers,
-        vpnState.remoteBypassServers,
-        vpnState.remoteProxySeeds
-    ) {
-        VpnManager.getServersForEngine(vpnState.engine)
+    val allServers = remember(vpnState.remoteBypassServers) {
+        VpnManager.getBypassServers()
     }
 
     val serverPings = vpnState.serverPings
@@ -102,9 +93,6 @@ internal fun TvServersScreen(
                     forceRefresh = false,
                     reason = "mở tab Máy chủ TV (chưa có dữ liệu ping)"
                 )
-            }
-            if (vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL) {
-                VpnManager.autoSyncPublicProxiesIfNeeded(context = context, countryFilter = "ALL", force = false)
             }
         } else if (serverPings.isEmpty() && !isTestingAll) {
             VpnManager.testAllServers(
@@ -213,19 +201,10 @@ internal fun TvServersScreen(
                     fontWeight = FontWeight.ExtraBold,
                     maxLines = 1
                 )
-                val isProxyWithoutServer = vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL &&
-                    (allServers.isEmpty() || currentServer.kind != com.example.vpn.ServerKind.PROXY)
                 TvPill(
-                    text = if (isProxyWithoutServer) {
-                        androidx.compose.ui.res.stringResource(
-                            if (vpnState.isAutoSyncingLiveProxies) com.example.R.string.vpn_proxy_scanning
-                            else com.example.R.string.vpn_proxy_empty_title
-                        )
-                    } else {
-                        "${config.tr("Đang dùng", "Active")}: ${currentServer.flag} ${currentServer.name}"
-                    },
+                    text = "${config.tr("Đang dùng", "Active")}: ${currentServer.flag} ${currentServer.name}",
                     scale = scale,
-                    tone = if (isProxyWithoutServer) TvPillTone.WARN else TvPillTone.GREEN
+                    tone = TvPillTone.GREEN
                 )
             }
 
@@ -253,21 +232,7 @@ internal fun TvServersScreen(
                     modifier = Modifier.testTag("tv_servers_auto_best_btn")
                 )
 
-                if (vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL) {
-                    TvChip(
-                        text = config.tr("+ Proxy riêng", "+ Custom Proxy"),
-                        selected = false,
-                        scale = scale * 0.92f,
-                        onClick = { showCustomDialog = true },
-                        modifier = Modifier.testTag("tv_servers_add_custom_btn")
-                    )
-                }
-
-                val modeShortName = when (vpnState.engine) {
-                    com.example.vpn.VpnEngine.SMART_BYPASS -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
-                    com.example.vpn.VpnEngine.PROXY_TUNNEL -> "Proxy"
-                    com.example.vpn.VpnEngine.EXTERNAL_VPN -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn)
-                }
+                val modeShortName = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
                 TvButton(
                     text = if (isVpnActive) {
                         "${config.tr("Tắt", "Off")} $modeShortName"
@@ -285,150 +250,29 @@ internal fun TvServersScreen(
             }
         }
 
-        // 2. Mode Switcher (Bypass | VPN) + Country / Category Filter Chips
-        val isVpnMode = vpnState.isVpnModeSelected
-        val isProxySub = vpnState.engine == com.example.vpn.VpnEngine.PROXY_TUNNEL
-        val isExternalSub = vpnState.engine == com.example.vpn.VpnEngine.EXTERNAL_VPN
+        // 2. Country / Category Filter Chips + GitHub Catalog Sync (Bypass-only)
         val categories = listOf(
             "ALL" to config.tr("Tất cả (${allServers.size})", "All (${allServers.size})"),
             "JP" to config.tr("🇯🇵 Nhật Bản", "🇯🇵 Japan"),
             "KR" to config.tr("🇰🇷 Hàn Quốc", "🇰🇷 Korea"),
-            "US" to config.tr("🇺🇸 Hoa Kỳ", "🇺🇸 USA"),
-            "CUSTOM" to config.tr("Máy chủ riêng", "Custom")
+            "US" to config.tr("🇺🇸 Hoa Kỳ", "🇺🇸 USA")
         )
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy((8.dp * scale).coerceAtLeast(6.dp)),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            item(key = "tv_srv_mode_bypass") {
+            item(key = "tv_srv_github_sync") {
                 TvChip(
-                    text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass),
-                    selected = !isVpnMode,
-                    scale = scale,
+                    text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_github_sync_btn),
+                    selected = vpnState.isSyncingRemoteCatalog,
+                    scale = scale * 0.94f,
                     onClick = {
-                        VpnManager.activateBypassMode(context)
-                        Toast.makeText(
-                            context,
-                            context.getString(com.example.R.string.vpn_mode_switched_bypass_toast),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
-                    modifier = Modifier.testTag("tv_server_mode_bypass_chip")
-                )
-            }
-            item(key = "tv_srv_mode_vpn") {
-                TvChip(
-                    text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_vpn),
-                    selected = isVpnMode,
-                    scale = scale,
-                    onClick = {
-                        if (!isVpnMode) {
-                            showVpnConfirmDialog = true
+                        if (!vpnState.isSyncingRemoteCatalog) {
+                            VpnManager.syncRemoteCatalogIfNeeded(context, force = true)
                         }
                     },
-                    modifier = Modifier.testTag("tv_server_mode_vpn_chip")
+                    modifier = Modifier.testTag("tv_server_github_sync_chip")
                 )
-            }
-            if (isVpnMode) {
-                item(key = "tv_srv_sub_proxy") {
-                    TvChip(
-                        text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_in_app_proxy),
-                        selected = isProxySub,
-                        scale = scale * 0.94f,
-                        onClick = {
-                            VpnManager.activateVpnMode(context, com.example.vpn.VpnEngine.PROXY_TUNNEL)
-                            Toast.makeText(
-                                context,
-                                context.getString(com.example.R.string.vpn_mode_switched_proxy_toast),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        modifier = Modifier.testTag("tv_server_sub_proxy_chip")
-                    )
-                }
-                item(key = "tv_srv_sub_external") {
-                    TvChip(
-                        text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn),
-                        selected = isExternalSub,
-                        scale = scale * 0.94f,
-                        onClick = {
-                            VpnManager.activateVpnMode(context, com.example.vpn.VpnEngine.EXTERNAL_VPN)
-                            Toast.makeText(
-                                context,
-                                context.getString(com.example.R.string.vpn_mode_switched_external_toast),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        modifier = Modifier.testTag("tv_server_sub_external_chip")
-                    )
-                }
-            }
-            if (isProxySub) {
-                item(key = "tv_srv_scan_real_proxies") {
-                    TvChip(
-                        text = if (vpnState.isAutoSyncingLiveProxies) {
-                            androidx.compose.ui.res.stringResource(com.example.R.string.vpn_proxy_scanning)
-                        } else {
-                            androidx.compose.ui.res.stringResource(com.example.R.string.vpn_proxy_scan_btn)
-                        },
-                        selected = vpnState.isAutoSyncingLiveProxies,
-                        scale = scale * 0.94f,
-                        onClick = {
-                            if (!vpnState.isAutoSyncingLiveProxies) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(com.example.R.string.vpn_proxy_scanning),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                VpnManager.autoSyncPublicProxiesIfNeeded(context, countryFilter = "ALL", force = true)
-                            }
-                        },
-                        modifier = Modifier.testTag("tv_server_scan_proxies_chip")
-                    )
-                }
-            } else if (isExternalSub) {
-                item(key = "tv_srv_ext_vpn_status") {
-                    val extOn = vpnState.isExternalSystemVpnDetected
-                    TvPill(
-                        text = androidx.compose.ui.res.stringResource(
-                            if (extOn) com.example.R.string.vpn_external_status_on
-                            else com.example.R.string.vpn_external_status_off
-                        ),
-                        scale = scale * 0.94f,
-                        tone = if (extOn) TvPillTone.GREEN else TvPillTone.WARN
-                    )
-                }
-                item(key = "tv_srv_open_device_vpn") {
-                    TvChip(
-                        text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_open_device_vpn_btn),
-                        selected = false,
-                        scale = scale * 0.94f,
-                        onClick = {
-                            if (!VpnManager.openDeviceVpnSettings(context)) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(com.example.R.string.vpn_open_device_vpn_unavailable),
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-                        },
-                        modifier = Modifier.testTag("tv_server_open_device_vpn_chip")
-                    )
-                }
-            } else {
-                item(key = "tv_srv_github_sync") {
-                    TvChip(
-                        text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_github_sync_btn),
-                        selected = vpnState.isSyncingRemoteCatalog,
-                        scale = scale * 0.94f,
-                        onClick = {
-                            if (!vpnState.isSyncingRemoteCatalog) {
-                                VpnManager.syncRemoteCatalogIfNeeded(context, force = true)
-                            }
-                        },
-                        modifier = Modifier.testTag("tv_server_github_sync_chip")
-                    )
-                }
             }
             items(categories, key = { "tv_srv_cat_${it.first}" }) { (code, label) ->
                 TvChip(
@@ -450,58 +294,6 @@ internal fun TvServersScreen(
             verticalArrangement = Arrangement.spacedBy((10.dp * scale).coerceAtLeast(7.dp)),
             contentPadding = PaddingValues(bottom = (10.dp * scale).coerceAtLeast(6.dp))
         ) {
-            if (filteredServers.isEmpty() && isProxySub) {
-                item(key = "tv_proxy_empty_state") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape((16.dp * scale).coerceAtLeast(12.dp)))
-                            .background(TvSurface)
-                            .padding((18.dp * scale).coerceAtLeast(12.dp))
-                            .testTag("tv_proxy_empty_state_card"),
-                        verticalArrangement = Arrangement.spacedBy((10.dp * scale).coerceAtLeast(8.dp))
-                    ) {
-                        Text(
-                            text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_proxy_empty_title),
-                            color = TvInk,
-                            fontFamily = SpaceGroteskFontFamily,
-                            fontSize = (16f * scale).coerceAtLeast(13.5f).sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_proxy_empty_desc),
-                            color = TvMuted,
-                            fontFamily = SpaceGroteskFontFamily,
-                            fontSize = (13f * scale).coerceAtLeast(11.5f).sp
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy((10.dp * scale).coerceAtLeast(8.dp))) {
-                            TvButton(
-                                text = if (vpnState.isAutoSyncingLiveProxies) {
-                                    androidx.compose.ui.res.stringResource(com.example.R.string.vpn_proxy_scanning)
-                                } else {
-                                    androidx.compose.ui.res.stringResource(com.example.R.string.vpn_proxy_scan_btn)
-                                },
-                                variant = TvButtonVariant.PRIMARY,
-                                scale = scale,
-                                focusRequester = defaultFocusRequester,
-                                onClick = {
-                                    if (!vpnState.isAutoSyncingLiveProxies) {
-                                        VpnManager.autoSyncPublicProxiesIfNeeded(context, countryFilter = "ALL", force = true)
-                                    }
-                                },
-                                modifier = Modifier.testTag("tv_proxy_empty_scan_btn")
-                            )
-                            TvButton(
-                                text = config.tr("+ Máy chủ riêng", "+ Custom Proxy"),
-                                variant = TvButtonVariant.DEFAULT,
-                                scale = scale,
-                                onClick = { showCustomDialog = true },
-                                modifier = Modifier.testTag("tv_proxy_empty_add_custom_btn")
-                            )
-                        }
-                    }
-                }
-            }
             itemsIndexed(
                 items = filteredServers,
                 key = { _, srv -> "tv_srv_row_${srv.id}" }
@@ -537,33 +329,6 @@ internal fun TvServersScreen(
                 )
             }
         }
-    }
-
-    if (showVpnConfirmDialog) {
-        com.example.ui.components.VpnModeSwitchConfirmDialog(
-            onConfirm = {
-                showVpnConfirmDialog = false
-                VpnManager.activateVpnMode(context)
-                val toastRes = if (VpnManager.state.value.engine == com.example.vpn.VpnEngine.EXTERNAL_VPN) {
-                    com.example.R.string.vpn_mode_switched_external_toast
-                } else {
-                    com.example.R.string.vpn_mode_switched_proxy_toast
-                }
-                Toast.makeText(context, context.getString(toastRes), Toast.LENGTH_SHORT).show()
-            },
-            onDismiss = { showVpnConfirmDialog = false }
-        )
-    }
-
-    if (showCustomDialog) {
-        CustomProxyDialog(
-            onDismiss = { showCustomDialog = false },
-            onAddServer = { newServer ->
-                VpnManager.addCustomServer(newServer)
-                onSelectServer(newServer)
-                showCustomDialog = false
-            }
-        )
     }
 
     detailServer?.let { srv ->

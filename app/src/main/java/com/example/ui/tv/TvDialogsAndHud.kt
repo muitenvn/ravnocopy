@@ -508,12 +508,8 @@ internal fun TvInGameFloatingHud(
                                     testTag = "tv_hud_record_row"
                                 )
 
-                                // Hàng 6: Chuyển mạng Bypass / Proxy / VPN ngoài <-> Trực tiếp
-                                val tvHudModeName = when (vpnState.engine) {
-                                    com.example.vpn.VpnEngine.SMART_BYPASS -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
-                                    com.example.vpn.VpnEngine.PROXY_TUNNEL -> "Proxy"
-                                    com.example.vpn.VpnEngine.EXTERNAL_VPN -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn)
-                                }
+                                // Hàng 6: Bật / tắt Bypass <-> Trực tiếp
+                                val tvHudModeName = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
                                 TvHudActionRow(
                                     title = if (vpnState.mode == NetworkMode.VPN_JAPAN) {
                                         "${config.tr("Tắt", "Disconnect")} $tvHudModeName (${config.tr("Trực tiếp", "Direct")})"

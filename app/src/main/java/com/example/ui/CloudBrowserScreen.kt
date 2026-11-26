@@ -101,6 +101,9 @@ fun CloudBrowserScreen(
     val currentServer by remember {
         VpnManager.state.map { it.currentServer }.distinctUntilChanged()
     }.collectAsState(initial = VpnManager.state.value.currentServer)
+    val isBypassModeActive by remember {
+        VpnManager.state.map { it.mode != NetworkMode.DIRECT_NETWORK }.distinctUntilChanged()
+    }.collectAsState(initial = VpnManager.state.value.mode != NetworkMode.DIRECT_NETWORK)
     val hasUnlockFailPrompt by remember {
         VpnManager.state.map { it.unlockFailPromptServer != null }.distinctUntilChanged()
     }.collectAsState(initial = VpnManager.state.value.unlockFailPromptServer != null)
@@ -793,6 +796,7 @@ fun CloudBrowserScreen(
         config.clarityBoostEnabled,
         config.clarityPreset,
         currentServer,
+        isBypassModeActive,
         effectiveLocale,
         effectiveTranslate,
         config.translateLanguage,
@@ -824,7 +828,7 @@ fun CloudBrowserScreen(
             clarityBoost = config.clarityBoostEnabled,
             clarityPreset = config.clarityPreset.name,
             targetCountry = currentServer.countryCode,
-            targetIp = currentServer.ip,
+            targetIp = if (isBypassModeActive) currentServer.ip else "",
             userLocale = effectiveLocale,
             xcloudTranslate = effectiveTranslate,
             preserveTitles = config.preserveGameTitles,
@@ -839,23 +843,26 @@ fun CloudBrowserScreen(
             renderScaleFactor = config.streamRenderScale.scaleFactor,
             fpsCap = config.streamFpsCap.fps,
             gpuLoadReduction = config.gpuLoadReductionEnabled,
-            isCellular = isCellular
+            isCellular = isCellular,
+            targetAzureEndpoint = currentServer.azureEndpoint,
+            bypassEnabled = isBypassModeActive
         )
     }
 
     val currentInjectionScript by rememberUpdatedState(injectionScript)
 
-    // Dynamically update active WebView when user changes server or locale
-    LaunchedEffect(currentServer, effectiveLocale) {
+    // Dynamically update active WebView when user changes server, bypass mode, or locale
+    LaunchedEffect(currentServer, isBypassModeActive, effectiveLocale) {
         CookieManager.getInstance().setCookie(
             "https://www.xbox.com",
             "MSPC-LOCALE=$effectiveLocale; domain=.xbox.com; path=/"
         )
         val safeCountry = org.json.JSONObject.quote(currentServer.countryCode)
-        val safeIp = org.json.JSONObject.quote(currentServer.ip)
+        val safeIp = org.json.JSONObject.quote(if (isBypassModeActive) currentServer.ip else "")
+        val safeAzure = org.json.JSONObject.quote(currentServer.azureEndpoint)
         val safeLocale = org.json.JSONObject.quote(effectiveLocale)
         webViewInstance?.evaluateJavascript(
-            "if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: $safeCountry, ip: $safeIp, locale: $safeLocale });",
+            "if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: $safeCountry, ip: $safeIp, azureEndpoint: $safeAzure, bypassEnabled: $isBypassModeActive, locale: $safeLocale });",
             null
         )
     }
@@ -1488,19 +1495,6 @@ fun CloudBrowserScreen(
                             val isMainFrame = request?.isForMainFrame == true
                             val targetUrl = request?.url?.toString()
                             if (isMainFrame && targetUrl != null) {
-                                // Bảo vệ tuyệt đối khi Proxy trong app đang bật: chặn ngay mọi chuyển hướng ngoài tên miền tin cậy hoặc giao thức lạ
-                                if (VpnManager.isInAppProxySecurityGuardActive() &&
-                                    !VpnManager.isUrlAllowedUnderInAppProxy(targetUrl)
-                                ) {
-                                    val safeBlockedTarget = com.example.data.AppLogger.safeUrlHostPath(targetUrl)
-                                    VpnManager.triggerSecurityKillSwitch(
-                                        context = context,
-                                        violationType = com.example.vpn.VpnSecurityViolationType.EXTERNAL_REDIRECT_OR_SCHEME,
-                                        detail = safeBlockedTarget
-                                    )
-                                    view?.stopLoading()
-                                    return true
-                                }
                                 val isClassicAutoExitActive = config.autoExitPreviewHandlerEnabled &&
                                     config.xboxWebUiMode == com.example.data.XboxWebUiMode.CLASSIC &&
                                     !classicBounceLoopStopped
@@ -1601,7 +1595,7 @@ fun CloudBrowserScreen(
                                 )
                                 val isProxyErr = desc.contains("ERR_PROXY", ignoreCase = true) ||
                                     desc.contains("ERR_TUNNEL", ignoreCase = true)
-                                if (isProxyErr && VpnManager.state.value.engine != com.example.vpn.VpnEngine.PROXY_TUNNEL) {
+                                if (isProxyErr) {
                                     VpnManager.ensureWebViewProxyCleanIfNotProxyEngine()
                                     view?.postDelayed({ view.reload() }, 250L)
                                 }
@@ -1638,17 +1632,9 @@ fun CloudBrowserScreen(
                             val safeUrl = com.example.data.AppLogger.safeUrlHostPath(error?.url)
                             val errCode = error?.primaryError ?: -1
                             com.example.data.AppLogger.error(
-                                "VPN_SECURITY",
+                                "WEBVIEW",
                                 "Từ chối chứng chỉ SSL không hợp lệ ($safeUrl, code=$errCode)"
                             )
-                            if (VpnManager.isInAppProxySecurityGuardActive()) {
-                                VpnManager.triggerSecurityKillSwitch(
-                                    context = context,
-                                    violationType = com.example.vpn.VpnSecurityViolationType.SSL_TAMPERING,
-                                    detail = "$safeUrl (SSL #$errCode)"
-                                )
-                                view?.stopLoading()
-                            }
                         }
                     }
 
@@ -2693,9 +2679,10 @@ private fun IsolatedServerUnlockFailReminderChip(
         if (autoSwitchedFrom != null && webViewInstance != null && autoSwitchedFrom.id != slice.currentServer.id) {
             val safeCountry = org.json.JSONObject.quote(slice.currentServer.countryCode)
             val safeIp = org.json.JSONObject.quote(slice.currentServer.ip)
+            val safeAzure = org.json.JSONObject.quote(slice.currentServer.azureEndpoint)
             val safeLocale = org.json.JSONObject.quote(effectiveLocale)
             webViewInstance.evaluateJavascript(
-                "window.__lastUnlockSignal = null; if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: $safeCountry, ip: $safeIp, locale: $safeLocale }); location.reload();",
+                "window.__lastUnlockSignal = null; if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: $safeCountry, ip: $safeIp, azureEndpoint: $safeAzure, bypassEnabled: true, locale: $safeLocale }); location.reload();",
                 null
             )
         }
@@ -2785,9 +2772,10 @@ private fun IsolatedServerUnlockFailReminderChip(
                                     if (nextServer != null && webViewInstance != null) {
                                         val safeCountry = org.json.JSONObject.quote(nextServer.countryCode)
                                         val safeIp = org.json.JSONObject.quote(nextServer.ip)
+                                        val safeAzure = org.json.JSONObject.quote(nextServer.azureEndpoint)
                                         val safeLocale = org.json.JSONObject.quote(effectiveLocale)
                                         webViewInstance.evaluateJavascript(
-                                            "window.__lastUnlockSignal = null; if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: $safeCountry, ip: $safeIp, locale: $safeLocale }); location.reload();",
+                                            "window.__lastUnlockSignal = null; if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: $safeCountry, ip: $safeIp, azureEndpoint: $safeAzure, bypassEnabled: true, locale: $safeLocale }); location.reload();",
                                             null
                                         )
                                     }

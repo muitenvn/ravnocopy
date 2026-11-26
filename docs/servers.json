@@ -59,42 +59,5 @@
     { "id": "us_chicago_14", "name": "United States Chicago Hub #14", "flag": "🇺🇸", "ip": "167.99.8.113", "port": 8006, "azureEndpoint": "centralus.cloudapp.azure.com", "description": "Chicago Central Cloud Hub", "countryCode": "US" }
   ],
   "proxyServers": [],
-  "proxySources": [
-    {
-      "id": "proxyscrape_v4_json",
-      "type": "proxyscrape_v4_json",
-      "protocol": "http",
-      "urlTemplate": "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&protocol=http&proxy_format=ipport&format=json&timeout=5000"
-    },
-    {
-      "id": "proxifly_http_json",
-      "type": "proxifly_json",
-      "protocol": "http",
-      "urlTemplate": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.json"
-    },
-    {
-      "id": "geonode_json",
-      "type": "geonode_json",
-      "protocol": "http",
-      "urlTemplate": "https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=http"
-    },
-    {
-      "id": "proxyscrape_http",
-      "type": "plain_ip_port",
-      "protocol": "http",
-      "urlTemplate": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country={country}&ssl=all&anonymity=all"
-    },
-    {
-      "id": "monosans_http",
-      "type": "plain_ip_port",
-      "protocol": "http",
-      "urlTemplate": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt"
-    },
-    {
-      "id": "thespeedx_http",
-      "type": "plain_ip_port",
-      "protocol": "http",
-      "urlTemplate": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt"
-    }
-  ]
+  "proxySources": []
 }

@@ -42,7 +42,7 @@ object RemoteServerCatalog {
     private const val KEY_REMOTE_CATALOG_SOURCE = "remote_server_catalog_source_v1"
     private const val KEY_REMOTE_CATALOG_SYNCED_AT = "remote_server_catalog_synced_at_v1"
 
-    const val AUTO_SYNC_CATALOG_INTERVAL_MS = 6L * 60L * 60L * 1000L // 6 giờ
+    const val AUTO_SYNC_CATALOG_INTERVAL_MS = 2L * 60L * 60L * 1000L // 2 giờ
 
     val DEFAULT_PROXY_SOURCES: List<ProxyFeedSource> = listOf(
         ProxyFeedSource(
@@ -113,6 +113,7 @@ object RemoteServerCatalog {
                 readTimeout = (timeoutMs + 800).coerceAtMost(5000)
                 instanceFollowRedirects = true
                 setRequestProperty("Accept", "application/json")
+                setRequestProperty("Cache-Control", "no-cache")
                 setRequestProperty("User-Agent", "Ravno-Android/1.0")
             }
             if (conn.responseCode != 200) return null

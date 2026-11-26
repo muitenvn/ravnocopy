@@ -262,7 +262,9 @@ class XboxBridge(
             renderScaleFactor: Float = 1.0f,
             fpsCap: Int = 60,
             gpuLoadReduction: Boolean = true,
-            isCellular: Boolean = false
+            isCellular: Boolean = false,
+            targetAzureEndpoint: String = "",
+            bypassEnabled: Boolean = true
         ): String {
             val currentConfig = com.example.data.SettingsRepository.config.value
             val isEnglishUi = currentConfig.isEnglishUI()
@@ -271,7 +273,10 @@ class XboxBridge(
             val nativeGyroAllowed = currentConfig.gyroEnabled &&
                 currentConfig.gyroMode == com.example.data.GyroControlMode.GAME_NATIVE
             val targetTranslateLang = currentConfig.getTargetTranslateLanguageCode()
-            val cacheKey = "$clarityBoost|$clarityPreset|$maxBitrateMbps|$antiAfk|$targetCountry|$targetIp|$userLocale|$xcloudTranslate|$preserveTitles|$bilingualMode|$hideStreamStats|$cellularMode|$networkTuningMode|$speedFirstPriority|$effectiveBitrateMbps|$lowEndDeviceMode|$virtualGamepadEnabled|$renderScaleFactor|$fpsCap|$gpuLoadReduction|$isCellular|$isEnglishUi|$autoExitPreviewEnabled|$nativeGyroAllowed|$targetTranslateLang|${currentConfig.hashCode()}"
+            val safeTargetCountry = targetCountry.trim().uppercase()
+            val safeTargetIp = if (bypassEnabled) targetIp.trim() else ""
+            val safeAzureEndpoint = targetAzureEndpoint.trim()
+            val cacheKey = "$clarityBoost|$clarityPreset|$maxBitrateMbps|$antiAfk|$safeTargetCountry|$safeTargetIp|$safeAzureEndpoint|$bypassEnabled|$userLocale|$xcloudTranslate|$preserveTitles|$bilingualMode|$hideStreamStats|$cellularMode|$networkTuningMode|$speedFirstPriority|$effectiveBitrateMbps|$lowEndDeviceMode|$virtualGamepadEnabled|$renderScaleFactor|$fpsCap|$gpuLoadReduction|$isCellular|$isEnglishUi|$autoExitPreviewEnabled|$nativeGyroAllowed|$targetTranslateLang|${currentConfig.hashCode()}"
             if (cacheKey == lastInjectionCacheKey) {
                 lastInjectionScript?.let { return it }
             }
@@ -283,27 +288,29 @@ class XboxBridge(
                 hideStreamStats = hideStreamStats,
                 targetLanguage = targetTranslateLang
             )
-            val physMapJson = org.json.JSONObject().apply {
-                com.example.data.SettingsRepository.parsePhysicalButtonMap(currentConfig.physicalGamepadButtonMap).forEach { (k, v) ->
-                    put(k.toString(), v)
-                }
-            }.toString()
-            val initPhysConfJson = org.json.JSONObject().apply {
-                put("buttonMap", org.json.JSONObject(physMapJson))
-                put("leftInner", currentConfig.physLeftStickInnerDeadzone.toDouble())
-                put("leftOuter", currentConfig.physLeftStickOuterDeadzone.toDouble())
-                put("rightInner", currentConfig.physRightStickInnerDeadzone.toDouble())
-                put("rightOuter", currentConfig.physRightStickOuterDeadzone.toDouble())
-                put("shortcutsEnabled", currentConfig.controllerShortcutsEnabled)
-                put("shortcutStatsBtn", currentConfig.shortcutToggleStatsButton)
-                put("shortcutVpadBtn", currentConfig.shortcutToggleVirtualPadButton)
-                put("shortcutRecBtn", currentConfig.shortcutToggleRecordingButton)
-            }.toString()
+            val initPhysConfJson = runCatching {
+                val physMapJson = org.json.JSONObject().apply {
+                    com.example.data.SettingsRepository.parsePhysicalButtonMap(currentConfig.physicalGamepadButtonMap).forEach { (k, v) ->
+                        put(k.toString(), v)
+                    }
+                }.toString()
+                org.json.JSONObject().apply {
+                    put("buttonMap", org.json.JSONObject(physMapJson))
+                    put("leftInner", currentConfig.physLeftStickInnerDeadzone.toDouble())
+                    put("leftOuter", currentConfig.physLeftStickOuterDeadzone.toDouble())
+                    put("rightInner", currentConfig.physRightStickInnerDeadzone.toDouble())
+                    put("rightOuter", currentConfig.physRightStickOuterDeadzone.toDouble())
+                    put("shortcutsEnabled", currentConfig.controllerShortcutsEnabled)
+                    put("shortcutStatsBtn", currentConfig.shortcutToggleStatsButton)
+                    put("shortcutVpadBtn", currentConfig.shortcutToggleVirtualPadButton)
+                    put("shortcutRecBtn", currentConfig.shortcutToggleRecordingButton)
+                }.toString()
+            }.getOrDefault("{}")
             return """
                 (function() {
                     window.__cloudPlayIsEnglishUi = $isEnglishUi;
                     if (window.__cloudPlayInjected) {
-                        if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: "$targetCountry", ip: "$targetIp", locale: "$userLocale" });
+                        if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: "$safeTargetCountry", ip: "$safeTargetIp", azureEndpoint: "$safeAzureEndpoint", bypassEnabled: $bypassEnabled, locale: "$userLocale" });
                         if (window.__setClarityPreset) window.__setClarityPreset($clarityBoost ? "$clarityPreset" : "OFF");
                         if (window.__toggleClarityBoost) window.__toggleClarityBoost($clarityBoost);
                         if (window.__toggleXCloudTranslation) window.__toggleXCloudTranslation($xcloudTranslate);
@@ -565,14 +572,143 @@ class XboxBridge(
                         }
                     }
 
-                    let targetCountry = "$targetCountry";
-                    let bypassIp = "$targetIp";
+                    let targetCountry = "$safeTargetCountry";
+                    let bypassIp = "$safeTargetIp";
+                    let targetAzureEndpoint = "$safeAzureEndpoint";
+                    let bypassEnabled = $bypassEnabled;
                     let preferredLocale = "$userLocale";
+
+                    const COUNTRY_REGION_PRIORITIES = {
+                        JP: ['JAPANEAST', 'JAPANWEST'],
+                        KR: ['KOREACENTRAL', 'KOREASOUTH'],
+                        US: ['WESTUS2', 'WESTUS', 'CENTRALUS', 'EASTUS2', 'EASTUS', 'SOUTHCENTRALUS', 'NORTHCENTRALUS'],
+                        CA: ['EASTUS2', 'WESTUS2', 'CENTRALUS', 'CANADACENTRAL'],
+                        AU: ['AUSTRALIAEAST', 'AUSTRALIASOUTHEAST'],
+                        NZ: ['AUSTRALIAEAST', 'AUSTRALIASOUTHEAST'],
+                        GB: ['UKSOUTH', 'UKWEST', 'WESTEUROPE'],
+                        IE: ['UKSOUTH', 'NORTHEUROPE', 'WESTEUROPE'],
+                        DE: ['WESTEUROPE', 'GERMANYWESTCENTRAL', 'NORTHEUROPE'],
+                        FR: ['WESTEUROPE', 'FRANCECENTRAL', 'UKSOUTH'],
+                        NL: ['WESTEUROPE', 'NORTHEUROPE'],
+                        BE: ['WESTEUROPE', 'UKSOUTH'],
+                        AT: ['WESTEUROPE', 'SWITZERLANDNORTH'],
+                        CH: ['WESTEUROPE', 'SWITZERLANDNORTH'],
+                        ES: ['WESTEUROPE', 'UKSOUTH'],
+                        PT: ['WESTEUROPE', 'UKSOUTH'],
+                        IT: ['WESTEUROPE', 'SWITZERLANDNORTH'],
+                        SE: ['NORTHEUROPE', 'SWEDENCENTRAL', 'WESTEUROPE'],
+                        NO: ['NORTHEUROPE', 'WESTEUROPE'],
+                        DK: ['NORTHEUROPE', 'WESTEUROPE'],
+                        FI: ['NORTHEUROPE', 'SWEDENCENTRAL'],
+                        PL: ['WESTEUROPE', 'NORTHEUROPE'],
+                        CZ: ['WESTEUROPE', 'NORTHEUROPE'],
+                        HU: ['WESTEUROPE', 'NORTHEUROPE'],
+                        SK: ['WESTEUROPE', 'NORTHEUROPE'],
+                        BR: ['BRAZILSOUTH', 'EASTUS2'],
+                        MX: ['SOUTHCENTRALUS', 'WESTUS2', 'CENTRALUS'],
+                        AR: ['BRAZILSOUTH'],
+                        CL: ['BRAZILSOUTH'],
+                        CO: ['EASTUS2', 'BRAZILSOUTH']
+                    };
+
+                    const COUNTRY_GEO_COORDS = {
+                        JP: [35.6762, 139.6503],
+                        KR: [37.5665, 126.9780],
+                        US: [37.3382, -121.8863],
+                        CA: [43.6532, -79.3832],
+                        AU: [-33.8688, 151.2093],
+                        NZ: [-36.8485, 174.7633],
+                        GB: [51.5074, -0.1278],
+                        IE: [53.3498, -6.2603],
+                        DE: [50.1109, 8.6821],
+                        FR: [48.8566, 2.3522],
+                        NL: [52.3676, 4.9041],
+                        BE: [50.8503, 4.3517],
+                        AT: [48.2082, 16.3738],
+                        CH: [47.3769, 8.5417],
+                        ES: [40.4168, -3.7038],
+                        PT: [38.7223, -9.1393],
+                        IT: [45.4642, 9.1900],
+                        SE: [59.3293, 18.0686],
+                        NO: [59.9139, 10.7522],
+                        DK: [55.6761, 12.5683],
+                        FI: [60.1699, 24.9384],
+                        PL: [52.2297, 21.0122],
+                        CZ: [50.0755, 14.4378],
+                        HU: [47.4979, 19.0402],
+                        SK: [48.1486, 17.1077],
+                        BR: [-23.5505, -46.6333],
+                        MX: [19.4326, -99.1332],
+                        AR: [-34.6037, -58.3816],
+                        CL: [-33.4489, -70.6693],
+                        CO: [4.7110, -74.0721]
+                    };
+
+                    function getDesiredRegions() {
+                        const list = [];
+                        if (targetAzureEndpoint) {
+                            const prefix = String(targetAzureEndpoint).split('.')[0].replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                            if (prefix) list.push(prefix);
+                        }
+                        const cc = String(targetCountry || 'JP').toUpperCase();
+                        const mapped = COUNTRY_REGION_PRIORITIES[cc] || ['JAPANEAST', 'KOREACENTRAL', 'WESTUS2'];
+                        for (let i = 0; i < mapped.length; i++) {
+                            if (list.indexOf(mapped[i]) === -1) list.push(mapped[i]);
+                        }
+                        return list;
+                    }
+
+                    function isActiveBypass() {
+                        return !!(bypassEnabled && bypassIp && String(bypassIp).trim().length > 0);
+                    }
+
+                    function shouldInjectBypassHeader(url) {
+                        if (!isActiveBypass() || !url) return false;
+                        const lower = String(url).toLowerCase();
+                        const isXboxBackend = lower.indexOf('xboxlive.com') !== -1 ||
+                            lower.indexOf('xboxservices.com') !== -1 ||
+                            lower.indexOf('xbox.com') !== -1;
+                        if (!isXboxBackend) return false;
+                        return lower.indexOf('/v2/login/user') !== -1 ||
+                            lower.indexOf('/v2/login/device') !== -1 ||
+                            lower.indexOf('/sessions/cloud/play') !== -1;
+                    }
+
+                    function isLoginOfferingUrl(url) {
+                        if (!url) return false;
+                        const lower = String(url).toLowerCase();
+                        return lower.indexOf('/v2/login/user') !== -1 || lower.indexOf('/v2/login/device') !== -1;
+                    }
+
+                    function buildSpoofedHeaders(request, init) {
+                        const merged = new Headers();
+                        try {
+                            if (request instanceof Request && request.headers) {
+                                request.headers.forEach(function(val, key) {
+                                    merged.set(key, val);
+                                });
+                            }
+                            if (init && init.headers) {
+                                const initHeaders = new Headers(init.headers);
+                                initHeaders.forEach(function(val, key) {
+                                    merged.set(key, val);
+                                });
+                            }
+                            merged.set('X-Forwarded-For', bypassIp);
+                        } catch (hdrErr) {}
+                        return merged;
+                    }
 
                     window.__updateRegionAndLocale = function(conf) {
                         if (!conf) return;
-                        if (conf.country) targetCountry = conf.country;
-                        if (conf.ip) bypassIp = conf.ip;
+                        const prevIp = bypassIp;
+                        if (typeof conf.bypassEnabled === 'boolean') bypassEnabled = conf.bypassEnabled;
+                        if (conf.country) targetCountry = String(conf.country).trim().toUpperCase();
+                        if (typeof conf.ip === 'string') bypassIp = conf.ip.trim();
+                        if (typeof conf.azureEndpoint === 'string') targetAzureEndpoint = conf.azureEndpoint.trim();
+                        if (prevIp !== bypassIp) {
+                            try { regionCheckCountForUrl = 0; } catch (e) {}
+                        }
                         if (conf.locale) {
                             preferredLocale = conf.locale;
                             try {
@@ -587,26 +723,29 @@ class XboxBridge(
                     } catch(e) {}
 
                     // ==========================================
-                    // 1. Smart Region Header Interceptor
+                    // 1. Smart Region Header Interceptor (CORS-safe, Headers-preserving)
                     // ==========================================
                     try {
                         const NATIVE_FETCH = window.fetch;
                         window.fetch = async function(request, init) {
-                            let url = typeof request === 'string' ? request : String((request && (request.url || request.href)) || '');
-                            if (bypassIp && (url.includes('/v2/login/user') || url.includes('/sessions/cloud/play'))) {
-                                if (typeof request === 'string') {
-                                    init = init || {};
-                                    init.headers = Object.assign({}, init.headers, {
-                                        'X-Forwarded-For': bypassIp,
-                                        'X-Client-IP': bypassIp,
-                                        'X-Real-IP': bypassIp
-                                    });
-                                } else if (request instanceof Request) {
-                                    try {
-                                        request.headers.set('X-Forwarded-For', bypassIp);
-                                        request.headers.set('X-Client-IP', bypassIp);
-                                        request.headers.set('X-Real-IP', bypassIp);
-                                    } catch (hdrErr) {}
+                            const url = typeof request === 'string' ? request : String((request && (request.url || request.href)) || '');
+                            const injectHeader = shouldInjectBypassHeader(url);
+                            let fetchReq = request;
+                            let fetchInit = init;
+
+                            if (injectHeader) {
+                                try {
+                                    const mergedHeaders = buildSpoofedHeaders(request, init);
+                                    if (request instanceof Request) {
+                                        const clonedInit = Object.assign({}, init || {}, { headers: mergedHeaders });
+                                        fetchReq = new Request(request, clonedInit);
+                                        fetchInit = undefined;
+                                    } else {
+                                        fetchInit = Object.assign({}, init || {}, { headers: mergedHeaders });
+                                    }
+                                } catch (cloneErr) {
+                                    fetchReq = request;
+                                    fetchInit = init;
                                 }
                             }
 
@@ -616,75 +755,117 @@ class XboxBridge(
                                 window.__cpExitPreviewInFlightFetches = (window.__cpExitPreviewInFlightFetches || 0) + 1;
                             }
                             try {
-                                response = await NATIVE_FETCH(request, init);
+                                response = await NATIVE_FETCH(fetchReq, fetchInit);
                             } catch(err) {
-                                if (trackExitFetch) {
-                                    window.__cpExitPreviewInFlightFetches = Math.max(0, (window.__cpExitPreviewInFlightFetches || 1) - 1);
-                                    window.__cpExitPreviewCompletedFetches = (window.__cpExitPreviewCompletedFetches || 0) + 1;
+                                // Safe CORS fallback: if adding X-Forwarded-For caused a network/CORS rejection on non-login endpoints, retry cleanly once
+                                if (injectHeader && !isLoginOfferingUrl(url)) {
+                                    try {
+                                        response = await NATIVE_FETCH(request, init);
+                                    } catch (retryErr) {
+                                        if (trackExitFetch) {
+                                            window.__cpExitPreviewInFlightFetches = Math.max(0, (window.__cpExitPreviewInFlightFetches || 1) - 1);
+                                            window.__cpExitPreviewCompletedFetches = (window.__cpExitPreviewCompletedFetches || 0) + 1;
+                                        }
+                                        throw retryErr;
+                                    }
+                                } else {
+                                    if (trackExitFetch) {
+                                        window.__cpExitPreviewInFlightFetches = Math.max(0, (window.__cpExitPreviewInFlightFetches || 1) - 1);
+                                        window.__cpExitPreviewCompletedFetches = (window.__cpExitPreviewCompletedFetches || 0) + 1;
+                                    }
+                                    throw err;
                                 }
-                                throw err;
                             }
                             if (trackExitFetch) {
                                 window.__cpExitPreviewInFlightFetches = Math.max(0, (window.__cpExitPreviewInFlightFetches || 1) - 1);
                                 window.__cpExitPreviewCompletedFetches = (window.__cpExitPreviewCompletedFetches || 0) + 1;
                             }
 
-                            // Intercept /v2/login/user to ensure target region is selected and active
-                            if (url.includes('/v2/login/user') && response && response.ok) {
-                                try {
-                                    const clone = response.clone();
-                                    const data = await clone.json();
-                                    if (data) {
-                                        let targetName = targetCountry === 'KR' ? 'KOREACENTRAL' : 
-                                                         (targetCountry === 'US' ? 'WESTUS' : 'JAPANEAST');
+                            // Instant network-layer unlock detection on /v2/login/user
+                            if (url.toLowerCase().indexOf('/v2/login/user') !== -1 && response) {
+                                if ((response.status === 403 || response.status === 451) && isActiveBypass()) {
+                                    if (window.__lastUnlockSignal !== 'UNLOCK_FAIL') {
+                                        window.__lastUnlockSignal = 'UNLOCK_FAIL';
+                                        notify('onRegionUnlockSignal', 'UNLOCK_FAIL');
+                                    }
+                                } else if (response.ok) {
+                                    try {
+                                        const clone = response.clone();
+                                        const data = await clone.json();
+                                        if (data) {
+                                            const desiredRegions = getDesiredRegions();
+                                            let matchedRegionName = desiredRegions[0] || 'JAPANEAST';
+                                            let foundTargetRegion = false;
 
-                                        let foundTargetRegion = false;
-                                        if (data.offeringSettings && Array.isArray(data.offeringSettings.regions)) {
-                                            data.offeringSettings.allowRegionSelection = true;
-                                            let found = data.offeringSettings.regions.find(r => r && r.name && r.name.toUpperCase() === targetName);
-                                            if (found) {
-                                                found.isDefault = true;
-                                                data.offeringSettings.regions.forEach(r => { if (r !== found) r.isDefault = false; });
-                                                foundTargetRegion = true;
-                                            } else if (data.offeringSettings.regions.length > 0) {
-                                                data.offeringSettings.regions[0].isDefault = true;
-                                                foundTargetRegion = true;
+                                            if (data.offeringSettings && Array.isArray(data.offeringSettings.regions)) {
+                                                const regions = data.offeringSettings.regions;
+                                                data.offeringSettings.allowRegionSelection = true;
+                                                if (regions.length === 0) {
+                                                    if (isActiveBypass() && window.__lastUnlockSignal !== 'UNLOCK_FAIL') {
+                                                        window.__lastUnlockSignal = 'UNLOCK_FAIL';
+                                                        notify('onRegionUnlockSignal', 'UNLOCK_FAIL');
+                                                    }
+                                                } else {
+                                                    let found = null;
+                                                    if (isActiveBypass()) {
+                                                        for (let p = 0; p < desiredRegions.length && !found; p++) {
+                                                            const want = desiredRegions[p];
+                                                            found = regions.find(function(r) {
+                                                                if (!r) return false;
+                                                                const rName = String(r.name || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                                                                const rUri = String(r.baseUri || '').toLowerCase();
+                                                                return rName === want || rUri.indexOf(want.toLowerCase()) !== -1;
+                                                            });
+                                                        }
+                                                    }
+                                                    if (!found) {
+                                                        found = regions.find(function(r) { return r && r.isDefault; }) || regions[0];
+                                                    }
+                                                    if (found) {
+                                                        found.isDefault = true;
+                                                        regions.forEach(function(r) { if (r && r !== found) r.isDefault = false; });
+                                                        matchedRegionName = String(found.name || matchedRegionName);
+                                                        foundTargetRegion = true;
+                                                    }
+                                                }
+                                            }
+
+                                            if (foundTargetRegion) {
+                                                window.__lastUnlockSignal = 'UNLOCK_OK';
+                                                const oldBanner = document.getElementById('__cloudplay_unlock_fail_banner');
+                                                if (oldBanner) oldBanner.remove();
+                                                notify('onRegionUnlockSignal', 'UNLOCK_OK');
+                                                if (isActiveBypass()) {
+                                                    notify('onRegionBypassed', JSON.stringify({
+                                                        country: targetCountry,
+                                                        ip: bypassIp,
+                                                        targetRegion: matchedRegionName
+                                                    }));
+                                                }
+                                            }
+
+                                            const modifiedBody = JSON.stringify(data);
+                                            try {
+                                                return new Response(modifiedBody, {
+                                                    status: response.status,
+                                                    statusText: response.statusText,
+                                                    headers: response.headers
+                                                });
+                                            } catch (respErr) {
+                                                Object.defineProperty(response, 'json', { value: () => Promise.resolve(data) });
+                                                Object.defineProperty(response, 'text', { value: () => Promise.resolve(modifiedBody) });
                                             }
                                         }
-
-                                        if (foundTargetRegion) {
-                                            window.__lastUnlockSignal = 'UNLOCK_OK';
-                                            const oldBanner = document.getElementById('__cloudplay_unlock_fail_banner');
-                                            if (oldBanner) oldBanner.remove();
-                                            notify('onRegionUnlockSignal', 'UNLOCK_OK');
-                                            notify('onRegionBypassed', JSON.stringify({
-                                                country: targetCountry,
-                                                ip: bypassIp,
-                                                targetRegion: targetName
-                                            }));
-                                        }
-
-                                        const modifiedBody = JSON.stringify(data);
-                                        try {
-                                            return new Response(modifiedBody, {
-                                                status: response.status,
-                                                statusText: response.statusText,
-                                                headers: response.headers
-                                            });
-                                        } catch (respErr) {
-                                            Object.defineProperty(response, 'json', { value: () => Promise.resolve(data) });
-                                            Object.defineProperty(response, 'text', { value: () => Promise.resolve(modifiedBody) });
-                                        }
+                                    } catch(e) {
+                                        // Ignore non-JSON login responses cleanly
                                     }
-                                } catch(e) {
-                                    // Ignore non-JSON login responses cleanly
                                 }
                             }
 
                             return response;
                         };
 
-                        // Patch XMLHttpRequest for older components
+                        // Patch XMLHttpRequest cleanly (only X-Forwarded-For, no CORS-breaking extra headers)
                         const origXhrOpen = XMLHttpRequest.prototype.open;
                         const origXhrSend = XMLHttpRequest.prototype.send;
                         XMLHttpRequest.prototype.open = function(method, url) {
@@ -692,11 +873,9 @@ class XboxBridge(
                             return origXhrOpen.apply(this, arguments);
                         };
                         XMLHttpRequest.prototype.send = function(data) {
-                            if (bypassIp && this._url && (this._url.includes('/v2/login/user') || this._url.includes('/sessions/cloud/play'))) {
+                            if (shouldInjectBypassHeader(this._url)) {
                                 try {
                                     this.setRequestHeader('X-Forwarded-For', bypassIp);
-                                    this.setRequestHeader('X-Client-IP', bypassIp);
-                                    this.setRequestHeader('X-Real-IP', bypassIp);
                                 } catch(e) {}
                             }
                             return origXhrSend.apply(this, arguments);
@@ -706,28 +885,47 @@ class XboxBridge(
                     }
 
                     // ==========================================
-                    // 2. Spoof Geolocation to Tokyo, Japan
+                    // 2. Dynamic Geolocation matching active Bypass country
                     // ==========================================
                     try {
-                        const fakePosition = {
-                            coords: {
-                                latitude: 35.6762,
-                                longitude: 139.6503,
-                                accuracy: 15,
-                                altitude: null,
-                                altitudeAccuracy: null,
-                                heading: null,
-                                speed: null
-                            },
-                            timestamp: Date.now()
-                        };
-                        navigator.geolocation.getCurrentPosition = function(success) {
-                            if (success) success(fakePosition);
-                        };
-                        navigator.geolocation.watchPosition = function(success) {
-                            if (success) success(fakePosition);
-                            return 1;
-                        };
+                        const origGeoGet = navigator.geolocation && navigator.geolocation.getCurrentPosition
+                            ? navigator.geolocation.getCurrentPosition.bind(navigator.geolocation)
+                            : null;
+                        const origGeoWatch = navigator.geolocation && navigator.geolocation.watchPosition
+                            ? navigator.geolocation.watchPosition.bind(navigator.geolocation)
+                            : null;
+                        function buildTargetGeoPosition() {
+                            const cc = String(targetCountry || 'JP').toUpperCase();
+                            const pair = COUNTRY_GEO_COORDS[cc] || COUNTRY_GEO_COORDS.JP;
+                            return {
+                                coords: {
+                                    latitude: pair[0],
+                                    longitude: pair[1],
+                                    accuracy: 18,
+                                    altitude: null,
+                                    altitudeAccuracy: null,
+                                    heading: null,
+                                    speed: null
+                                },
+                                timestamp: Date.now()
+                            };
+                        }
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition = function(success, error, opts) {
+                                if (isActiveBypass()) {
+                                    if (success) success(buildTargetGeoPosition());
+                                    return;
+                                }
+                                if (origGeoGet) origGeoGet(success, error, opts);
+                            };
+                            navigator.geolocation.watchPosition = function(success, error, opts) {
+                                if (isActiveBypass()) {
+                                    if (success) success(buildTargetGeoPosition());
+                                    return 1;
+                                }
+                                return origGeoWatch ? origGeoWatch(success, error, opts) : 1;
+                            };
+                        }
                     } catch(e) {}
 
                     // ==========================================
@@ -1880,15 +2078,22 @@ class XboxBridge(
                             }
                             return;
                         }
-                        if (hasActionLoadingSpinner() || regionCheckCountForUrl >= 4) return;
+                        if (hasActionLoadingSpinner() || regionCheckCountForUrl >= 6) return;
                         regionCheckCountForUrl++;
                         const bodyText = (document.body.textContent || '').toLowerCase();
                         const hasRegionUnsupportedText =
                             bodyText.includes('unavailable in your region') ||
                             bodyText.includes('not available in your region') ||
+                            bodyText.includes('isn\'t available in your region') ||
                             bodyText.includes('view supported regions') ||
                             bodyText.includes('không khả dụng tại khu vực') ||
-                            bodyText.includes('xem các khu vực được hỗ trợ');
+                            bodyText.includes('xem các khu vực được hỗ trợ') ||
+                            bodyText.includes('お住まいの地域では利用できません') ||
+                            bodyText.includes('지역에서는 사용할 수 없습니다') ||
+                            bodyText.includes('no está disponible en tu región') ||
+                            bodyText.includes('não está disponível na sua região') ||
+                            bodyText.includes('n\'est pas disponible dans votre région') ||
+                            bodyText.includes('in ihrer region nicht verfügbar');
                         if (hasRegionUnsupportedText && !hasPlayButtonOnPage()) {
                             if (window.__lastUnlockSignal !== 'UNLOCK_FAIL') {
                                 window.__lastUnlockSignal = 'UNLOCK_FAIL';
@@ -4039,9 +4244,10 @@ class XboxBridge(
                 val locale = com.example.data.SettingsRepository.config.value.getEffectiveLocale()
                 val safeCountry = JSONObject.quote(nextServer.countryCode)
                 val safeIp = JSONObject.quote(nextServer.ip)
+                val safeAzure = JSONObject.quote(nextServer.azureEndpoint)
                 val safeLocale = JSONObject.quote(locale)
                 wv.evaluateJavascript(
-                    "window.__lastUnlockSignal = null; if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: $safeCountry, ip: $safeIp, locale: $safeLocale }); location.reload();",
+                    "window.__lastUnlockSignal = null; if (window.__updateRegionAndLocale) window.__updateRegionAndLocale({ country: $safeCountry, ip: $safeIp, azureEndpoint: $safeAzure, bypassEnabled: true, locale: $safeLocale }); location.reload();",
                     null
                 )
             }

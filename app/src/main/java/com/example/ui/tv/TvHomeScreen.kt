@@ -377,11 +377,7 @@ internal fun TvHomeScreen(
                         modifier = Modifier.testTag("tv_hero_web_ui_mode_btn")
                     )
 
-                    val tvModeShortName = when (vpnState.engine) {
-                        com.example.vpn.VpnEngine.SMART_BYPASS -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
-                        com.example.vpn.VpnEngine.PROXY_TUNNEL -> "Proxy"
-                        com.example.vpn.VpnEngine.EXTERNAL_VPN -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn)
-                    }
+                    val tvModeShortName = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
                     TvButton(
                         text = if (isVpnConnected) {
                             "${config.tr("Tắt", "Turn Off")} $tvModeShortName"

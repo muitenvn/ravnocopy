@@ -30,22 +30,7 @@ class ProxyAndCatalogUnitTest {
             "All bypassServers must be tagged ServerKind.BYPASS",
             data.bypassServers.all { it.kind == ServerKind.BYPASS }
         )
-        assertTrue(
-            "All proxyServers must be tagged ServerKind.PROXY",
-            data.proxyServers.all { it.kind == ServerKind.PROXY }
-        )
-        assertTrue("Catalog must contain at least 5 HTTPS proxySources", data.proxySources.size >= 5)
-        assertTrue(
-            "Every proxySource urlTemplate must be HTTPS",
-            data.proxySources.all { it.urlTemplate.startsWith("https://") }
-        )
-        // Verify no Bypass server accidentally shares an endpoint with a Proxy seed
-        val bypassKeys = data.bypassServers.map { it.addressPortKey.lowercase() }.toSet()
-        val proxyKeys = data.proxyServers.map { it.addressPortKey.lowercase() }.toSet()
-        assertTrue(
-            "Bypass and Proxy server pools must not overlap",
-            bypassKeys.intersect(proxyKeys).isEmpty()
-        )
+        assertTrue("Bypass-only catalog must have empty proxyServers", data.proxyServers.isEmpty())
     }
 
     @Test
@@ -301,54 +286,89 @@ class ProxyAndCatalogUnitTest {
     }
 
     @Test
-    fun vpnManager_strictlySeparatesBypassAndProxyPools_andKeepsBypassClean() {
-        VpnManager.setEngine(VpnEngine.SMART_BYPASS, null)
-        val bypassBefore = VpnManager.state.value.currentServer
+    fun vpnManager_enforcesBypassOnlyModeAndNeverExposesProxyServers() {
+        // Attempting to switch to PROXY_TUNNEL or EXTERNAL_VPN must always stay on SMART_BYPASS
+        VpnManager.setEngine(VpnEngine.PROXY_TUNNEL, null)
+        assertEquals(VpnEngine.SMART_BYPASS, VpnManager.state.value.engine)
+
+        VpnManager.setEngine(VpnEngine.EXTERNAL_VPN, null)
+        assertEquals(VpnEngine.SMART_BYPASS, VpnManager.state.value.engine)
+
+        VpnManager.activateVpnMode(null, VpnEngine.PROXY_TUNNEL)
+        assertEquals(VpnEngine.SMART_BYPASS, VpnManager.state.value.engine)
 
         val bypassServers = VpnManager.getServersForEngine(VpnEngine.SMART_BYPASS)
         assertTrue("Bypass pool must never be empty (built-in 9 fallback nodes)", bypassServers.size >= 9)
         assertTrue("Bypass pool must ONLY contain BYPASS servers", bypassServers.all { it.kind == ServerKind.BYPASS })
 
-        val proxyServersBefore = VpnManager.getServersForEngine(VpnEngine.PROXY_TUNNEL)
-        assertTrue(
-            "Proxy pool must NEVER contain any BYPASS server",
-            proxyServersBefore.none { it.kind == ServerKind.BYPASS }
-        )
-        val defaultBypassKeys = DEFAULT_SERVERS.map { it.addressPortKey.lowercase() }.toSet()
-        assertTrue(
-            "Proxy pool must NEVER include DEFAULT_SERVERS Bypass nodes",
-            proxyServersBefore.none { it.addressPortKey.lowercase() in defaultBypassKeys }
-        )
+        val serversViaLegacyProxyArg = VpnManager.getServersForEngine(VpnEngine.PROXY_TUNNEL)
+        assertTrue("All server queries must return Bypass servers only", serversViaLegacyProxyArg.all { it.kind == ServerKind.BYPASS })
+        assertEquals(ServerKind.BYPASS, VpnManager.state.value.currentServer.kind)
+        assertFalse("In-app proxy security guard must stay inactive in Bypass-only mode", VpnManager.isInAppProxySecurityGuardActive())
 
-        // Adding a custom proxy while in SMART_BYPASS MUST NOT overwrite Bypass currentServer
-        val customProxy = ServerLocation(
-            id = "test_custom_proxy_jp",
-            name = "Custom Test Proxy",
-            flag = "🇯🇵",
-            ip = "45.88.99.10",
-            port = 8080,
-            protocol = "http",
-            azureEndpoint = "japaneast.cloudapp.azure.com",
-            description = "Test custom proxy",
-            countryCode = "JP",
-            isCustom = true,
-            kind = ServerKind.PROXY
-        )
-        VpnManager.addCustomServer(customProxy)
-        assertEquals(
-            "Bypass currentServer must NOT be overwritten when adding custom proxy in Bypass mode",
-            bypassBefore.id,
-            VpnManager.state.value.currentServer.id
-        )
-        assertTrue(
-            "Custom proxy must appear in Proxy pool",
-            VpnManager.getProxyServers().any { it.id == customProxy.id }
-        )
-        // Clean up custom proxy after test
-        VpnManager.removeCustomServer(customProxy.id)
-
-        // Ensure proxy-clean guard works cleanly in Bypass mode without throwing
         VpnManager.ensureWebViewProxyCleanIfNotProxyEngine()
         assertEquals(VpnEngine.SMART_BYPASS, VpnManager.state.value.engine)
     }
+
+    @Test
+    fun xboxBridgeInjectionScript_preservesHeadersSupportsMultiRegionAndDisablesOnDirectNetwork() {
+        val activeScript = com.example.cloudplay.XboxBridge.getInjectionScript(
+            clarityBoost = false,
+            targetCountry = "US",
+            targetIp = "34.43.46.91",
+            targetAzureEndpoint = "westus2.cloudapp.azure.com",
+            bypassEnabled = true
+        )
+        assertTrue("Must normalize Headers safely via new Headers()", activeScript.contains("new Headers("))
+        assertTrue("Must inject X-Forwarded-For cleanly", activeScript.contains("'X-Forwarded-For'"))
+        assertFalse("Must NOT inject CORS-breaking X-Client-IP", activeScript.contains("X-Client-IP"))
+        assertFalse("Must NOT inject CORS-breaking X-Real-IP", activeScript.contains("X-Real-IP"))
+        assertTrue("Must include targetAzureEndpoint", activeScript.contains("westus2.cloudapp.azure.com"))
+        assertTrue("Must include 30-country region priority table", activeScript.contains("COUNTRY_REGION_PRIORITIES"))
+        assertTrue("Must detect instant network-layer 403/451 UNLOCK_FAIL", activeScript.contains("response.status === 403 || response.status === 451"))
+
+        val directScript = com.example.cloudplay.XboxBridge.getInjectionScript(
+            clarityBoost = false,
+            targetCountry = "JP",
+            targetIp = "219.100.37.197",
+            targetAzureEndpoint = "japaneast.cloudapp.azure.com",
+            bypassEnabled = false
+        )
+        assertTrue("When bypassEnabled=false, bypassEnabled flag must be false", directScript.contains("let bypassEnabled = false;"))
+        assertTrue("When bypassEnabled=false, bypassIp must be empty", directScript.contains("let bypassIp = \"\";"))
+    }
+
+    @Test
+    fun parseCatalogJson_acceptsHunterMetadataFieldsCleanly() {
+        val hunterJson = """
+            {
+              "schemaVersion": 1,
+              "updatedAt": "2026-11-26T08:00:00Z",
+              "bypassServers": [
+                {
+                  "id": "gh_auto_jp_153_122_10_5_443",
+                  "name": "Japan Tokyo #1",
+                  "flag": "🇯🇵",
+                  "ip": "153.122.10.5",
+                  "port": 443,
+                  "azureEndpoint": "japaneast.cloudapp.azure.com",
+                  "description": "NTT Communications • GeoIP 2x • Top #1",
+                  "countryCode": "JP",
+                  "verifiedAt": "2026-11-26T08:00:00Z",
+                  "latencyMs": 42,
+                  "source": "vpngate"
+                }
+              ],
+              "proxyServers": [],
+              "proxySources": []
+            }
+        """.trimIndent()
+        val parsed = RemoteServerCatalog.parseCatalogJson(hunterJson, "hunter_test")
+        assertNotNull("Hunter catalog JSON must parse cleanly", parsed)
+        assertEquals(1, parsed!!.bypassServers.size)
+        assertEquals("153.122.10.5", parsed.bypassServers.first().ip)
+        assertEquals("japaneast.cloudapp.azure.com", parsed.bypassServers.first().azureEndpoint)
+        assertEquals(ServerKind.BYPASS, parsed.bypassServers.first().kind)
+    }
 }
+

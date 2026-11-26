@@ -357,11 +357,7 @@ internal fun HudNetworkTabContent(
         // VPN quick switch row
         val isVpnOn = vpnState.mode != NetworkMode.DIRECT_NETWORK
         HudSurfaceRow(minHeight = 42.dp) {
-            val hudModeName = when (vpnState.engine) {
-                com.example.vpn.VpnEngine.SMART_BYPASS -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
-                com.example.vpn.VpnEngine.PROXY_TUNNEL -> "Proxy"
-                com.example.vpn.VpnEngine.EXTERNAL_VPN -> androidx.compose.ui.res.stringResource(com.example.R.string.vpn_sub_external_vpn)
-            }
+            val hudModeName = androidx.compose.ui.res.stringResource(com.example.R.string.vpn_mode_bypass)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = hudModeName,
