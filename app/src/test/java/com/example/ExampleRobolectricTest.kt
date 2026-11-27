@@ -138,15 +138,8 @@ class ExampleRobolectricTest {
     }
 
     @Test
-    fun `verify system revolution 1 0 optimization`() {
-        SettingsRepository.optimizeEntireSystem()
-        val config = SettingsRepository.config.value
-        assertTrue(config.systemRevolutionEnabled)
-        assertTrue(config.stealthHeadersEnabled)
-        assertTrue(config.autoHealingProxyMesh)
-        assertTrue(config.sdpBitrateBoostEnabled)
-        assertTrue(config.zeroDelayDirectHandshake)
-        assertTrue(config.antiJapaneseEnforcer)
+    fun `verify default AppConfig stream and bypass settings`() {
+        val config = com.example.data.AppConfig()
         assertTrue(config.smartVpnEnabled)
         assertTrue(config.autoBypassEnabled)
         assertEquals(15, config.maxBitrateMbps)

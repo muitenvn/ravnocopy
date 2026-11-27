@@ -212,10 +212,6 @@
     <string name="vpn_mode_switched_bypass_toast">✓ Modo: Bypass</string>
     <string name="vpn_mode_switched_proxy_toast">✓ Modo: Proxy (Proxy en la app)</string>
     <string name="vpn_mode_switched_external_toast">✓ Modo: Proxy (VPN externa)</string>
-    <string name="vpn_security_confirm_title">¿Cambiar al modo Proxy?</string>
-    <string name="vpn_security_confirm_message">• El Proxy en la app está aislado estrictamente dentro de Ravno: no accede a datos del teléfono, excluye el inicio de sesión de Microsoft y redes locales, se pausa en segundo plano y bloquea y desconecta automáticamente cualquier proxy con errores SSL o redirecciones externas.\n\n• Las apps de VPN externa funcionan a nivel del sistema Android, por lo que Ravno no puede inspeccionar ni bloquear su tráfico.\n\n• Los servidores proxy públicos y VPN de terceros envían tráfico a través de terceros. Al continuar, aceptas estos riesgos bajo tu total responsabilidad en el modo Proxy.</string>
-    <string name="vpn_security_confirm_accept">Entiendo, bajo mi responsabilidad</string>
-    <string name="vpn_security_confirm_cancel">Cancelar (Seguir en Bypass)</string>
     <string name="vpn_security_killswitch_title">Proxy bloqueado por seguridad</string>
     <string name="vpn_security_killswitch_ssl_msg">El proxy %1$s provocó un error de certificado SSL (%2$s). Ravno bloqueó la conexión, desconectó el Proxy y puso este servidor en cuarentena.</string>
     <string name="vpn_security_killswitch_external_msg">El proxy %1$s intentó redirigir fuera de los dominios confiables (%2$s). Ravno bloqueó la ruta, desconectó el Proxy y puso este servidor en cuarentena.</string>
@@ -242,28 +238,12 @@
     <!-- Pantalla de carga del juego -->
     <string name="loading_home_btn">Inicio</string>
     <string name="loading_hub_title">Xbox Cloud Gaming</string>
-    <string name="loading_hub_subtitle">Sesión de consola en la nube</string>
     <string name="loading_phase_connecting">Conectando con Xbox Cloud…</string>
     <string name="loading_phase_routing">Desbloqueando región vía %1$s…</string>
     <string name="loading_phase_syncing">Sincronizando señal %1$s · %2$d FPS…</string>
     <string name="loading_phase_ready">Listo para jugar</string>
-    <string name="loading_step_connect">Conexión</string>
-    <string name="loading_step_region">Región</string>
-    <string name="loading_step_stream">Señal</string>
-    <string name="loading_step_ready">Listo</string>
-    <string name="loading_meta_server">Servidor</string>
-    <string name="loading_meta_controls">Controles</string>
-    <string name="loading_ctrl_physical">Mando físico</string>
-    <string name="loading_ctrl_touch_virtual">Táctil y mando virtual</string>
-    <string name="loading_ctrl_virtual">Mando virtual</string>
-    <string name="loading_ping_measuring">Midiendo</string>
-    <string name="loading_ping_optimal">Óptimo</string>
-    <string name="loading_ping_stable">Estable</string>
     <string name="loading_ping_high">Alto</string>
     <string name="loading_enter_now">Entrar al juego</string>
     <string name="loading_skip_wait">Abrir ahora</string>
-    <string name="loading_tip_1">Abre la barra HUD superior en partida para ver el ping o cambiar controles.</string>
-    <string name="loading_tip_2">Bypass se desactiva al iniciar el juego para usar conexión directa sin demora.</string>
-    <string name="loading_tip_3">Conecta un mando Bluetooth o USB para mapeo automático de consola.</string>
     <string name="loading_artwork_cd">Portada del juego %1$s</string>
 </resources>

@@ -212,10 +212,6 @@
     <string name="vpn_mode_switched_bypass_toast">✓ Режим: Bypass</string>
     <string name="vpn_mode_switched_proxy_toast">✓ Режим: Proxy (Прокси в приложении)</string>
     <string name="vpn_mode_switched_external_toast">✓ Режим: Proxy (Внешний VPN)</string>
-    <string name="vpn_security_confirm_title">Переключиться в режим Proxy?</string>
-    <string name="vpn_security_confirm_message">• Прокси в приложении строго изолирован внутри Ravno: нет доступа к данным телефона, исключён вход Microsoft и локальные сети, приостанавливается в фоне и автоматически блокирует и отключает прокси при ошибке SSL или внешнем перенаправлении.\n\n• Внешние VPN работают на уровне ОС Android — Ravno не может проверять или блокировать их трафик.\n\n• Публичные прокси и сторонние VPN пропускают трафик через третьи стороны. Продолжая, вы понимаете риски и берёте на себя полную ответственность в режиме Proxy.</string>
-    <string name="vpn_security_confirm_accept">Понимаю, на мой риск</string>
-    <string name="vpn_security_confirm_cancel">Отмена (Оставить Bypass)</string>
     <string name="vpn_security_killswitch_title">Proxy заблокирован для безопасности</string>
     <string name="vpn_security_killswitch_ssl_msg">Прокси %1$s вызвал ошибку SSL-сертификата (%2$s). Ravno заблокировал соединение, отключил Proxy и поместил сервер в карантин.</string>
     <string name="vpn_security_killswitch_external_msg">Прокси %1$s попытался перенаправить за пределы доверенных доменов (%2$s). Ravno заблокировал маршрут, отключил Proxy и поместил сервер в карантин.</string>
@@ -242,28 +238,12 @@
     <!-- Экран загрузки игры -->
     <string name="loading_home_btn">Главная</string>
     <string name="loading_hub_title">Xbox Cloud Gaming</string>
-    <string name="loading_hub_subtitle">Облачная игровая сессия</string>
     <string name="loading_phase_connecting">Подключение к Xbox Cloud…</string>
     <string name="loading_phase_routing">Разблокировка региона через %1$s…</string>
     <string name="loading_phase_syncing">Синхронизация %1$s · %2$d FPS…</string>
     <string name="loading_phase_ready">Готово к игре</string>
-    <string name="loading_step_connect">Связь</string>
-    <string name="loading_step_region">Регион</string>
-    <string name="loading_step_stream">Поток</string>
-    <string name="loading_step_ready">Готово</string>
-    <string name="loading_meta_server">Сервер</string>
-    <string name="loading_meta_controls">Управление</string>
-    <string name="loading_ctrl_physical">Физический геймпад</string>
-    <string name="loading_ctrl_touch_virtual">Сенсор и вирт. пад</string>
-    <string name="loading_ctrl_virtual">Виртуальный геймпад</string>
-    <string name="loading_ping_measuring">Замер</string>
-    <string name="loading_ping_optimal">Отлично</string>
-    <string name="loading_ping_stable">Стабильно</string>
     <string name="loading_ping_high">Высокий</string>
     <string name="loading_enter_now">Войти в игру</string>
     <string name="loading_skip_wait">Открыть сейчас</string>
-    <string name="loading_tip_1">Откройте верхнюю панель HUD в игре, чтобы проверить пинг или сменить управление.</string>
-    <string name="loading_tip_2">Bypass автоматически отключается после запуска игры для минимальной задержки.</string>
-    <string name="loading_tip_3">Подключите Bluetooth или USB-геймпад для автоматической консольной раскладки.</string>
     <string name="loading_artwork_cd">Обложка игры %1$s</string>
 </resources>

@@ -94,7 +94,6 @@ import com.example.ui.components.gamepadActionButton
 import com.example.ui.components.gamepadClickable
 import com.example.vpn.DEFAULT_SERVERS
 import com.example.vpn.EndpointPingMeasurement
-import com.example.vpn.LiveProxyFetcher
 import com.example.vpn.PingTester
 import com.example.vpn.RegionUnlockStatus
 import com.example.vpn.ServerLocation

@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GppBad
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,59 +34,9 @@ import com.example.ui.theme.JapanRed
 import com.example.ui.theme.SpaceGroteskFontFamily
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
-import com.example.ui.theme.WarningAmber
 import com.example.ui.theme.XboxCardBorder
 import com.example.vpn.VpnSecurityAlert
 import com.example.vpn.VpnSecurityViolationType
-
-/**
- * Hộp thoại xác nhận & cảnh báo tự chịu trách nhiệm khi người dùng chuyển từ Bypass sang chế độ VPN.
- * Dùng chung khung AdaptiveConfirmPopupDialog: thích ứng điện thoại dọc/ngang, tablet, TV và điều khiển trọn vẹn bằng D-Pad.
- */
-@Composable
-fun VpnModeSwitchConfirmDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    val title = stringResource(R.string.vpn_security_confirm_title)
-    val message = stringResource(R.string.vpn_security_confirm_message)
-    val confirmText = stringResource(R.string.vpn_security_confirm_accept)
-    val cancelText = stringResource(R.string.vpn_security_confirm_cancel)
-
-    AdaptiveConfirmPopupDialog(
-        title = title,
-        message = message,
-        confirmText = confirmText,
-        dismissText = cancelText,
-        onConfirm = onConfirm,
-        onDismiss = onDismiss,
-        dialogTestTag = "vpn_security_confirm_dialog",
-        confirmButtonTestTag = "vpn_security_confirm_accept_btn",
-        dismissButtonTestTag = "vpn_security_confirm_cancel_btn",
-        confirmContentDescription = confirmText,
-        dismissContentDescription = cancelText,
-        confirmContainerColor = WarningAmber,
-        confirmContentColor = Color(0xFF1A1202),
-        defaultFocusOnDismiss = true,
-        iconContent = {
-            Box(
-                modifier = Modifier
-                    .size(iconBoxSize)
-                    .clip(RoundedCornerShape(btnCorner))
-                    .background(Color(0xFF2A2208))
-                    .border(borderThin, WarningAmber, RoundedCornerShape(btnCorner)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Shield,
-                    contentDescription = null,
-                    tint = WarningAmber,
-                    modifier = Modifier.size(iconSize)
-                )
-            }
-        }
-    )
-}
 
 /**
  * Hộp thoại thông báo Cầu dao bảo mật (Kill-Switch) khi Proxy trong app phát sinh lỗi SSL

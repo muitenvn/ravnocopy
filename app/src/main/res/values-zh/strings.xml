@@ -212,10 +212,6 @@
     <string name="vpn_mode_switched_bypass_toast">✓ 模式：Bypass</string>
     <string name="vpn_mode_switched_proxy_toast">✓ 模式：Proxy（应用内代理）</string>
     <string name="vpn_mode_switched_external_toast">✓ 模式：Proxy（外部 VPN）</string>
-    <string name="vpn_security_confirm_title">切换到 Proxy 模式？</string>
-    <string name="vpn_security_confirm_message">• 应用内代理严格隔离在 Ravno 内部：不会访问手机数据，排除微软登录页和局域网，退至后台自动暂停，并在检测到 SSL 证书错误或外部跳转时立即拦截、断开并隔离该代理。\n\n• 外部 VPN 应用运行在 Android 系统层级，Ravno 无法检查或拦截其流量。\n\n• 公共代理和第三方 VPN 会经过第三方节点。继续操作即表示您了解相关风险，并自行承担使用 Proxy 模式的全部责任。</string>
-    <string name="vpn_security_confirm_accept">我已了解，责任自负</string>
-    <string name="vpn_security_confirm_cancel">取消（保留 Bypass）</string>
     <string name="vpn_security_killswitch_title">已出于安全原因拦截 Proxy</string>
     <string name="vpn_security_killswitch_ssl_msg">代理 %1$s 触发了 SSL 安全证书错误（%2$s）。应用已立即拦截连接、断开 Proxy 并隔离该服务器。</string>
     <string name="vpn_security_killswitch_external_msg">代理 %1$s 试图跳转到受信任域名之外（%2$s）。应用已拦截该路径、断开 Proxy 并隔离该服务器。</string>
@@ -242,28 +238,12 @@
     <!-- 游戏启动加载画面 -->
     <string name="loading_home_btn">首页</string>
     <string name="loading_hub_title">Xbox Cloud Gaming</string>
-    <string name="loading_hub_subtitle">云主机游戏会话</string>
     <string name="loading_phase_connecting">正在连接 Xbox Cloud…</string>
     <string name="loading_phase_routing">正在通过 %1$s 解锁区域…</string>
     <string name="loading_phase_syncing">正在同步 %1$s · %2$d FPS 画面…</string>
     <string name="loading_phase_ready">已准备就绪</string>
-    <string name="loading_step_connect">连接</string>
-    <string name="loading_step_region">区域</string>
-    <string name="loading_step_stream">串流</string>
-    <string name="loading_step_ready">就绪</string>
-    <string name="loading_meta_server">服务器</string>
-    <string name="loading_meta_controls">控制方式</string>
-    <string name="loading_ctrl_physical">实体手柄</string>
-    <string name="loading_ctrl_touch_virtual">触控与虚拟手柄</string>
-    <string name="loading_ctrl_virtual">虚拟手柄</string>
-    <string name="loading_ping_measuring">检测中</string>
-    <string name="loading_ping_optimal">极佳</string>
-    <string name="loading_ping_stable">稳定</string>
     <string name="loading_ping_high">较高</string>
     <string name="loading_enter_now">立即进入游戏</string>
     <string name="loading_skip_wait">立即打开</string>
-    <string name="loading_tip_1">游戏中点击顶部 HUD 状态条可随时查看实时延迟或切换控制方式。</string>
-    <string name="loading_tip_2">进入游戏后 Bypass 会自动关闭并转为直连，进一步降低延迟。</string>
-    <string name="loading_tip_3">连接蓝牙或 USB 手柄即可自动适配主机按键布局。</string>
     <string name="loading_artwork_cd">%1$s 游戏封面</string>
 </resources>

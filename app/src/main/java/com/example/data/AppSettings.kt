@@ -775,15 +775,11 @@ data class AppConfig(
     val clarityBoostEnabled: Boolean = false,
     val clarityPreset: ClarityPreset = ClarityPreset.BALANCED,
     val maxBitrateMbps: Int = 15,
-    val antiAfkKeepAlive: Boolean = true,
-    val inputPollingBoost: Boolean = true,
-    val showFloatingHud: Boolean = true,
     val hudIdleOpacity: Float = 0.35f, // 0.15f .. 0.90f
     val showVirtualController: Boolean = false,
     val autoHideVirtualOnPhysicalController: Boolean = true,
     val gamepadScale: Float = 1.0f, // 0.75f .. 1.35f
     val gamepadOpacity: Float = 0.70f, // 0.25f .. 0.95f
-    val gamepadDeadzone: Float = 0.08f, // 0.02f .. 0.25f
     val leftStickInnerDeadzone: Float = 0.08f, // 0.00f .. 0.30f
     val leftStickOuterDeadzone: Float = 0.95f, // 0.70f .. 1.00f
     val rightStickInnerDeadzone: Float = 0.08f, // 0.00f .. 0.30f
@@ -828,18 +824,10 @@ data class AppConfig(
     val gyroHoldLtOnly: Boolean = false,
     val useSystemLanguage: Boolean = true,
     val customLocale: String = "en-US",
-    val preferredServerId: String = "jp_tokyo_linode_1",
-    val systemRevolutionEnabled: Boolean = true,
-    val stealthHeadersEnabled: Boolean = true,
-    val autoHealingProxyMesh: Boolean = true,
-    val sdpBitrateBoostEnabled: Boolean = true,
-    val zeroDelayDirectHandshake: Boolean = true,
-    val antiJapaneseEnforcer: Boolean = true,
     val xcloudTranslateEnabled: Boolean = true,
     val translateLanguage: String = "vi",
     val preserveGameTitles: Boolean = true,
     val bilingualMode: Boolean = false,
-    val githubDictionaryEnabled: Boolean = true,
     val hideStreamStatsOverlay: Boolean = true,
     val cellularMode: CellularOptimizationMode = CellularOptimizationMode.AUTO,
     val networkTuningMode: NetworkTuningMode = NetworkTuningMode.AUTO,
@@ -849,7 +837,6 @@ data class AppConfig(
     val streamFpsCap: StreamFpsCap = StreamFpsCap.FPS_60,
     val gpuLoadReductionEnabled: Boolean = true,
     val screenRecordQuality: ScreenRecordQuality = ScreenRecordQuality.BALANCED_720P_30,
-    val autoReduceLoadWhenRecording: Boolean = true,
     val recordingCaptureEngine: RecordingCaptureEngine = RecordingCaptureEngine.HARDWARE_SCREEN,
     val videoContrast: Int = 100, // 80 .. 140 (%)
     val videoSaturation: Int = 100, // 80 .. 150 (%)
@@ -1032,14 +1019,11 @@ object SettingsRepository {
                 ClarityPreset.valueOf(sp.getString("clarity_preset", ClarityPreset.BALANCED.name) ?: ClarityPreset.BALANCED.name)
             } catch (_: Exception) { ClarityPreset.BALANCED },
             maxBitrateMbps = sp.getInt("max_bitrate", 15),
-            antiAfkKeepAlive = sp.getBoolean("anti_afk", true),
-            inputPollingBoost = sp.getBoolean("input_polling_boost", true),
             hudIdleOpacity = sp.getFloat("hud_idle_opacity", 0.35f).coerceIn(0.15f, 0.90f),
             showVirtualController = sp.getBoolean("show_virtual_controller", false),
             autoHideVirtualOnPhysicalController = sp.getBoolean("auto_hide_virtual_on_phys", true),
             gamepadScale = sp.getFloat("gamepad_scale", 1.0f).coerceIn(0.75f, 1.35f),
             gamepadOpacity = sp.getFloat("gamepad_opacity", 0.70f).coerceIn(0.25f, 0.95f),
-            gamepadDeadzone = sp.getFloat("gamepad_deadzone", 0.08f).coerceIn(0.02f, 0.25f),
             leftStickInnerDeadzone = sp.getFloat("left_stick_inner_deadzone", sp.getFloat("gamepad_deadzone", 0.08f)).coerceIn(0.00f, 0.30f),
             leftStickOuterDeadzone = sp.getFloat("left_stick_outer_deadzone", 0.95f).coerceIn(0.70f, 1.00f),
             rightStickInnerDeadzone = sp.getFloat("right_stick_inner_deadzone", sp.getFloat("gamepad_deadzone", 0.08f)).coerceIn(0.00f, 0.30f),
@@ -1097,17 +1081,10 @@ object SettingsRepository {
             gyroInvertX = sp.getBoolean("gyro_invert_x", false),
             gyroInvertY = sp.getBoolean("gyro_invert_y", false),
             gyroHoldLtOnly = sp.getBoolean("gyro_hold_lt_only", false),
-            systemRevolutionEnabled = sp.getBoolean("system_revolution", true),
-            stealthHeadersEnabled = sp.getBoolean("stealth_headers", true),
-            autoHealingProxyMesh = sp.getBoolean("auto_healing_mesh", true),
-            sdpBitrateBoostEnabled = sp.getBoolean("sdp_bitrate_boost", true),
-            zeroDelayDirectHandshake = sp.getBoolean("zero_delay_handshake", true),
-            antiJapaneseEnforcer = sp.getBoolean("anti_jp_enforcer", true),
             xcloudTranslateEnabled = sp.getBoolean("xcloud_translate", true),
             translateLanguage = sp.getString("translate_language", "vi") ?: "vi",
             preserveGameTitles = sp.getBoolean("preserve_titles", true),
             bilingualMode = sp.getBoolean("bilingual_mode", false),
-            githubDictionaryEnabled = sp.getBoolean("github_dict", true),
             hideStreamStatsOverlay = sp.getBoolean("hide_stream_stats", true),
             cellularMode = try {
                 CellularOptimizationMode.valueOf(
@@ -1139,7 +1116,6 @@ object SettingsRepository {
                         ?: ScreenRecordQuality.BALANCED_720P_30.name
                 )
             } catch (_: Exception) { ScreenRecordQuality.BALANCED_720P_30 },
-            autoReduceLoadWhenRecording = sp.getBoolean("auto_reduce_load_recording", true),
             recordingCaptureEngine = try {
                 RecordingCaptureEngine.valueOf(
                     sp.getString("recording_capture_engine_v3", RecordingCaptureEngine.HARDWARE_SCREEN.name)
@@ -1208,14 +1184,11 @@ object SettingsRepository {
             putBoolean("clarity_boost_enabled", c.clarityBoostEnabled)
             putString("clarity_preset", c.clarityPreset.name)
             putInt("max_bitrate", c.maxBitrateMbps)
-            putBoolean("anti_afk", c.antiAfkKeepAlive)
-            putBoolean("input_polling_boost", c.inputPollingBoost)
             putFloat("hud_idle_opacity", c.hudIdleOpacity)
             putBoolean("show_virtual_controller", c.showVirtualController)
             putBoolean("auto_hide_virtual_on_phys", c.autoHideVirtualOnPhysicalController)
             putFloat("gamepad_scale", c.gamepadScale)
             putFloat("gamepad_opacity", c.gamepadOpacity)
-            putFloat("gamepad_deadzone", c.gamepadDeadzone)
             putFloat("left_stick_inner_deadzone", c.leftStickInnerDeadzone)
             putFloat("left_stick_outer_deadzone", c.leftStickOuterDeadzone)
             putFloat("right_stick_inner_deadzone", c.rightStickInnerDeadzone)
@@ -1258,17 +1231,10 @@ object SettingsRepository {
             putBoolean("gyro_invert_x", c.gyroInvertX)
             putBoolean("gyro_invert_y", c.gyroInvertY)
             putBoolean("gyro_hold_lt_only", c.gyroHoldLtOnly)
-            putBoolean("system_revolution", c.systemRevolutionEnabled)
-            putBoolean("stealth_headers", c.stealthHeadersEnabled)
-            putBoolean("auto_healing_mesh", c.autoHealingProxyMesh)
-            putBoolean("sdp_bitrate_boost", c.sdpBitrateBoostEnabled)
-            putBoolean("zero_delay_handshake", c.zeroDelayDirectHandshake)
-            putBoolean("anti_jp_enforcer", c.antiJapaneseEnforcer)
             putBoolean("xcloud_translate", c.xcloudTranslateEnabled)
             putString("translate_language", c.translateLanguage)
             putBoolean("preserve_titles", c.preserveGameTitles)
             putBoolean("bilingual_mode", c.bilingualMode)
-            putBoolean("github_dict", c.githubDictionaryEnabled)
             putBoolean("hide_stream_stats", c.hideStreamStatsOverlay)
             putString("cellular_mode", c.cellularMode.name)
             putString("graphics_quality_mode_v2", c.cellularMode.name)
@@ -1279,7 +1245,6 @@ object SettingsRepository {
             putString("stream_fps_cap", c.streamFpsCap.name)
             putBoolean("gpu_load_reduction_enabled", c.gpuLoadReductionEnabled)
             putString("screen_record_quality", c.screenRecordQuality.name)
-            putBoolean("auto_reduce_load_recording", c.autoReduceLoadWhenRecording)
             putString("recording_capture_engine_v3", c.recordingCaptureEngine.name)
             putString("recording_capture_engine", c.recordingCaptureEngine.name)
             putInt("video_contrast_v2", c.videoContrast)
@@ -1605,67 +1570,11 @@ object SettingsRepository {
         logSettingChange("Giới hạn Bitrate", "${old}Mbps", "${mbps}Mbps")
     }
 
-    fun updateAntiAfk(enabled: Boolean) {
-        val old = _config.value.antiAfkKeepAlive
-        _config.update { it.copy(antiAfkKeepAlive = enabled) }
-        persist(_config.value)
-        logSettingChange("Chống văng AFK", old, enabled)
-    }
-
-    fun updateInputPollingBoost(enabled: Boolean) {
-        val old = _config.value.inputPollingBoost
-        _config.update { it.copy(inputPollingBoost = enabled) }
-        persist(_config.value)
-        logSettingChange("Tăng tốc độ đọc tay cầm (Polling Boost)", old, enabled)
-    }
-
     fun updateShowVirtualController(enabled: Boolean) {
         val old = _config.value.showVirtualController
         _config.update { it.copy(showVirtualController = enabled) }
         persist(_config.value)
         logSettingChange("Tay cầm ảo trên màn hình", old, enabled)
-    }
-
-    fun updateSystemRevolution(enabled: Boolean) {
-        val old = _config.value.systemRevolutionEnabled
-        _config.update { it.copy(systemRevolutionEnabled = enabled) }
-        persist(_config.value)
-        logSettingChange("Tối ưu hóa hệ thống", old, enabled)
-    }
-
-    fun updateStealthHeaders(enabled: Boolean) {
-        val old = _config.value.stealthHeadersEnabled
-        _config.update { it.copy(stealthHeadersEnabled = enabled) }
-        persist(_config.value)
-        logSettingChange("Stealth Headers", old, enabled)
-    }
-
-    fun updateAutoHealingProxyMesh(enabled: Boolean) {
-        val old = _config.value.autoHealingProxyMesh
-        _config.update { it.copy(autoHealingProxyMesh = enabled) }
-        persist(_config.value)
-        logSettingChange("Tự chuyển máy chủ dự phòng", old, enabled)
-    }
-
-    fun updateSdpBitrateBoost(enabled: Boolean) {
-        val old = _config.value.sdpBitrateBoostEnabled
-        _config.update { it.copy(sdpBitrateBoostEnabled = enabled) }
-        persist(_config.value)
-        logSettingChange("Tối ưu SDP Bitrate", old, enabled)
-    }
-
-    fun updateZeroDelayDirectHandshake(enabled: Boolean) {
-        val old = _config.value.zeroDelayDirectHandshake
-        _config.update { it.copy(zeroDelayDirectHandshake = enabled) }
-        persist(_config.value)
-        logSettingChange("Bắt tay trực tiếp không trễ", old, enabled)
-    }
-
-    fun updateAntiJapaneseEnforcer(enabled: Boolean) {
-        val old = _config.value.antiJapaneseEnforcer
-        _config.update { it.copy(antiJapaneseEnforcer = enabled) }
-        persist(_config.value)
-        logSettingChange("Chống chuyển vùng tiếng Nhật", old, enabled)
     }
 
     fun updateXcloudTranslate(enabled: Boolean) {
@@ -1697,13 +1606,6 @@ object SettingsRepository {
         _config.update { it.copy(bilingualMode = enabled) }
         persist(_config.value)
         logSettingChange("Hiển thị song ngữ", old, enabled)
-    }
-
-    fun updateGithubDictionaryEnabled(enabled: Boolean) {
-        val old = _config.value.githubDictionaryEnabled
-        _config.update { it.copy(githubDictionaryEnabled = enabled) }
-        persist(_config.value)
-        logSettingChange("Từ điển thuật ngữ game", old, enabled)
     }
 
     fun updateHideStreamStatsOverlay(hide: Boolean) {
@@ -1749,37 +1651,6 @@ object SettingsRepository {
         _config.update { it.copy(wifiSpeedFirstPriority = enabled) }
         persist(_config.value)
         logSettingChange("Ưu tiên độ trễ thấp trên Wi-Fi", old, enabled)
-    }
-
-    /**
-     * Cuộc Cách Mạng Hệ Thống 1.0: Tối ưu hóa toàn diện toàn bộ 5 tầng chỉ với 1 chạm.
-     */
-    fun optimizeEntireSystem() {
-        val optimized = _config.value.copy(
-            systemRevolutionEnabled = true,
-            stealthHeadersEnabled = true,
-            autoHealingProxyMesh = true,
-            sdpBitrateBoostEnabled = true,
-            zeroDelayDirectHandshake = true,
-            antiJapaneseEnforcer = true,
-            xcloudTranslateEnabled = true,
-            preserveGameTitles = true,
-            smartVpnEnabled = true,
-            autoBypassEnabled = true,
-            autoBypassDelaySeconds = 2,
-            forceDesktopUserAgent = true,
-            clarityBoostEnabled = true,
-            clarityPreset = ClarityPreset.BALANCED,
-            maxBitrateMbps = 15,
-            antiAfkKeepAlive = true,
-            inputPollingBoost = true,
-            cellularMode = CellularOptimizationMode.DATA_SAVER_HIGH_SPEED,
-            networkTuningMode = NetworkTuningMode.AUTO,
-            wifiSpeedFirstPriority = true
-        )
-        _config.update { optimized }
-        persist(optimized)
-        AppLogger.info("UI", "Bấm tối ưu hóa toàn diện hệ thống (1 chạm)")
     }
 
     fun updateTargetRegionUrl(url: String) {
@@ -1853,20 +1724,6 @@ object SettingsRepository {
         logSettingChange("Độ đậm tay cầm ảo", "${(old * 100).toInt()}%", "${(next * 100).toInt()}%", throttleMs = 400L)
     }
 
-    fun updateGamepadDeadzone(deadzone: Float) {
-        val old = _config.value.gamepadDeadzone
-        val clamped = deadzone.coerceIn(0.02f, 0.25f)
-        _config.update {
-            it.copy(
-                gamepadDeadzone = clamped,
-                leftStickInnerDeadzone = clamped,
-                rightStickInnerDeadzone = clamped
-            )
-        }
-        persist(_config.value)
-        logSettingChange("Vùng chết cần analog ảo", "${(old * 100).toInt()}%", "${(clamped * 100).toInt()}%", throttleMs = 400L)
-    }
-
     fun updateVirtualStickDeadzones(
         leftInner: Float = _config.value.leftStickInnerDeadzone,
         leftOuter: Float = _config.value.leftStickOuterDeadzone,
@@ -1880,7 +1737,6 @@ object SettingsRepository {
         val ro = rightOuter.coerceIn(0.70f, 1.00f)
         _config.update {
             it.copy(
-                gamepadDeadzone = li.coerceIn(0.02f, 0.25f),
                 leftStickInnerDeadzone = li,
                 leftStickOuterDeadzone = lo,
                 rightStickInnerDeadzone = ri,
@@ -2750,13 +2606,6 @@ object SettingsRepository {
         _config.update { it.copy(screenRecordQuality = quality) }
         persist(_config.value)
         logSettingChange("Chất lượng quay màn hình", old.name, quality.name)
-    }
-
-    fun updateAutoReduceLoadWhenRecording(enabled: Boolean) {
-        val old = _config.value.autoReduceLoadWhenRecording
-        _config.update { it.copy(autoReduceLoadWhenRecording = enabled) }
-        persist(_config.value)
-        logSettingChange("Tự giảm tải khi đang quay màn hình", old, enabled)
     }
 
     fun updateRecordingCaptureEngine(engine: RecordingCaptureEngine) {

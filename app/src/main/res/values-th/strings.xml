@@ -212,10 +212,6 @@
     <string name="vpn_mode_switched_bypass_toast">✓ โหมด: Bypass</string>
     <string name="vpn_mode_switched_proxy_toast">✓ โหมด: Proxy (พร็อกซีในแอป)</string>
     <string name="vpn_mode_switched_external_toast">✓ โหมด: Proxy (VPN ภายนอก)</string>
-    <string name="vpn_security_confirm_title">สลับเป็นโหมด Proxy หรือไม่?</string>
-    <string name="vpn_security_confirm_message">• พร็อกซีในแอปถูกแยกอย่างเข้มงวดเฉพาะภายใน Ravno: ไม่เข้าถึงข้อมูลในโทรศัพท์ ยกเว้นหน้าเข้าสู่ระบบ Microsoft และเครือข่ายภายใน หยุดชั่วคราวเมื่อย่อแอป และจะบล็อกพร้อมตัดการเชื่อมต่อทันทีหากพบข้อผิดพลาด SSL หรือการเปลี่ยนเส้นทางภายนอก\n\n• แอป VPN ภายนอกทำงานในระดับระบบ Android ทำให้ Ravno ไม่สามารถตรวจสอบหรือบล็อกการรับส่งข้อมูลได้\n\n• พร็อกซีสาธารณะและ VPN บุคคลที่สามส่งข้อมูลผ่านตัวกลางภายนอก หากดำเนินการต่อ คุณรับทราบความเสี่ยงและรับผิดชอบด้วยตนเองทั้งหมดในการใช้โหมด Proxy</string>
-    <string name="vpn_security_confirm_accept">รับทราบและรับผิดชอบเอง</string>
-    <string name="vpn_security_confirm_cancel">ยกเลิก (ใช้ Bypass ต่อ)</string>
     <string name="vpn_security_killswitch_title">บล็อก Proxy เพื่อความปลอดภัย</string>
     <string name="vpn_security_killswitch_ssl_msg">พร็อกซี %1$s เกิดข้อผิดพลาดใบรับรอง SSL (%2$s) แอปได้บล็อกการเชื่อมต่อ ตัด Proxy และกักกันเซิร์ฟเวอร์นี้แล้ว</string>
     <string name="vpn_security_killswitch_external_msg">พร็อกซี %1$s พยายามเปลี่ยนเส้นทางออกนอกโดเมนที่เชื่อถือได้ (%2$s) แอปได้บล็อกเส้นทาง ตัด Proxy และกักกันเซิร์ฟเวอร์นี้แล้ว</string>
@@ -242,28 +238,12 @@
     <!-- หน้าจอโหลดเข้าเกม -->
     <string name="loading_home_btn">หน้าหลัก</string>
     <string name="loading_hub_title">Xbox Cloud Gaming</string>
-    <string name="loading_hub_subtitle">เซสชันคอนโซลบนคลาวด์</string>
     <string name="loading_phase_connecting">กำลังเชื่อมต่อ Xbox Cloud…</string>
     <string name="loading_phase_routing">กำลังปลดล็อกภูมิภาคผ่าน %1$s…</string>
     <string name="loading_phase_syncing">กำลังซิงค์สตรีม %1$s · %2$d FPS…</string>
     <string name="loading_phase_ready">พร้อมเข้าเล่นแล้ว</string>
-    <string name="loading_step_connect">เชื่อมต่อ</string>
-    <string name="loading_step_region">ภูมิภาค</string>
-    <string name="loading_step_stream">สตรีม</string>
-    <string name="loading_step_ready">พร้อม</string>
-    <string name="loading_meta_server">เซิร์ฟเวอร์</string>
-    <string name="loading_meta_controls">การควบคุม</string>
-    <string name="loading_ctrl_physical">จอยจริง</string>
-    <string name="loading_ctrl_touch_virtual">สัมผัสและจอยเสมือน</string>
-    <string name="loading_ctrl_virtual">จอยเสมือน</string>
-    <string name="loading_ping_measuring">กำลังวัด</string>
-    <string name="loading_ping_optimal">เหมาะสม</string>
-    <string name="loading_ping_stable">เสถียร</string>
     <string name="loading_ping_high">สูง</string>
     <string name="loading_enter_now">เข้าเกมเลย</string>
     <string name="loading_skip_wait">เปิดทันที</string>
-    <string name="loading_tip_1">เปิดแถบ HUD ด้านบนขณะเล่นเพื่อดูปิงจริงหรือสลับการควบคุมได้ตลอดเวลา</string>
-    <string name="loading_tip_2">Bypass จะปิดอัตโนมัติเมื่อเกมเริ่ม เพื่อให้เชื่อมต่อตรงและลดความหน่วง</string>
-    <string name="loading_tip_3">เชื่อมต่อจอย Bluetooth หรือ USB เพื่อตั้งค่าปุ่มคอนโซลอัตโนมัติ</string>
     <string name="loading_artwork_cd">ภาพปกเกม %1$s</string>
 </resources>

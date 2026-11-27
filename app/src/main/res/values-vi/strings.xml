@@ -212,10 +212,6 @@
     <string name="vpn_mode_switched_bypass_toast">✓ Chế độ: Bypass</string>
     <string name="vpn_mode_switched_proxy_toast">✓ Chế độ: Proxy (Proxy trong app)</string>
     <string name="vpn_mode_switched_external_toast">✓ Chế độ: Proxy (VPN ngoài)</string>
-    <string name="vpn_security_confirm_title">Chuyển sang chế độ Proxy?</string>
-    <string name="vpn_security_confirm_message">• Proxy trong app được cách ly tuyệt đối trong Ravno: không truy cập dữ liệu điện thoại, loại trừ trang đăng nhập Microsoft và mạng nội bộ, tự ngắt khi ẩn app, và tự động chặn đường dẫn + khóa ngay máy chủ proxy nếu phát hiện lỗi chứng chỉ SSL hoặc chuyển hướng ra ngoài.\n\n• Ứng dụng VPN ngoài chạy ở cấp hệ điều hành Android nên Ravno không thể kiểm soát hay chặn lưu lượng của ứng dụng đó.\n\n• Máy chủ proxy công cộng và VPN bên thứ ba vẫn đi qua trung gian bên ngoài. Khi tiếp tục, bạn hiểu rõ rủi ro và tự chịu hoàn toàn trách nhiệm khi sử dụng chế độ Proxy.</string>
-    <string name="vpn_security_confirm_accept">Tôi hiểu, tự chịu trách nhiệm</string>
-    <string name="vpn_security_confirm_cancel">Hủy (Giữ Bypass)</string>
     <string name="vpn_security_killswitch_title">Đã chặn Proxy để bảo vệ an toàn</string>
     <string name="vpn_security_killswitch_ssl_msg">Máy chủ proxy %1$s phát sinh lỗi chứng chỉ bảo mật SSL (%2$s). Ứng dụng đã chặn kết nối, ngắt Proxy và khóa máy chủ này.</string>
     <string name="vpn_security_killswitch_external_msg">Máy chủ proxy %1$s cố chuyển hướng ra ngoài phạm vi tin cậy của ứng dụng (%2$s). Ứng dụng đã chặn đường dẫn đó, ngắt Proxy và khóa máy chủ này.</string>
@@ -242,28 +238,12 @@
     <!-- Màn hình chờ vào game -->
     <string name="loading_home_btn">Trang chủ</string>
     <string name="loading_hub_title">Xbox Cloud Gaming</string>
-    <string name="loading_hub_subtitle">Phiên chơi Console đám mây</string>
     <string name="loading_phase_connecting">Đang kết nối Xbox Cloud…</string>
     <string name="loading_phase_routing">Đang mở vùng qua %1$s…</string>
     <string name="loading_phase_syncing">Đang đồng bộ luồng %1$s · %2$d FPS…</string>
     <string name="loading_phase_ready">Sẵn sàng vào game</string>
-    <string name="loading_step_connect">Kết nối</string>
-    <string name="loading_step_region">Vùng</string>
-    <string name="loading_step_stream">Luồng</string>
-    <string name="loading_step_ready">Vào game</string>
-    <string name="loading_meta_server">Máy chủ</string>
-    <string name="loading_meta_controls">Điều khiển</string>
-    <string name="loading_ctrl_physical">Tay cầm vật lý</string>
-    <string name="loading_ctrl_touch_virtual">Cảm ứng &amp; tay cầm ảo</string>
-    <string name="loading_ctrl_virtual">Tay cầm ảo</string>
-    <string name="loading_ping_measuring">Đang đo</string>
-    <string name="loading_ping_optimal">Tối ưu</string>
-    <string name="loading_ping_stable">Ổn định</string>
     <string name="loading_ping_high">Cao</string>
     <string name="loading_enter_now">Vào game ngay</string>
     <string name="loading_skip_wait">Mở ngay</string>
-    <string name="loading_tip_1">Mở thanh HUD phía trên trong game để xem ping thực tế hoặc đổi tay cầm.</string>
-    <string name="loading_tip_2">Bypass tự động tắt khi game bắt đầu để đường truyền đi trực tiếp, giảm độ trễ.</string>
-    <string name="loading_tip_3">Kết nối tay cầm Bluetooth hoặc USB để tự động nhận đầy đủ phím chuẩn Console.</string>
     <string name="loading_artwork_cd">Ảnh bìa game %1$s</string>
 </resources>

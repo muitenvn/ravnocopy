@@ -212,10 +212,6 @@
     <string name="vpn_mode_switched_bypass_toast">✓ 모드: Bypass</string>
     <string name="vpn_mode_switched_proxy_toast">✓ 모드: Proxy (앱 내 프록시)</string>
     <string name="vpn_mode_switched_external_toast">✓ 모드: Proxy (외부 VPN)</string>
-    <string name="vpn_security_confirm_title">Proxy 모드로 전환할까요?</string>
-    <string name="vpn_security_confirm_message">• 앱 내 프록시는 Ravno 내부에만 격리됩니다. 기기 데이터에 접근하지 않고 Microsoft 로그인 및 로컬 네트워크를 제외하며, 백그라운드 시 일시 중지되고 SSL 오류나 외부 리디렉션 감지 시 즉시 차단·연결 해제·격리됩니다.\n\n• 외부 VPN 앱은 Android OS 수준에서 작동하므로 Ravno가 트래픽을 검사하거나 차단할 수 없습니다.\n\n• 공용 프록시 및 외부 VPN은 제3자를 경유합니다. 계속 진행하면 위험을 이해하고 Proxy 사용에 대한 모든 책임을 본인이 부담함에 동의하게 됩니다.</string>
-    <string name="vpn_security_confirm_accept">이해함, 본인 책임으로 전환</string>
-    <string name="vpn_security_confirm_cancel">취소 (Bypass 유지)</string>
     <string name="vpn_security_killswitch_title">보안을 위해 Proxy 차단됨</string>
     <string name="vpn_security_killswitch_ssl_msg">프록시 %1$s에서 SSL 인증서 오류(%2$s)가 발생했습니다. 연결을 차단하고 Proxy를 끊은 뒤 해당 서버를 격리했습니다.</string>
     <string name="vpn_security_killswitch_external_msg">프록시 %1$s이(가) 신뢰 도메인 외부로 이동을 시도했습니다(%2$s). 경로를 차단하고 Proxy를 끊은 뒤 해당 서버를 격리했습니다.</string>
@@ -242,28 +238,12 @@
     <!-- 게임 로딩 화면 -->
     <string name="loading_home_btn">홈</string>
     <string name="loading_hub_title">Xbox Cloud Gaming</string>
-    <string name="loading_hub_subtitle">클라우드 콘솔 세션</string>
     <string name="loading_phase_connecting">Xbox Cloud 연결 중…</string>
     <string name="loading_phase_routing">%1$s 경유 지역 해제 중…</string>
     <string name="loading_phase_syncing">%1$s · %2$d FPS 스트림 동기화 중…</string>
     <string name="loading_phase_ready">플레이 준비 완료</string>
-    <string name="loading_step_connect">연결</string>
-    <string name="loading_step_region">지역</string>
-    <string name="loading_step_stream">스트림</string>
-    <string name="loading_step_ready">준비</string>
-    <string name="loading_meta_server">서버</string>
-    <string name="loading_meta_controls">조작</string>
-    <string name="loading_ctrl_physical">물리 컨트롤러</string>
-    <string name="loading_ctrl_touch_virtual">터치 및 가상 패드</string>
-    <string name="loading_ctrl_virtual">가상 게임패드</string>
-    <string name="loading_ping_measuring">측정 중</string>
-    <string name="loading_ping_optimal">최적</string>
-    <string name="loading_ping_stable">안정</string>
     <string name="loading_ping_high">높음</string>
     <string name="loading_enter_now">게임 입장</string>
     <string name="loading_skip_wait">바로 열기</string>
-    <string name="loading_tip_1">게임 중 상단 HUD 바를 열어 실시간 핑을 확인하거나 조작을 전환하세요.</string>
-    <string name="loading_tip_2">게임이 시작되면 Bypass가 자동 해제되어 직접 연결로 낮은 지연을 유지합니다.</string>
-    <string name="loading_tip_3">Bluetooth 또는 USB 컨트롤러를 연결하면 콘솔 버튼이 자동 매핑됩니다.</string>
     <string name="loading_artwork_cd">%1$s 게임 커버 이미지</string>
 </resources>

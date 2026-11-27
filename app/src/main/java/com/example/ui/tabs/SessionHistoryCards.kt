@@ -1,6 +1,5 @@
 package com.example.ui.tabs
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,7 +20,6 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -404,58 +402,6 @@ internal fun SessionHistoryItemCard(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-internal fun MetricChip(
-    text: String,
-    color: Color
-) {
-    Surface(
-        shape = RoundedCornerShape(7.dp),
-        color = color.copy(alpha = 0.14f),
-        border = BorderStroke(0.7.dp, color.copy(alpha = 0.45f))
-    ) {
-        Text(
-            text = text,
-            color = color,
-            fontFamily = JetBrainsMonoFontFamily,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 5.5.dp, vertical = 2.5.dp)
-        )
-    }
-}
-
-@Composable
-internal fun WarningBadgePill(
-    text: String,
-    color: Color
-) {
-    Surface(
-        shape = RoundedCornerShape(6.dp),
-        color = color.copy(alpha = 0.18f),
-        border = BorderStroke(0.6.dp, color.copy(alpha = 0.55f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Whatshot,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(10.dp)
-            )
-            Text(
-                text = text,
-                color = color,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold
-            )
         }
     }
 }
