@@ -239,4 +239,31 @@
     <string name="vpn_external_status_off">Chưa bật VPN trên máy</string>
     <string name="vpn_open_device_vpn_btn">Mở cài đặt VPN của máy</string>
     <string name="vpn_open_device_vpn_unavailable">Thiết bị này không hỗ trợ mở nhanh cài đặt VPN. Bạn có thể tự bật ứng dụng VPN ngoài.</string>
+    <!-- Màn hình chờ vào game -->
+    <string name="loading_home_btn">Trang chủ</string>
+    <string name="loading_hub_title">Xbox Cloud Gaming</string>
+    <string name="loading_hub_subtitle">Phiên chơi Console đám mây</string>
+    <string name="loading_phase_connecting">Đang kết nối Xbox Cloud…</string>
+    <string name="loading_phase_routing">Đang mở vùng qua %1$s…</string>
+    <string name="loading_phase_syncing">Đang đồng bộ luồng %1$s · %2$d FPS…</string>
+    <string name="loading_phase_ready">Sẵn sàng vào game</string>
+    <string name="loading_step_connect">Kết nối</string>
+    <string name="loading_step_region">Vùng</string>
+    <string name="loading_step_stream">Luồng</string>
+    <string name="loading_step_ready">Vào game</string>
+    <string name="loading_meta_server">Máy chủ</string>
+    <string name="loading_meta_controls">Điều khiển</string>
+    <string name="loading_ctrl_physical">Tay cầm vật lý</string>
+    <string name="loading_ctrl_touch_virtual">Cảm ứng &amp; tay cầm ảo</string>
+    <string name="loading_ctrl_virtual">Tay cầm ảo</string>
+    <string name="loading_ping_measuring">Đang đo</string>
+    <string name="loading_ping_optimal">Tối ưu</string>
+    <string name="loading_ping_stable">Ổn định</string>
+    <string name="loading_ping_high">Cao</string>
+    <string name="loading_enter_now">Vào game ngay</string>
+    <string name="loading_skip_wait">Mở ngay</string>
+    <string name="loading_tip_1">Mở thanh HUD phía trên trong game để xem ping thực tế hoặc đổi tay cầm.</string>
+    <string name="loading_tip_2">Bypass tự động tắt khi game bắt đầu để đường truyền đi trực tiếp, giảm độ trễ.</string>
+    <string name="loading_tip_3">Kết nối tay cầm Bluetooth hoặc USB để tự động nhận đầy đủ phím chuẩn Console.</string>
+    <string name="loading_artwork_cd">Ảnh bìa game %1$s</string>
 </resources>

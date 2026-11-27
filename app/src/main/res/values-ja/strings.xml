@@ -239,4 +239,31 @@
     <string name="vpn_external_status_off">端末の VPN は OFF</string>
     <string name="vpn_open_device_vpn_btn">端末の VPN 設定を開く</string>
     <string name="vpn_open_device_vpn_unavailable">この端末では VPN 設定を直接開けません。VPN アプリを手動でオンにしてください。</string>
+    <!-- ゲーム起動ロード画面 -->
+    <string name="loading_home_btn">ホーム</string>
+    <string name="loading_hub_title">Xbox Cloud Gaming</string>
+    <string name="loading_hub_subtitle">クラウドコンソールセッション</string>
+    <string name="loading_phase_connecting">Xbox Cloud に接続中…</string>
+    <string name="loading_phase_routing">%1$s 経由でリージョン解除中…</string>
+    <string name="loading_phase_syncing">%1$s · %2$d FPS ストリームを同期中…</string>
+    <string name="loading_phase_ready">プレイ準備完了</string>
+    <string name="loading_step_connect">接続</string>
+    <string name="loading_step_region">地域</string>
+    <string name="loading_step_stream">映像</string>
+    <string name="loading_step_ready">完了</string>
+    <string name="loading_meta_server">サーバー</string>
+    <string name="loading_meta_controls">操作</string>
+    <string name="loading_ctrl_physical">物理コントローラー</string>
+    <string name="loading_ctrl_touch_virtual">タッチ＆仮想パッド</string>
+    <string name="loading_ctrl_virtual">仮想コントローラー</string>
+    <string name="loading_ping_measuring">計測中</string>
+    <string name="loading_ping_optimal">最適</string>
+    <string name="loading_ping_stable">安定</string>
+    <string name="loading_ping_high">高め</string>
+    <string name="loading_enter_now">ゲームへ入る</string>
+    <string name="loading_skip_wait">今すぐ開く</string>
+    <string name="loading_tip_1">プレイ中に上部HUDバーを開くと、リアルタイムPing確認や操作切替ができます。</string>
+    <string name="loading_tip_2">ゲーム開始時にBypassは自動解除され、低遅延の直接通信に切り替わります。</string>
+    <string name="loading_tip_3">Bluetooth または USB コントローラーを接続すると自動的に最適化されます。</string>
+    <string name="loading_artwork_cd">%1$s のカバー画像</string>
 </resources>

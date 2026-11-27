@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 data class StreamUiState(
     val isGameActive: Boolean = false,
     val gameTitle: String? = null,
+    val gameImageUrl: String? = null,
     val isStreamConnected: Boolean = false,
     val countdownRemainingSeconds: Int? = null,
     val autoBypassTriggered: Boolean = false,
@@ -116,8 +117,17 @@ class StreamController(private val context: Context) {
                 supportsTouch = supportsTouch,
                 markAsLastPlayed = shouldMarkPlayed
             )
+            val resolvedArt = bookmark?.heroImageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                ?: bookmark?.imageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                ?: imageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                ?: _uiState.value.gameImageUrl
             if (bookmark != null && !bookmark.title.equals("Xbox Cloud Game", ignoreCase = true)) {
-                _uiState.value = _uiState.value.copy(gameTitle = bookmark.title)
+                _uiState.value = _uiState.value.copy(
+                    gameTitle = bookmark.title,
+                    gameImageUrl = resolvedArt
+                )
+            } else if (resolvedArt != _uiState.value.gameImageUrl) {
+                _uiState.value = _uiState.value.copy(gameImageUrl = resolvedArt)
             }
         }
     }
@@ -153,10 +163,14 @@ class StreamController(private val context: Context) {
                 markAsLastPlayed = true
             )
             val finalTitle = syncedBookmark?.title ?: resolvedTitle
+            val finalArt = syncedBookmark?.heroImageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                ?: syncedBookmark?.imageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                ?: _uiState.value.gameImageUrl
 
             _uiState.value = _uiState.value.copy(
                 isGameActive = true,
-                gameTitle = finalTitle
+                gameTitle = finalTitle,
+                gameImageUrl = finalArt
             )
 
             val config = SettingsRepository.config.value
@@ -214,7 +228,10 @@ class StreamController(private val context: Context) {
             _uiState.value = _uiState.value.copy(
                 isStreamConnected = true,
                 isGameActive = true,
-                gameTitle = syncedBookmark?.title ?: updatedTitle
+                gameTitle = syncedBookmark?.title ?: updatedTitle,
+                gameImageUrl = syncedBookmark?.heroImageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                    ?: syncedBookmark?.imageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                    ?: _uiState.value.gameImageUrl
             )
             NetworkOptimizer.setStreamActive(true)
 

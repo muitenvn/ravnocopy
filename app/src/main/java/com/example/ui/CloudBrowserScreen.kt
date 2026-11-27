@@ -113,6 +113,7 @@ fun CloudBrowserScreen(
             old.isGameActive == new.isGameActive &&
                 old.isStreamConnected == new.isStreamConnected &&
                 old.gameTitle == new.gameTitle &&
+                old.gameImageUrl == new.gameImageUrl &&
                 old.currentUrl == new.currentUrl &&
                 old.shortcutVirtualPadOverrideTick == new.shortcutVirtualPadOverrideTick &&
                 old.shortcutToggleRecordingTick == new.shortcutToggleRecordingTick
@@ -1777,20 +1778,8 @@ fun CloudBrowserScreen(
             }
         }
 
-        // Dedicated Game Loading Screen (Optimized for Portrait & Landscape, isolated state collection)
-        IsolatedInGameLoadingOverlay(
-            isLoading = isLoadingOverlayVisible,
-            progress = pageLoadingProgress,
-            hasGamepad = gamepadStatus.hasPhysicalController,
-            gameProfile = gameProfile,
-            lowEndDeviceMode = config.lowEndDeviceMode,
-            onNavigateHome = onNavigateBackToDashboard,
-            onSkip = { isPageLoading = false },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Subtle Top Progress Bar when loading dynamically
-        if (isPageLoading && pageLoadingProgress in 0.05f..0.99f) {
+        // Subtle Top Progress Bar when loading dynamically (only when full-screen loading overlay is dismissed)
+        if (!isLoadingOverlayVisible && isPageLoading && pageLoadingProgress in 0.05f..0.99f) {
             LinearProgressIndicator(
                 progress = { pageLoadingProgress },
                 modifier = Modifier
@@ -1801,14 +1790,16 @@ fun CloudBrowserScreen(
             )
         }
 
-        // Heads-up Notification Banner (Auto-Switch Countdown / Direct Active, isolated state collection)
-        IsolatedStatusBanner(
-            streamController = streamController,
-            isEnglishUI = config.isEnglishUI(),
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 16.dp, start = 16.dp, end = 16.dp)
-        )
+        // Heads-up Notification Banner (hidden while full-screen loading overlay is visible so it never overlaps top bar)
+        if (!isLoadingOverlayVisible) {
+            IsolatedStatusBanner(
+                streamController = streamController,
+                isEnglishUI = config.isEnglishUI(),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+            )
+        }
 
         // Mục 7e: Khi người dùng đã tự đổi thị trường Xbox khác en-US và vào game thất bại (unlock fail),
         // hiện gợi ý "Quay về en-US" để người dùng bấm (không tự ý đổi ngầm).
@@ -2005,8 +1996,8 @@ fun CloudBrowserScreen(
             )
         }
 
-        // Virtual Gamepad Overlay
-        if (effectiveShowVirtualController) {
+        // Virtual Gamepad Overlay (never rendered over the full-screen loading screen)
+        if (effectiveShowVirtualController && !isLoadingOverlayVisible) {
             VirtualGamepadOverlay(
                 webView = webViewInstance,
                 gameKey = activeGameKey,
@@ -2043,7 +2034,8 @@ fun CloudBrowserScreen(
             }
         }
 
-        // In-game Floating HUD Pill (isolated state collection so WebView never recomposes on telemetry ticks)
+        // In-game Floating HUD Pill (hidden while full-screen loading overlay is visible)
+        if (!isLoadingOverlayVisible) {
         IsolatedFloatingHud(
             isGameActive = streamUiState.isGameActive,
             virtualControllerEnabled = effectiveShowVirtualController,
@@ -2172,6 +2164,71 @@ fun CloudBrowserScreen(
             },
             onHudOpenStateChanged = { open -> isHudOpen = open }
         )
+        }
+
+        // Full-screen Game Launch Loading Overlay — rendered ABOVE WebView, VirtualPad, and HUD
+        val launchLookupUrl = currentMainFrameUrl.ifBlank { activeSessionInitialUrl }
+        val isSpecificGameLaunchUrl = remember(launchLookupUrl, activeSessionInitialUrl) {
+            val combined = "$launchLookupUrl $activeSessionInitialUrl"
+            combined.contains("/play/games/", ignoreCase = true) ||
+                combined.contains("/play/launch/", ignoreCase = true) ||
+                combined.contains("/products/", ignoreCase = true) ||
+                combined.contains("/games/", ignoreCase = true)
+        }
+        val libraryGames by com.example.data.GameLibraryRepository.games.collectAsState()
+        val matchedLaunchGame = remember(libraryGames, launchLookupUrl, activeSessionInitialUrl, streamUiState.gameTitle) {
+            com.example.data.GameLibraryRepository.findGameForLaunch(launchLookupUrl, streamUiState.gameTitle)
+                ?: com.example.data.GameLibraryRepository.findGameForLaunch(activeSessionInitialUrl, streamUiState.gameTitle)
+        }
+        val resolvedLaunchTitle = remember(matchedLaunchGame, streamUiState.gameTitle, gameProfile, isSpecificGameLaunchUrl, launchLookupUrl) {
+            matchedLaunchGame?.title?.takeIf { it.isNotBlank() }
+                ?: streamUiState.gameTitle?.takeIf {
+                    it.isNotBlank() &&
+                        !it.equals("Xbox Cloud Game", ignoreCase = true) &&
+                        !it.equals("Xbox Game", ignoreCase = true) &&
+                        !it.equals("Xbox Cloud Gaming", ignoreCase = true)
+                }
+                ?: gameProfile.title.takeIf { gameProfile.gameId != "generic" && it.isNotBlank() }
+                ?: if (isSpecificGameLaunchUrl) {
+                    val slug = com.example.data.GameLibraryRepository.extractSlug(launchLookupUrl)
+                        .ifBlank { com.example.data.GameLibraryRepository.extractSlug(activeSessionInitialUrl) }
+                    slug.takeIf { it.isNotBlank() }?.split("-", "_")
+                        ?.filter { it.isNotBlank() }
+                        ?.joinToString(" ") { w -> w.replaceFirstChar { c -> c.uppercaseChar() } }
+                } else null
+        }
+        val resolvedLaunchSubtitle = remember(matchedLaunchGame, config.appLanguage) {
+            matchedLaunchGame?.publisher?.takeIf { it.isNotBlank() }
+                ?: matchedLaunchGame?.localizedCategory(config.isEnglishUI())?.takeIf { it.isNotBlank() }
+        }
+        val resolvedLaunchImageUrl = remember(matchedLaunchGame, streamUiState.gameImageUrl, isSpecificGameLaunchUrl) {
+            matchedLaunchGame?.heroImageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                ?: matchedLaunchGame?.imageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                ?: if (isSpecificGameLaunchUrl) streamUiState.gameImageUrl?.takeIf { it.startsWith("http", ignoreCase = true) } else null
+        }
+        val launchResolutionTag = remember(config.lowEndDeviceMode, config.forceDesktopUserAgent, config.cellularMode) {
+            if (config.lowEndDeviceMode || !config.forceDesktopUserAgent || config.cellularMode == com.example.data.CellularOptimizationMode.DATA_SAVER_HIGH_SPEED) {
+                "720p"
+            } else {
+                "1080p"
+            }
+        }
+        IsolatedInGameLoadingOverlay(
+            isLoading = isLoadingOverlayVisible,
+            progress = pageLoadingProgress,
+            hasGamepad = gamepadStatus.hasPhysicalController,
+            gameProfile = gameProfile,
+            gameTitleOverride = resolvedLaunchTitle,
+            gameSubtitleOverride = resolvedLaunchSubtitle,
+            gameImageUrl = resolvedLaunchImageUrl,
+            supportsNativeTouch = matchedLaunchGame?.supportsTouch,
+            targetResolutionTag = launchResolutionTag,
+            targetFps = config.streamFpsCap.fps,
+            lowEndDeviceMode = config.lowEndDeviceMode,
+            onNavigateHome = onNavigateBackToDashboard,
+            onSkip = { isPageLoading = false },
+            modifier = Modifier.fillMaxSize()
+        )
 
         // In-Game Quick Settings Sheet (Opened from "Cài đặt" in Expanded HUD)
         if (showQuickSettingsDialog) {
@@ -2237,6 +2294,12 @@ private fun IsolatedInGameLoadingOverlay(
     progress: Float,
     hasGamepad: Boolean,
     gameProfile: com.example.data.GameOptimizationProfile,
+    gameTitleOverride: String? = null,
+    gameSubtitleOverride: String? = null,
+    gameImageUrl: String? = null,
+    supportsNativeTouch: Boolean? = null,
+    targetResolutionTag: String = "1080p",
+    targetFps: Int = 60,
     lowEndDeviceMode: Boolean,
     onNavigateHome: () -> Unit,
     onSkip: () -> Unit,
@@ -2254,6 +2317,12 @@ private fun IsolatedInGameLoadingOverlay(
         targetServerName = "${vpnSnapshot.currentServer.flag} ${vpnSnapshot.currentServer.name}",
         hasGamepad = hasGamepad,
         gameProfile = gameProfile,
+        gameTitleOverride = gameTitleOverride,
+        gameSubtitleOverride = gameSubtitleOverride,
+        gameImageUrl = gameImageUrl,
+        supportsNativeTouch = supportsNativeTouch,
+        targetResolutionTag = targetResolutionTag,
+        targetFps = targetFps,
         realLatencyMs = if (vpnSnapshot.mode == NetworkMode.DIRECT_NETWORK) vpnSnapshot.directLatencyMs else vpnSnapshot.latencyMs,
         lowEndDeviceMode = lowEndDeviceMode,
         onNavigateHome = onNavigateHome,

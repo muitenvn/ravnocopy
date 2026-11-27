@@ -239,4 +239,31 @@
     <string name="vpn_external_status_off">VPN de l\'appareil DÉSACTIVÉ</string>
     <string name="vpn_open_device_vpn_btn">Ouvrir les réglages VPN Android</string>
     <string name="vpn_open_device_vpn_unavailable">Cet appareil ne permet pas d\'ouvrir directement les réglages VPN. Activez votre app VPN manuellement.</string>
+    <!-- Écran de chargement du jeu -->
+    <string name="loading_home_btn">Accueil</string>
+    <string name="loading_hub_title">Xbox Cloud Gaming</string>
+    <string name="loading_hub_subtitle">Session console cloud</string>
+    <string name="loading_phase_connecting">Connexion à Xbox Cloud…</string>
+    <string name="loading_phase_routing">Déblocage régional via %1$s…</string>
+    <string name="loading_phase_syncing">Synchronisation du flux %1$s · %2$d FPS…</string>
+    <string name="loading_phase_ready">Prêt à jouer</string>
+    <string name="loading_step_connect">Connexion</string>
+    <string name="loading_step_region">Région</string>
+    <string name="loading_step_stream">Flux</string>
+    <string name="loading_step_ready">Prêt</string>
+    <string name="loading_meta_server">Serveur</string>
+    <string name="loading_meta_controls">Commandes</string>
+    <string name="loading_ctrl_physical">Manette physique</string>
+    <string name="loading_ctrl_touch_virtual">Tactile et pad virtuel</string>
+    <string name="loading_ctrl_virtual">Manette virtuelle</string>
+    <string name="loading_ping_measuring">Mesure</string>
+    <string name="loading_ping_optimal">Optimal</string>
+    <string name="loading_ping_stable">Stable</string>
+    <string name="loading_ping_high">Élevé</string>
+    <string name="loading_enter_now">Lancer le jeu</string>
+    <string name="loading_skip_wait">Ouvrir maintenant</string>
+    <string name="loading_tip_1">Ouvrez la barre HUD en haut en jeu pour voir le ping ou changer les commandes.</string>
+    <string name="loading_tip_2">Bypass se coupe dès le lancement du jeu pour une connexion directe rapide.</string>
+    <string name="loading_tip_3">Connectez une manette Bluetooth ou USB pour une configuration console automatique.</string>
+    <string name="loading_artwork_cd">Jaquette du jeu %1$s</string>
 </resources>

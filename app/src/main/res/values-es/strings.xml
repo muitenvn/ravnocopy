@@ -239,4 +239,31 @@
     <string name="vpn_external_status_off">VPN del dispositivo INACTIVA</string>
     <string name="vpn_open_device_vpn_btn">Abrir ajustes VPN del dispositivo</string>
     <string name="vpn_open_device_vpn_unavailable">Este dispositivo no puede abrir ajustes VPN directamente. Activa tu app VPN manualmente.</string>
+    <!-- Pantalla de carga del juego -->
+    <string name="loading_home_btn">Inicio</string>
+    <string name="loading_hub_title">Xbox Cloud Gaming</string>
+    <string name="loading_hub_subtitle">Sesión de consola en la nube</string>
+    <string name="loading_phase_connecting">Conectando con Xbox Cloud…</string>
+    <string name="loading_phase_routing">Desbloqueando región vía %1$s…</string>
+    <string name="loading_phase_syncing">Sincronizando señal %1$s · %2$d FPS…</string>
+    <string name="loading_phase_ready">Listo para jugar</string>
+    <string name="loading_step_connect">Conexión</string>
+    <string name="loading_step_region">Región</string>
+    <string name="loading_step_stream">Señal</string>
+    <string name="loading_step_ready">Listo</string>
+    <string name="loading_meta_server">Servidor</string>
+    <string name="loading_meta_controls">Controles</string>
+    <string name="loading_ctrl_physical">Mando físico</string>
+    <string name="loading_ctrl_touch_virtual">Táctil y mando virtual</string>
+    <string name="loading_ctrl_virtual">Mando virtual</string>
+    <string name="loading_ping_measuring">Midiendo</string>
+    <string name="loading_ping_optimal">Óptimo</string>
+    <string name="loading_ping_stable">Estable</string>
+    <string name="loading_ping_high">Alto</string>
+    <string name="loading_enter_now">Entrar al juego</string>
+    <string name="loading_skip_wait">Abrir ahora</string>
+    <string name="loading_tip_1">Abre la barra HUD superior en partida para ver el ping o cambiar controles.</string>
+    <string name="loading_tip_2">Bypass se desactiva al iniciar el juego para usar conexión directa sin demora.</string>
+    <string name="loading_tip_3">Conecta un mando Bluetooth o USB para mapeo automático de consola.</string>
+    <string name="loading_artwork_cd">Portada del juego %1$s</string>
 </resources>

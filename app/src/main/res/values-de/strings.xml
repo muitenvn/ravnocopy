@@ -239,4 +239,31 @@
     <string name="vpn_external_status_off">Geräte-VPN ist AUS</string>
     <string name="vpn_open_device_vpn_btn">Geräte-VPN-Einstellungen öffnen</string>
     <string name="vpn_open_device_vpn_unavailable">Dieses Gerät kann VPN-Einstellungen nicht direkt öffnen. Bitte aktivieren Sie Ihre VPN-App manuell.</string>
+    <!-- Spiel-Ladebildschirm -->
+    <string name="loading_home_btn">Start</string>
+    <string name="loading_hub_title">Xbox Cloud Gaming</string>
+    <string name="loading_hub_subtitle">Cloud-Konsolensitzung</string>
+    <string name="loading_phase_connecting">Verbindung zu Xbox Cloud…</string>
+    <string name="loading_phase_routing">Region entsperren über %1$s…</string>
+    <string name="loading_phase_syncing">%1$s · %2$d FPS-Stream wird synchronisiert…</string>
+    <string name="loading_phase_ready">Bereit zum Spielen</string>
+    <string name="loading_step_connect">Verbinden</string>
+    <string name="loading_step_region">Region</string>
+    <string name="loading_step_stream">Stream</string>
+    <string name="loading_step_ready">Bereit</string>
+    <string name="loading_meta_server">Server</string>
+    <string name="loading_meta_controls">Steuerung</string>
+    <string name="loading_ctrl_physical">Physischer Controller</string>
+    <string name="loading_ctrl_touch_virtual">Touch &amp; virtuelles Pad</string>
+    <string name="loading_ctrl_virtual">Virtuelles Gamepad</string>
+    <string name="loading_ping_measuring">Prüfe</string>
+    <string name="loading_ping_optimal">Optimal</string>
+    <string name="loading_ping_stable">Stabil</string>
+    <string name="loading_ping_high">Hoch</string>
+    <string name="loading_enter_now">Spiel starten</string>
+    <string name="loading_skip_wait">Jetzt öffnen</string>
+    <string name="loading_tip_1">Öffne im Spiel die obere HUD-Leiste für Live-Ping oder Steuerungswechsel.</string>
+    <string name="loading_tip_2">Bypass schaltet sich nach Spielstart automatisch ab für minimale Latenz.</string>
+    <string name="loading_tip_3">Verbinde einen Bluetooth- oder USB-Controller für automatische Konsolenbelegung.</string>
+    <string name="loading_artwork_cd">Spielcover für %1$s</string>
 </resources>

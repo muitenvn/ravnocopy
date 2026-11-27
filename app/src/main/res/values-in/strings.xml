@@ -239,4 +239,31 @@
     <string name="vpn_external_status_off">VPN Perangkat MATI</string>
     <string name="vpn_open_device_vpn_btn">Buka Pengaturan VPN Perangkat</string>
     <string name="vpn_open_device_vpn_unavailable">Perangkat ini tidak mendukung buka cepat pengaturan VPN. Aktifkan aplikasi VPN secara manual.</string>
+    <!-- Layar Muat Game -->
+    <string name="loading_home_btn">Beranda</string>
+    <string name="loading_hub_title">Xbox Cloud Gaming</string>
+    <string name="loading_hub_subtitle">Sesi konsol cloud</string>
+    <string name="loading_phase_connecting">Menghubungkan ke Xbox Cloud…</string>
+    <string name="loading_phase_routing">Membuka wilayah via %1$s…</string>
+    <string name="loading_phase_syncing">Menyelaraskan stream %1$s · %2$d FPS…</string>
+    <string name="loading_phase_ready">Siap dimainkan</string>
+    <string name="loading_step_connect">Koneksi</string>
+    <string name="loading_step_region">Wilayah</string>
+    <string name="loading_step_stream">Stream</string>
+    <string name="loading_step_ready">Siap</string>
+    <string name="loading_meta_server">Server</string>
+    <string name="loading_meta_controls">Kontrol</string>
+    <string name="loading_ctrl_physical">Kontroler fisik</string>
+    <string name="loading_ctrl_touch_virtual">Sentuh &amp; pad virtual</string>
+    <string name="loading_ctrl_virtual">Gamepad virtual</string>
+    <string name="loading_ping_measuring">Mengukur</string>
+    <string name="loading_ping_optimal">Optimal</string>
+    <string name="loading_ping_stable">Stabil</string>
+    <string name="loading_ping_high">Tinggi</string>
+    <string name="loading_enter_now">Masuk Game</string>
+    <string name="loading_skip_wait">Buka Sekarang</string>
+    <string name="loading_tip_1">Buka bilah HUD atas saat bermain untuk cek ping langsung atau ganti kontrol.</string>
+    <string name="loading_tip_2">Bypass otomatis mati saat game dimulai agar koneksi langsung lebih lancar.</string>
+    <string name="loading_tip_3">Hubungkan kontroler Bluetooth atau USB untuk pemetaan tombol konsol otomatis.</string>
+    <string name="loading_artwork_cd">Sampul game %1$s</string>
 </resources>

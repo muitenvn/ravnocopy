@@ -239,4 +239,31 @@
     <string name="vpn_external_status_off">기기 VPN 꺼짐</string>
     <string name="vpn_open_device_vpn_btn">기기 VPN 설정 열기</string>
     <string name="vpn_open_device_vpn_unavailable">이 기기에서는 VPN 설정을 바로 열 수 없습니다. VPN 앱을 직접 켜 주세요.</string>
+    <!-- 게임 로딩 화면 -->
+    <string name="loading_home_btn">홈</string>
+    <string name="loading_hub_title">Xbox Cloud Gaming</string>
+    <string name="loading_hub_subtitle">클라우드 콘솔 세션</string>
+    <string name="loading_phase_connecting">Xbox Cloud 연결 중…</string>
+    <string name="loading_phase_routing">%1$s 경유 지역 해제 중…</string>
+    <string name="loading_phase_syncing">%1$s · %2$d FPS 스트림 동기화 중…</string>
+    <string name="loading_phase_ready">플레이 준비 완료</string>
+    <string name="loading_step_connect">연결</string>
+    <string name="loading_step_region">지역</string>
+    <string name="loading_step_stream">스트림</string>
+    <string name="loading_step_ready">준비</string>
+    <string name="loading_meta_server">서버</string>
+    <string name="loading_meta_controls">조작</string>
+    <string name="loading_ctrl_physical">물리 컨트롤러</string>
+    <string name="loading_ctrl_touch_virtual">터치 및 가상 패드</string>
+    <string name="loading_ctrl_virtual">가상 게임패드</string>
+    <string name="loading_ping_measuring">측정 중</string>
+    <string name="loading_ping_optimal">최적</string>
+    <string name="loading_ping_stable">안정</string>
+    <string name="loading_ping_high">높음</string>
+    <string name="loading_enter_now">게임 입장</string>
+    <string name="loading_skip_wait">바로 열기</string>
+    <string name="loading_tip_1">게임 중 상단 HUD 바를 열어 실시간 핑을 확인하거나 조작을 전환하세요.</string>
+    <string name="loading_tip_2">게임이 시작되면 Bypass가 자동 해제되어 직접 연결로 낮은 지연을 유지합니다.</string>
+    <string name="loading_tip_3">Bluetooth 또는 USB 컨트롤러를 연결하면 콘솔 버튼이 자동 매핑됩니다.</string>
+    <string name="loading_artwork_cd">%1$s 게임 커버 이미지</string>
 </resources>

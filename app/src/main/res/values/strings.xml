@@ -239,4 +239,31 @@
     <string name="vpn_external_status_off">Device VPN is OFF</string>
     <string name="vpn_open_device_vpn_btn">Open Device VPN Settings</string>
     <string name="vpn_open_device_vpn_unavailable">This device cannot open VPN settings directly. Please turn on your VPN app manually.</string>
+    <!-- Game Launch Loading Screen -->
+    <string name="loading_home_btn">Home</string>
+    <string name="loading_hub_title">Xbox Cloud Gaming</string>
+    <string name="loading_hub_subtitle">Cloud console session</string>
+    <string name="loading_phase_connecting">Connecting to Xbox Cloud…</string>
+    <string name="loading_phase_routing">Unlocking region via %1$s…</string>
+    <string name="loading_phase_syncing">Syncing %1$s · %2$d FPS stream…</string>
+    <string name="loading_phase_ready">Ready to play</string>
+    <string name="loading_step_connect">Connect</string>
+    <string name="loading_step_region">Region</string>
+    <string name="loading_step_stream">Stream</string>
+    <string name="loading_step_ready">Ready</string>
+    <string name="loading_meta_server">Server</string>
+    <string name="loading_meta_controls">Controls</string>
+    <string name="loading_ctrl_physical">Physical controller</string>
+    <string name="loading_ctrl_touch_virtual">Touch &amp; virtual pad</string>
+    <string name="loading_ctrl_virtual">Virtual gamepad</string>
+    <string name="loading_ping_measuring">Checking</string>
+    <string name="loading_ping_optimal">Optimal</string>
+    <string name="loading_ping_stable">Stable</string>
+    <string name="loading_ping_high">High</string>
+    <string name="loading_enter_now">Enter Game</string>
+    <string name="loading_skip_wait">Open Now</string>
+    <string name="loading_tip_1">Open the top HUD pill in-game to check live ping or switch controls.</string>
+    <string name="loading_tip_2">Bypass turns off automatically once the game starts for direct low-latency play.</string>
+    <string name="loading_tip_3">Connect a Bluetooth or USB controller for automatic console layout mapping.</string>
+    <string name="loading_artwork_cd">Game cover art for %1$s</string>
 </resources>

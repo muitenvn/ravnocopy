@@ -741,6 +741,41 @@ object GameLibraryRepository {
     }
 
     /**
+     * Tìm thông tin game thật (tên, ảnh bìa chính thức, nhà phát hành, hỗ trợ cảm ứng)
+     * từ kho game đã đồng bộ theo URL hoặc tên game khi bắt đầu vào màn hình chờ.
+     */
+    fun findGameForLaunch(url: String?, fallbackTitle: String? = null): GameBookmark? {
+        val list = _games.value
+        if (list.isEmpty()) return null
+
+        val pid = extractProductId(url)
+        if (pid.isNotBlank()) {
+            list.firstOrNull { g ->
+                extractProductId(g.playUrl).equals(pid, ignoreCase = true) ||
+                    g.id.equals(pid, ignoreCase = true)
+            }?.let { return it }
+        }
+
+        val slug = extractSlug(url)
+        if (slug.isNotBlank()) {
+            list.firstOrNull { g ->
+                extractSlug(g.playUrl).equals(slug, ignoreCase = true) ||
+                    g.id.equals(slug, ignoreCase = true)
+            }?.let { return it }
+        }
+
+        val cleanTitle = fallbackTitle?.trim().orEmpty()
+        val isGenericTitle = cleanTitle.isBlank() ||
+            cleanTitle.equals("Xbox Cloud Game", ignoreCase = true) ||
+            cleanTitle.equals("Xbox Cloud Gaming", ignoreCase = true) ||
+            cleanTitle.equals("Xbox Game", ignoreCase = true)
+        if (!isGenericTitle) {
+            list.firstOrNull { it.title.equals(cleanTitle, ignoreCase = true) }?.let { return it }
+        }
+        return null
+    }
+
+    /**
      * Chuẩn hóa mọi đường dẫn game (kể cả link play.xbox.com/products/...) về định dạng Giao diện cũ chuẩn:
      * https://www.xbox.com/en-US/play/games/<slug>/<productId>
      */

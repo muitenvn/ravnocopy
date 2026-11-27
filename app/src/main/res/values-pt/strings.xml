@@ -239,4 +239,31 @@
     <string name="vpn_external_status_off">VPN do dispositivo DESLIGADA</string>
     <string name="vpn_open_device_vpn_btn">Abrir ajustes VPN do aparelho</string>
     <string name="vpn_open_device_vpn_unavailable">Este aparelho não permite abrir ajustes VPN direto. Ative seu app VPN manualmente.</string>
+    <!-- Tela de carregamento do jogo -->
+    <string name="loading_home_btn">Início</string>
+    <string name="loading_hub_title">Xbox Cloud Gaming</string>
+    <string name="loading_hub_subtitle">Sessão de console na nuvem</string>
+    <string name="loading_phase_connecting">Conectando ao Xbox Cloud…</string>
+    <string name="loading_phase_routing">Desbloqueando região via %1$s…</string>
+    <string name="loading_phase_syncing">Sincronizando fluxo %1$s · %2$d FPS…</string>
+    <string name="loading_phase_ready">Pronto para jogar</string>
+    <string name="loading_step_connect">Conexão</string>
+    <string name="loading_step_region">Região</string>
+    <string name="loading_step_stream">Fluxo</string>
+    <string name="loading_step_ready">Pronto</string>
+    <string name="loading_meta_server">Servidor</string>
+    <string name="loading_meta_controls">Controles</string>
+    <string name="loading_ctrl_physical">Controle físico</string>
+    <string name="loading_ctrl_touch_virtual">Toque e pad virtual</string>
+    <string name="loading_ctrl_virtual">Controle virtual</string>
+    <string name="loading_ping_measuring">Medindo</string>
+    <string name="loading_ping_optimal">Ótimo</string>
+    <string name="loading_ping_stable">Estável</string>
+    <string name="loading_ping_high">Alto</string>
+    <string name="loading_enter_now">Entrar no jogo</string>
+    <string name="loading_skip_wait">Abrir agora</string>
+    <string name="loading_tip_1">Abra a barra HUD superior no jogo para ver o ping ao vivo ou mudar controles.</string>
+    <string name="loading_tip_2">O Bypass desativa automaticamente ao iniciar o jogo para menor latência.</string>
+    <string name="loading_tip_3">Conecte um controle Bluetooth ou USB para mapeamento automático de console.</string>
+    <string name="loading_artwork_cd">Capa do jogo %1$s</string>
 </resources>
