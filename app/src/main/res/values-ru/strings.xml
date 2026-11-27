@@ -245,5 +245,31 @@
     <string name="loading_ping_high">Высокий</string>
     <string name="loading_enter_now">Войти в игру</string>
     <string name="loading_skip_wait">Открыть сейчас</string>
+    <string name="loading_ctrl_gamepad">Геймпад</string>
+    <string name="loading_ctrl_kb_mouse">Клавиатура и мышь</string>
+    <string name="loading_ctrl_touch">Сенсор</string>
     <string name="loading_artwork_cd">Обложка игры %1$s</string>
+    <!-- Remote Off-LAN Pad Relay -->
+    <string name="remote_pad_adv_title">Подключить Pad из другой сети</string>
+    <string name="remote_pad_adv_desc">Создаёт сквозной зашифрованный 8-значный код для подключения Ravno Pad через 4G/5G или другой Wi-Fi. По умолчанию выключено; LAN не меняется.</string>
+    <string name="remote_pad_confirm_title">Включить удалённое подключение Pad?</string>
+    <string name="remote_pad_confirm_desc">ТВ создаст 8-значный код через бесплатный зашифрованный ретранслятор (без входа в аккаунт). Код истекает через 15 минут ожидания.</string>
+    <string name="remote_pad_confirm_enable">Включить удалённый режим</string>
+    <string name="remote_pad_confirm_cancel">Отмена</string>
+    <string name="remote_pad_tab_lan">Общий Wi-Fi (LAN)</string>
+    <string name="remote_pad_tab_remote">Другая сеть (Доп.)</string>
+    <string name="remote_pad_enter_code_prompt">Введите этот 8-значный код в Ravno Pad → Ввести IP → Доп.</string>
+    <string name="remote_pad_status_connecting">Подключение к зашифрованному ретранслятору…</string>
+    <string name="remote_pad_status_ready">Готово · Сквозное шифрование (истекает через 15 мин)</string>
+    <string name="remote_pad_status_connected">Удалённо подключено: %1$s</string>
+    <string name="remote_pad_status_error">Ретранслятор недоступен · Повтор…</string>
+    <string name="remote_pad_status_locked">3 ошибки · Блокировка %1$s</string>
+    <string name="remote_pad_btn_new_code">Новый код</string>
+    <string name="remote_pad_btn_turn_off">Отключить удалённый</string>
+    <string name="remote_pad_btn_open_dialog">Открыть экран кода</string>
+    <string name="remote_pad_badge_lan">Локальная сеть (LAN)</string>
+    <string name="remote_pad_badge_remote">Удалённо · Шифрование</string>
+    <string name="remote_pad_step_2_remote">Нажмите Ввести IP → Доп.</string>
+    <string name="remote_pad_step_3_remote">Введите 8-значный код</string>
+    <string name="remote_pad_bottom_notice_remote">Зашифрованный 8-значный код · Истекает через 15 мин · 3 ошибки — блок 3 мин</string>
 </resources>

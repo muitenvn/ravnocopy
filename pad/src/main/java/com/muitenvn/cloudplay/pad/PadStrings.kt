@@ -740,4 +740,212 @@ object PadStrings {
         th = "รีเซ็ตจุดศูนย์กลางไจโร (0°)",
         ru = "Центрировать гироскоп (0°)"
     )
+
+    fun manualTabIp(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "IP (LAN)",
+        en = "IP (LAN)",
+        es = "IP (LAN)",
+        pt = "IP (LAN)",
+        fr = "IP (LAN)",
+        de = "IP (LAN)",
+        ja = "IP (LAN)",
+        ko = "IP (LAN)",
+        zh = "IP (局域网)",
+        id = "IP (LAN)",
+        th = "IP (LAN)",
+        ru = "IP (LAN)"
+    )
+
+    fun manualTabAdvanced(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Nâng cao (Mã)",
+        en = "Advanced (Code)",
+        es = "Avanzado (Código)",
+        pt = "Avançado (Código)",
+        fr = "Avancé (Code)",
+        de = "Erweitert (Code)",
+        ja = "詳細 (コード)",
+        ko = "고급 (코드)",
+        zh = "高级 (连接码)",
+        id = "Lanjutan (Kode)",
+        th = "ขั้นสูง (รหัส)",
+        ru = "Доп. (Код)"
+    )
+
+    fun remoteCodePlaceholder(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Mã TV (XXXX-XXXX)",
+        en = "TV Code (XXXX-XXXX)",
+        es = "Código TV (XXXX-XXXX)",
+        pt = "Código TV (XXXX-XXXX)",
+        fr = "Code TV (XXXX-XXXX)",
+        de = "TV-Code (XXXX-XXXX)",
+        ja = "TVコード (XXXX-XXXX)",
+        ko = "TV 코드 (XXXX-XXXX)",
+        zh = "电视代码 (XXXX-XXXX)",
+        id = "Kode TV (XXXX-XXXX)",
+        th = "รหัสทีวี (XXXX-XXXX)",
+        ru = "Код ТВ (XXXX-XXXX)"
+    )
+
+    fun remoteConnectBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Kết nối",
+        en = "Connect",
+        es = "Conectar",
+        pt = "Conectar",
+        fr = "Connecter",
+        de = "Verbinden",
+        ja = "接続",
+        ko = "연결",
+        zh = "连接",
+        id = "Hubungkan",
+        th = "เชื่อมต่อ",
+        ru = "Подключить"
+    )
+
+    fun remoteStatusConnecting(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Đang nối máy chủ mã hóa…",
+        en = "Connecting to encrypted relay…",
+        es = "Conectando al relé cifrado…",
+        pt = "Conectando ao relé criptografado…",
+        fr = "Connexion au relais chiffré…",
+        de = "Verbindung zum verschlüsselten Relay…",
+        ja = "暗号化リレーに接続中…",
+        ko = "암호화 릴레이에 연결 중…",
+        zh = "正在连接加密中继…",
+        id = "Menghubungkan ke relai terenkripsi…",
+        th = "กำลังเชื่อมต่อรีเลย์เข้ารหัส…",
+        ru = "Подключение к зашифрованному реле…"
+    )
+
+    fun remoteStatusHandshake(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Đang xác thực mã với TV…",
+        en = "Verifying code with TV…",
+        es = "Verificando código con la TV…",
+        pt = "Verificando código com a TV…",
+        fr = "Vérification du code avec la TV…",
+        de = "Code wird mit dem TV geprüft…",
+        ja = "TVとコードを確認中…",
+        ko = "TV와 코드를 확인하는 중…",
+        zh = "正在与电视验证连接码…",
+        id = "Memverifikasi kode dengan TV…",
+        th = "กำลังยืนยันรหัสกับทีวี…",
+        ru = "Проверка кода с ТВ…"
+    )
+
+    fun remoteStatusTryingLan(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Đang thử nối thẳng LAN…",
+        en = "Trying direct LAN upgrade…",
+        es = "Probando conexión directa LAN…",
+        pt = "Tentando conexão direta LAN…",
+        fr = "Tentative de liaison directe LAN…",
+        de = "Direkte LAN-Verbindung wird getestet…",
+        ja = "直接LAN接続を試行中…",
+        ko = "직접 LAN 연결 시도 중…",
+        zh = "正在尝试直连局域网…",
+        id = "Mencoba sambungan LAN langsung…",
+        th = "กำลังลองเชื่อมต่อ LAN โดยตรง…",
+        ru = "Попытка прямого LAN-соединения…"
+    )
+
+    fun remoteStatusInvalidCode(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Mã gồm 8 ký tự hợp lệ trên TV (không dùng 0, 1, O, I).",
+        en = "Enter the 8-character code from your TV (no 0, 1, O, I).",
+        es = "Ingresa el código de 8 caracteres de la TV (sin 0, 1, O, I).",
+        pt = "Digite o código de 8 caracteres da TV (sem 0, 1, O, I).",
+        fr = "Saisissez le code à 8 caractères de la TV (sans 0, 1, O, I).",
+        de = "8-stelligen Code vom TV eingeben (ohne 0, 1, O, I).",
+        ja = "TVに表示された8文字のコードを入力してください（0, 1, O, Iは不使用）。",
+        ko = "TV에 표시된 8자리 코드를 입력하세요(0, 1, O, I 제외).",
+        zh = "请输入电视上的8位有效代码（不含0、1、O、I）。",
+        id = "Masukkan kode 8 karakter dari TV (tanpa 0, 1, O, I).",
+        th = "กรอกรหัส 8 ตัวอักษรจากทีวี (ไม่มี 0, 1, O, I)",
+        ru = "Введите 8-значный код с ТВ (без 0, 1, O, I)."
+    )
+
+    fun remoteStatusBrokerError(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Không nối được máy chủ trung gian. Kiểm tra mạng Internet.",
+        en = "Could not reach relay server. Check your internet connection.",
+        es = "No se pudo conectar al servidor relé. Revisa tu internet.",
+        pt = "Não foi possível acessar o servidor relé. Verifique sua internet.",
+        fr = "Impossible de joindre le serveur relais. Vérifiez votre connexion.",
+        de = "Relay-Server nicht erreichbar. Internetverbindung prüfen.",
+        ja = "中継サーバーに接続できません。ネット接続を確認してください。",
+        ko = "릴레이 서버에 연결할 수 없습니다. 인터넷 연결을 확인하세요.",
+        zh = "无法连接中继服务器，请检查网络连接。",
+        id = "Tidak dapat menjangkau server relai. Periksa koneksi internet.",
+        th = "เชื่อมต่อเซิร์ฟเวอร์รีเลย์ไม่ได้ โปรดตรวจสอบอินเทอร์เน็ต",
+        ru = "Не удалось подключиться к реле-серверу. Проверьте интернет."
+    )
+
+    fun remoteStatusTimeout(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Không thấy TV dùng mã này. Kiểm tra lại mã đang mở trên TV.",
+        en = "No TV responded to this code. Check the active code on your TV.",
+        es = "Ninguna TV respondió a este código. Revisa el código activo en la TV.",
+        pt = "Nenhuma TV respondeu a este código. Confira o código ativo na TV.",
+        fr = "Aucune TV n'a répondu à ce code. Vérifiez le code affiché sur la TV.",
+        de = "Kein TV hat auf diesen Code geantwortet. Prüfe den Code am TV.",
+        ja = "このコードに一致するTVが見つかりません。TVのコードを確認してください。",
+        ko = "이 코드로 응답하는 TV가 없습니다. TV에 표시된 코드를 확인하세요.",
+        zh = "未找到使用此代码的电视，请核对电视上显示的代码。",
+        id = "Tidak ada TV yang merespons kode ini. Periksa kode aktif di TV.",
+        th = "ไม่พบทีวีที่ใช้รหัสนี้ โปรดตรวจสอบรหัสที่เปิดอยู่บนทีวี",
+        ru = "ТВ с этим кодом не отвечает. Проверьте активный код на ТВ."
+    )
+
+    fun remoteStatusLockedOut(lang: PadLanguage, timeStr: String) = tr(
+        lang = lang,
+        vi = "TV tạm khóa do nhập sai 3 lần · Chờ $timeStr",
+        en = "TV temporarily locked after 3 failed attempts · Wait $timeStr",
+        es = "TV bloqueada tras 3 intentos fallidos · Espera $timeStr",
+        pt = "TV bloqueada após 3 tentativas falhas · Aguarde $timeStr",
+        fr = "TV verrouillée après 3 échecs · Patientez $timeStr",
+        de = "TV nach 3 Fehlversuchen gesperrt · Warte $timeStr",
+        ja = "3回失敗のためTVが一時ロック中 · 残り $timeStr",
+        ko = "3회 실패로 TV가 일시 잠겼습니다 · 대기 $timeStr",
+        zh = "连续失败3次，电视已暂时锁定 · 请等待 $timeStr",
+        id = "TV dikunci sementara setelah 3 kali gagal · Tunggu $timeStr",
+        th = "ทีวีล็อกชั่วคราวหลังใส่ผิด 3 ครั้ง · รอ $timeStr",
+        ru = "ТВ временно заблокирован после 3 ошибок · Ждите $timeStr"
+    )
+
+    fun remoteTransportBadge(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Từ xa",
+        en = "Remote",
+        es = "Remoto",
+        pt = "Remoto",
+        fr = "Distant",
+        de = "Fern",
+        ja = "リモート",
+        ko = "원격",
+        zh = "远程",
+        id = "Jarak jauh",
+        th = "ระยะไกล",
+        ru = "Удалённо"
+    )
+
+    fun remoteDisconnectedSubtitle(lang: PadLanguage, tvName: String) = tr(
+        lang = lang,
+        vi = "Mất kết nối từ xa với $tvName. Mọi nút bấm đã tự nhả về trạng thái nghỉ.",
+        en = "Remote connection to $tvName was lost. All buttons were safely released.",
+        es = "Se perdió la conexión remota con $tvName. Todos los botones se soltaron.",
+        pt = "Conexão remota com $tvName perdida. Todos os botões foram soltos.",
+        fr = "Connexion distante avec $tvName perdue. Tous les boutons ont été relâchés.",
+        de = "Fernverbindung zu $tvName getrennt. Alle Tasten wurden sicher gelöst.",
+        ja = "$tvName とのリモート接続が切断されました。すべてのボタンを安全に解放しました。",
+        ko = "$tvName 와의 원격 연결이 끊어졌습니다. 모든 버튼이 안전하게 해제되었습니다.",
+        zh = "与 $tvName 的远程连接已断开，所有按键已自动松开。",
+        id = "Koneksi jarak jauh ke $tvName terputus. Semua tombol dilepas otomatis.",
+        th = "การเชื่อมต่อระยะไกลกับ $tvName ขาดหาย ปล่อยปุ่มทั้งหมดโดยอัตโนมัติแล้ว",
+        ru = "Удалённое соединение с $tvName прервано. Все кнопки безопасно отпущены."
+    )
 }

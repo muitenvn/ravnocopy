@@ -26,6 +26,12 @@ object RemotePadProtocol {
     /** TV không nhận gói UDP hoặc đứt TCP quá 450ms -> nhả toàn bộ nút và đưa cần/cò về 0 ngay */
     const val WATCHDOG_RELEASE_TIMEOUT_MS: Long = 450L
 
+    /** Kênh chuyển tiếp từ xa (4G/5G/khác Wi-Fi): nhịp tim 150ms, watchdog nhả nút 800ms */
+    const val REMOTE_RELAY_HEARTBEAT_INTERVAL_MS: Long = 150L
+    const val REMOTE_RELAY_WATCHDOG_TIMEOUT_MS: Long = 800L
+    const val REMOTE_RELAY_ANALOG_MIN_INTERVAL_MS: Long = 33L
+    const val REMOTE_CODE_IDLE_EXPIRY_MS: Long = 15 * 60 * 1000L
+
     /** Nhập sai mã 4 số quá 3 lần thì TV khóa ghép đôi tạm thời (3 phút) */
     const val MAX_PIN_ATTEMPTS: Int = 3
     const val PIN_LOCKOUT_DURATION_MS: Long = 3 * 60 * 1000L
@@ -399,6 +405,13 @@ sealed class RemoteControlFrame {
         val tokenHmacHex: String
     ) : RemoteControlFrame()
 
+    data class AuthWithQuickToken(
+        val protocolVersion: Int = RemotePadProtocol.PROTOCOL_VERSION,
+        val deviceId: String,
+        val deviceName: String,
+        val quickTokenHmacHex: String
+    ) : RemoteControlFrame()
+
     data class AuthOk(
         val protocolVersion: Int = RemotePadProtocol.PROTOCOL_VERSION,
         val rememberTokenHex: String,
@@ -481,6 +494,8 @@ object RemoteControlCodec {
                 "PAIR_PIN|v=${frame.protocolVersion}|id=${escape(frame.deviceId)}|name=${escape(frame.deviceName)}|hmac=${escape(frame.pinHmacHex)}"
             is RemoteControlFrame.AuthWithToken ->
                 "AUTH_TOKEN|v=${frame.protocolVersion}|id=${escape(frame.deviceId)}|name=${escape(frame.deviceName)}|hmac=${escape(frame.tokenHmacHex)}"
+            is RemoteControlFrame.AuthWithQuickToken ->
+                "AUTH_QUICK|v=${frame.protocolVersion}|id=${escape(frame.deviceId)}|name=${escape(frame.deviceName)}|hmac=${escape(frame.quickTokenHmacHex)}"
             is RemoteControlFrame.AuthOk ->
                 "AUTH_OK|v=${frame.protocolVersion}|tok=${escape(frame.rememberTokenHex)}|ukey=${escape(frame.udpSessionTokenHex)}|up=${frame.udpPort}|p=${frame.playerIndex}|gk=${escape(frame.activeGameKey)}|gt=${escape(frame.activeGameTitle)}"
             is RemoteControlFrame.AuthFail ->
@@ -532,6 +547,12 @@ object RemoteControlCodec {
                 deviceId = map["id"].orEmpty(),
                 deviceName = map["name"].orEmpty().ifBlank { "Ravno Pad" },
                 tokenHmacHex = map["hmac"].orEmpty()
+            )
+            "AUTH_QUICK" -> RemoteControlFrame.AuthWithQuickToken(
+                protocolVersion = map["v"]?.toIntOrNull() ?: RemotePadProtocol.PROTOCOL_VERSION,
+                deviceId = map["id"].orEmpty(),
+                deviceName = map["name"].orEmpty().ifBlank { "Ravno Pad" },
+                quickTokenHmacHex = map["hmac"].orEmpty()
             )
             "AUTH_OK" -> RemoteControlFrame.AuthOk(
                 protocolVersion = map["v"]?.toIntOrNull() ?: RemotePadProtocol.PROTOCOL_VERSION,

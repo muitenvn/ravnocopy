@@ -174,11 +174,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         com.example.cloudplay.PhysicalGamepadCaptureBus.releaseAllInGameKeys()
+        com.example.cloudplay.RemotePadTvServer.forceReleaseAllInputsToNeutral()
         super.onPause()
     }
 
     override fun onStop() {
         com.example.cloudplay.PhysicalGamepadCaptureBus.releaseAllInGameKeys()
+        com.example.cloudplay.RemotePadTvServer.forceReleaseAllInputsToNeutral()
         com.example.cloudplay.NetworkOptimizer.setAppForeground(false)
         VpnManager.onAppBackground()
         com.example.data.AppLogger.info("SYSTEM", "Ứng dụng vào nền (Background)")

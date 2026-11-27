@@ -10,10 +10,12 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import com.muitenvn.cloudplay.protocol.AuthFailReason
+import com.muitenvn.cloudplay.protocol.RelayHandshakeFrame
 import com.muitenvn.cloudplay.protocol.RemoteControlCodec
 import com.muitenvn.cloudplay.protocol.RemoteControlFrame
 import com.muitenvn.cloudplay.protocol.RemotePadCrypto
 import com.muitenvn.cloudplay.protocol.RemotePadProtocol
+import com.muitenvn.cloudplay.protocol.RemotePadRelayCrypto
 import com.muitenvn.cloudplay.protocol.RemotePadState
 import com.muitenvn.cloudplay.protocol.RemotePadUdpCodec
 import com.muitenvn.cloudplay.protocol.TvServiceStatus
@@ -89,7 +91,10 @@ data class PadClientUiState(
     val activeGameKey: String = "",
     val activeGameTitle: String = "",
     val suggestedPresetId: String = "",
-    val isAutoReconnecting: Boolean = false
+    val isAutoReconnecting: Boolean = false,
+    val isRemoteConnecting: Boolean = false,
+    val remoteStatusCode: String = "",
+    val activeTransportMode: PadTransportMode = PadTransportMode.LAN
 )
 
 /**
@@ -236,7 +241,7 @@ object PadNetworkClient {
             val next = if (pressed) (prev or bitMask) else (prev and bitMask.inv())
             if (prev == next) return
             if (currentButtonsBitmask.compareAndSet(prev, next)) {
-                dispatchCurrentPadStateOverUdp()
+                dispatchCurrentPadStateOverUdp(isUrgentButtonOrRelease = true)
                 return
             }
         }
@@ -248,7 +253,7 @@ object PadNetworkClient {
             val next = (prev and maskToClear.inv()) or maskToSet
             if (prev == next) return
             if (currentButtonsBitmask.compareAndSet(prev, next)) {
-                dispatchCurrentPadStateOverUdp()
+                dispatchCurrentPadStateOverUdp(isUrgentButtonOrRelease = true)
                 return
             }
         }
@@ -339,24 +344,30 @@ object PadNetworkClient {
         gyroY = 0f
         scope.launch {
             repeat(3) {
-                sendUdpSnapshotNow()
+                sendUdpSnapshotNow(isUrgentButtonOrRelease = true)
                 if (it < 2) delay(12L)
             }
         }
     }
 
-    private fun dispatchCurrentPadStateOverUdp() {
+    private fun dispatchCurrentPadStateOverUdp(isUrgentButtonOrRelease: Boolean = false) {
         scope.launch {
-            sendUdpSnapshotNow()
+            sendUdpSnapshotNow(isUrgentButtonOrRelease = isUrgentButtonOrRelease)
         }
     }
 
-    private fun sendUdpSnapshotNow() {
-        val token = activeUdpSessionToken ?: return
-        val dSocket = activeUdpSocketRef.get() ?: return
-        val addr = activeUdpTargetAddress ?: return
-        val port = activeUdpTargetPort
-        if (dSocket.isClosed || token.size != RemotePadProtocol.SESSION_TOKEN_BYTES) return
+    internal fun sendRemoteHeartbeatSnapshot() {
+        sendUdpSnapshotNow(isUrgentButtonOrRelease = true)
+    }
+
+    private fun sendUdpSnapshotNow(isUrgentButtonOrRelease: Boolean = false) {
+        val isRemoteActive = PadRemoteRelayConnector.isActive()
+        val token = if (isRemoteActive) {
+            PadRemoteRelayConnector.getSessionUdpToken()
+        } else {
+            activeUdpSessionToken
+        } ?: return
+        if (token.size != RemotePadProtocol.SESSION_TOKEN_BYTES) return
 
         val rawBtns = currentButtonsBitmask.get()
         val btns = rawBtns and 0xFFFF
@@ -382,6 +393,24 @@ object PadNetworkClient {
             lt = effLt,
             rt = effRt
         )
+
+        if (isRemoteActive) {
+            val encodedCopy = synchronized(udpSendLock) {
+                RemotePadUdpCodec.encode(
+                    state = stateSnapshot,
+                    sessionToken = token,
+                    outBuffer = reusableUdpBytes
+                )
+                reusableUdpBytes.copyOf()
+            }
+            PadRemoteRelayConnector.sendEncryptedInputPacket(encodedCopy, isUrgent = isUrgentButtonOrRelease)
+            return
+        }
+
+        val dSocket = activeUdpSocketRef.get() ?: return
+        val addr = activeUdpTargetAddress ?: return
+        val port = activeUdpTargetPort
+        if (dSocket.isClosed) return
 
         synchronized(udpSendLock) {
             try {
@@ -553,6 +582,221 @@ object PadNetworkClient {
         if (cleanIp.isEmpty()) return
         scope.launch {
             probeHostForTv(cleanIp, RemotePadProtocol.DEFAULT_TCP_CONTROL_PORT, timeoutMs = 1500)
+        }
+    }
+
+    @Volatile
+    private var lastRemotePairingCode: String = ""
+
+    fun connectWithRemoteCode(rawCode: String) {
+        val cur = _state.value
+        if (cur.isRemoteConnecting) return
+        lastRemotePairingCode = rawCode.trim()
+        PadRemoteRelayConnector.connectWithCode(
+            rawCode = rawCode,
+            clientDeviceId = cur.clientDeviceId,
+            clientDeviceName = cur.clientDeviceName
+        )
+    }
+
+    fun clearRemoteStatus() {
+        _state.update { it.copy(remoteStatusCode = "") }
+    }
+
+    internal fun onRemoteConnectStatus(isConnecting: Boolean, statusCode: String) {
+        _state.update {
+            it.copy(
+                isRemoteConnecting = isConnecting,
+                remoteStatusCode = statusCode
+            )
+        }
+    }
+
+    internal fun onRemoteHandshakeRejected(reject: RelayHandshakeFrame.TvReject) {
+        when (reject.reason) {
+            AuthFailReason.LOCKED_OUT -> {
+                applyLockoutCountdown(reject.lockoutRemainingSec.coerceAtLeast(30))
+                _state.update {
+                    it.copy(
+                        isRemoteConnecting = false,
+                        remoteStatusCode = "LOCKED_OUT"
+                    )
+                }
+            }
+            AuthFailReason.VERSION_MISMATCH -> {
+                val verCheck = RemotePadProtocol.checkVersionCompatibility(
+                    localVersion = RemotePadProtocol.PROTOCOL_VERSION,
+                    remoteVersion = reject.protocolVersion,
+                    isLocalTv = false
+                )
+                _state.update {
+                    it.copy(
+                        isRemoteConnecting = false,
+                        versionMismatchResult = verCheck,
+                        remoteStatusCode = "VERSION_MISMATCH"
+                    )
+                }
+            }
+            else -> {
+                _state.update {
+                    it.copy(
+                        isRemoteConnecting = false,
+                        remoteStatusCode = "TIMEOUT"
+                    )
+                }
+            }
+        }
+    }
+
+    internal fun onRemoteVersionMismatch(verCheck: VersionCheckResult) {
+        _state.update {
+            it.copy(
+                isRemoteConnecting = false,
+                versionMismatchResult = verCheck,
+                remoteStatusCode = "VERSION_MISMATCH"
+            )
+        }
+    }
+
+    internal fun tryQuickLanUpgrade(tv: DiscoveredTvDevice, quickTokenHex: String): Boolean {
+        val cur = _state.value
+        var socket: Socket? = null
+        return try {
+            socket = Socket()
+            socket.tcpNoDelay = true
+            socket.connect(InetSocketAddress(tv.hostAddress, tv.tcpPort), 650)
+            socket.soTimeout = 1_500
+
+            val reader = BufferedReader(InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))
+            val writer = BufferedWriter(OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))
+
+            val helloLine = reader.readLine() ?: throw IllegalStateException("No HELLO")
+            val hello = RemoteControlCodec.parse(helloLine) as? RemoteControlFrame.Hello
+                ?: throw IllegalStateException("Invalid HELLO")
+
+            val quickHmac = RemotePadRelayCrypto.computeQuickTokenProofHmac(
+                quickTokenHex = quickTokenHex,
+                tvNonceHex = hello.nonceHex,
+                clientDeviceId = cur.clientDeviceId
+            )
+            sendFrame(
+                writer,
+                RemoteControlFrame.AuthWithQuickToken(
+                    protocolVersion = RemotePadProtocol.PROTOCOL_VERSION,
+                    deviceId = cur.clientDeviceId,
+                    deviceName = cur.clientDeviceName,
+                    quickTokenHmacHex = quickHmac
+                )
+            )
+
+            val replyLine = reader.readLine() ?: throw IllegalStateException("No reply")
+            val authOk = RemoteControlCodec.parse(replyLine) as? RemoteControlFrame.AuthOk
+                ?: throw IllegalStateException("AuthQuick rejected")
+
+            val tvKey = hello.tvId.ifBlank { tv.tvId }
+            saveRememberToken(tvKey, authOk.rememberTokenHex)
+            val upgradedTv = tv.copy(
+                tvId = tvKey,
+                tvName = hello.tvName.ifBlank { tv.tvName },
+                hasRememberToken = true
+            )
+            discoveredMap[tvKey] = upgradedTv
+            publishDiscoveredList()
+
+            val connectedSocket = socket
+            socket = null
+            scope.launch {
+                runConnectedControlLoop(
+                    socket = connectedSocket,
+                    reader = reader,
+                    writer = writer,
+                    tv = upgradedTv,
+                    authOk = authOk,
+                    transportMode = PadTransportMode.LAN_UPGRADED
+                )
+            }
+            true
+        } catch (_: Exception) {
+            runCatching { socket?.close() }
+            false
+        }
+    }
+
+    internal fun onRemoteRelaySessionReady(
+        tv: DiscoveredTvDevice,
+        playerIndex: Int,
+        activeGameKey: String,
+        activeGameTitle: String,
+        activePresetName: String
+    ) {
+        stopDiscovery()
+        autoReconnectJob?.cancel()
+        udpSequenceCounter.set(0L)
+        currentButtonsBitmask.set(0)
+        currentLx = 0f
+        currentLy = 0f
+        currentRx = 0f
+        currentRy = 0f
+        currentLt = 0f
+        currentRt = 0f
+        _state.update {
+            it.copy(
+                isConnecting = false,
+                isRemoteConnecting = false,
+                isAutoReconnecting = false,
+                remoteStatusCode = "",
+                route = PadScreenRoute.GAMEPAD,
+                selectedTv = tv,
+                enteredPin = "",
+                pinErrorReason = null,
+                connectedPlayerIndex = playerIndex,
+                measuredPingMs = null,
+                disconnectReasonCode = "",
+                activeGameKey = activeGameKey,
+                activeGameTitle = activeGameTitle,
+                suggestedPresetId = activePresetName.trim().lowercase(),
+                activeTransportMode = PadTransportMode.REMOTE_RELAY
+            )
+        }
+    }
+
+    internal fun onRemotePongReceived(rttMs: Int, activeGameKey: String) {
+        _state.update { cur ->
+            cur.copy(
+                measuredPingMs = rttMs,
+                activeGameKey = activeGameKey.ifBlank { cur.activeGameKey }
+            )
+        }
+    }
+
+    internal fun onRemoteLayoutSyncReceived(frame: RemoteControlFrame.LayoutSync) {
+        _state.update { cur ->
+            cur.copy(
+                suggestedPresetId = frame.presetName.trim().lowercase(),
+                activeGameKey = frame.gameKey.ifBlank { cur.activeGameKey },
+                activeGameTitle = frame.gameTitle.ifBlank { cur.activeGameTitle }
+            )
+        }
+    }
+
+    internal fun onRemoteRelayDisconnected(reason: String) {
+        releaseAllInputsImmediate()
+        _state.update { cur ->
+            if (cur.route == PadScreenRoute.GAMEPAD) {
+                cur.copy(
+                    route = PadScreenRoute.DISCONNECTED,
+                    isConnecting = false,
+                    isRemoteConnecting = false,
+                    measuredPingMs = null,
+                    disconnectReasonCode = reason
+                )
+            } else {
+                cur.copy(
+                    isConnecting = false,
+                    isRemoteConnecting = false,
+                    measuredPingMs = null
+                )
+            }
         }
     }
 
@@ -805,7 +1049,12 @@ object PadNetworkClient {
     fun reconnectSelectedTv() {
         autoReconnectJob?.cancel()
         _state.update { it.copy(isAutoReconnecting = false) }
-        val tv = _state.value.selectedTv ?: return
+        val cur = _state.value
+        if (cur.activeTransportMode == PadTransportMode.REMOTE_RELAY && lastRemotePairingCode.isNotBlank()) {
+            connectWithRemoteCode(lastRemotePairingCode)
+            return
+        }
+        val tv = cur.selectedTv ?: return
         onSelectTv(tv)
     }
 
@@ -990,7 +1239,8 @@ object PadNetworkClient {
         reader: BufferedReader,
         writer: BufferedWriter,
         tv: DiscoveredTvDevice,
-        authOk: RemoteControlFrame.AuthOk
+        authOk: RemoteControlFrame.AuthOk,
+        transportMode: PadTransportMode = PadTransportMode.LAN
     ) {
         activeControlSocketRef.getAndSet(socket)?.let { old ->
             if (old !== socket) runCatching { old.close() }
@@ -1017,7 +1267,9 @@ object PadNetworkClient {
         _state.update {
             it.copy(
                 isConnecting = false,
+                isRemoteConnecting = false,
                 isAutoReconnecting = false,
+                remoteStatusCode = "",
                 route = PadScreenRoute.GAMEPAD,
                 selectedTv = tv,
                 enteredPin = "",
@@ -1026,7 +1278,8 @@ object PadNetworkClient {
                 measuredPingMs = null,
                 disconnectReasonCode = "",
                 activeGameKey = authOk.activeGameKey,
-                activeGameTitle = authOk.activeGameTitle
+                activeGameTitle = authOk.activeGameTitle,
+                activeTransportMode = transportMode
             )
         }
 
@@ -1142,10 +1395,14 @@ object PadNetworkClient {
     fun disconnectActiveSession(navigateToList: Boolean = true) {
         autoReconnectJob?.cancel()
         releaseAllInputsImmediate()
+        val wasRemote = PadRemoteRelayConnector.isActive()
         val writer = activeControlWriterRef.getAndSet(null)
         val socket = activeControlSocketRef.getAndSet(null)
         scope.launch {
             delay(35L)
+            if (wasRemote) {
+                PadRemoteRelayConnector.disconnectQuietly(reason = "PHONE_DISCONNECT", sendDisconnectFrame = true, notifyClient = false)
+            }
             activeUdpSessionToken = null
             activeUdpSocketRef.getAndSet(null)?.close()
             if (writer != null) {
@@ -1157,9 +1414,12 @@ object PadNetworkClient {
             cur.copy(
                 route = if (navigateToList) PadScreenRoute.FIND_TV else PadScreenRoute.DISCONNECTED,
                 isConnecting = false,
+                isRemoteConnecting = false,
                 isAutoReconnecting = false,
+                remoteStatusCode = "",
                 enteredPin = "",
-                measuredPingMs = null
+                measuredPingMs = null,
+                activeTransportMode = PadTransportMode.LAN
             )
         }
         val ctx = appContext
@@ -1169,6 +1429,7 @@ object PadNetworkClient {
     }
 
     fun forgetActiveTvAndDisconnect() {
+        lastRemotePairingCode = ""
         val curTv = _state.value.selectedTv
         if (curTv != null) {
             removeRememberToken(curTv.tvId)
@@ -1177,10 +1438,14 @@ object PadNetworkClient {
         }
         autoReconnectJob?.cancel()
         releaseAllInputsImmediate()
+        val wasRemote = PadRemoteRelayConnector.isActive()
         val writer = activeControlWriterRef.getAndSet(null)
         val socket = activeControlSocketRef.getAndSet(null)
         scope.launch {
             delay(35L)
+            if (wasRemote) {
+                PadRemoteRelayConnector.disconnectQuietly(reason = "FORGOTTEN", sendDisconnectFrame = true, notifyClient = false)
+            }
             activeUdpSessionToken = null
             activeUdpSocketRef.getAndSet(null)?.close()
             if (writer != null) {
@@ -1192,9 +1457,12 @@ object PadNetworkClient {
             cur.copy(
                 route = PadScreenRoute.FIND_TV,
                 isConnecting = false,
+                isRemoteConnecting = false,
                 isAutoReconnecting = false,
+                remoteStatusCode = "",
                 enteredPin = "",
-                measuredPingMs = null
+                measuredPingMs = null,
+                activeTransportMode = PadTransportMode.LAN
             )
         }
         val ctx = appContext

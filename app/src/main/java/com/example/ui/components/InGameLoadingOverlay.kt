@@ -1,5 +1,10 @@
 package com.example.ui.components
 
+import android.content.Context
+import android.hardware.input.InputManager
+import android.net.Uri
+import android.os.Build
+import android.view.InputDevice
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -52,6 +57,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,6 +87,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import coil.size.Precision
+import coil.size.Scale
 import com.example.R
 import com.example.data.GameOptimizationProfile
 import com.example.data.GameOptimizationRepository
@@ -104,11 +112,12 @@ fun InGameLoadingOverlay(
     isLoading: Boolean,
     progress: Float,
     targetServerName: String = "Korea",
-    @Suppress("UNUSED_PARAMETER") hasGamepad: Boolean = false,
+    hasGamepad: Boolean = false,
     gameProfile: GameOptimizationProfile = GameOptimizationRepository.getProfileForUrl(""),
     gameTitleOverride: String? = null,
     @Suppress("UNUSED_PARAMETER") gameSubtitleOverride: String? = null,
     gameImageUrl: String? = null,
+    portraitGameImageUrl: String? = null,
     @Suppress("UNUSED_PARAMETER") supportsNativeTouch: Boolean? = null,
     targetResolutionTag: String = "1080p",
     targetFps: Int = 60,
@@ -133,8 +142,11 @@ fun InGameLoadingOverlay(
                 ?: gameProfile.title.takeIf { gameProfile.gameId != "generic" && it.isNotBlank() }
                 ?: hubTitle
         }
-        val resolvedArtworkUrl = remember(gameImageUrl) {
+        val resolvedLandscapeUrl = remember(gameImageUrl) {
             gameImageUrl?.trim()?.takeIf { it.startsWith("http", ignoreCase = true) }
+        }
+        val resolvedPortraitUrl = remember(portraitGameImageUrl) {
+            portraitGameImageUrl?.trim()?.takeIf { it.startsWith("http", ignoreCase = true) }
         }
 
         val clampedProgress = progress.coerceIn(0.06f, 1f)
@@ -151,6 +163,24 @@ fun InGameLoadingOverlay(
             2 -> stringResource(R.string.loading_phase_routing, targetServerName)
             3 -> stringResource(R.string.loading_phase_syncing, targetResolutionTag, targetFps)
             else -> stringResource(R.string.loading_phase_ready)
+        }
+
+        // Compact metadata line: "<server> · <ping> ms · <control>" (omit any unavailable segment)
+        val hasExternalKbMouse = rememberHasExternalKeyboardOrMouse(enabled = isLoading)
+        val controlLabel = when {
+            hasGamepad || isPhysicalGamepadConnectedNow() -> stringResource(R.string.loading_ctrl_gamepad)
+            hasExternalKbMouse -> stringResource(R.string.loading_ctrl_kb_mouse)
+            else -> stringResource(R.string.loading_ctrl_touch)
+        }
+        val cleanServerLabel = remember(targetServerName) {
+            stripLeadingEmojiFlags(targetServerName)
+        }
+        val metaInfoLine = remember(cleanServerLabel, realLatencyMs, controlLabel) {
+            buildList {
+                if (cleanServerLabel.isNotBlank()) add(cleanServerLabel)
+                if (realLatencyMs != null && realLatencyMs > 0) add("$realLatencyMs ms")
+                if (controlLabel.isNotBlank()) add(controlLabel)
+            }.joinToString(" · ")
         }
 
         val highPingWarning = if (realLatencyMs != null && realLatencyMs >= 130) {
@@ -177,6 +207,12 @@ fun InGameLoadingOverlay(
                 val density = LocalDensity.current
                 val isTvUiMode = GamepadUiNavigation.keepFocusVisibleInTvMode
                 val isLandscapeOrWide = isTvUiMode || (maxWidth > maxHeight)
+                val viewportWidthPx = remember(maxWidth, density) {
+                    with(density) { maxWidth.roundToPx().coerceAtLeast(360) }
+                }
+                val viewportHeightPx = remember(maxHeight, density) {
+                    with(density) { maxHeight.roundToPx().coerceAtLeast(360) }
+                }
                 val scope = remember(maxWidth, maxHeight, isTvUiMode, isLandscapeOrWide, density) {
                     AdaptivePopupScope(
                         winW = maxWidth,
@@ -188,10 +224,44 @@ fun InGameLoadingOverlay(
                     )
                 }
 
+                // Pick orientation-matched artwork and upgrade Microsoft Store CDN sizing for crisp full-bleed display
+                val baseArtworkUrl = remember(resolvedLandscapeUrl, resolvedPortraitUrl, isLandscapeOrWide) {
+                    if (isLandscapeOrWide) {
+                        resolvedLandscapeUrl ?: resolvedPortraitUrl
+                    } else {
+                        resolvedPortraitUrl ?: resolvedLandscapeUrl
+                    }
+                }
+                val isDedicatedPortraitArt = !isLandscapeOrWide &&
+                    resolvedPortraitUrl != null &&
+                    resolvedPortraitUrl != resolvedLandscapeUrl
+                val highResArtworkUrl = remember(
+                    baseArtworkUrl,
+                    viewportWidthPx,
+                    viewportHeightPx,
+                    isLandscapeOrWide,
+                    isDedicatedPortraitArt,
+                    lowEndDeviceMode
+                ) {
+                    baseArtworkUrl?.let { rawUrl ->
+                        val targetWidthPx = when {
+                            lowEndDeviceMode -> if (isLandscapeOrWide) 960 else 720
+                            isLandscapeOrWide -> viewportWidthPx.coerceIn(1280, 1920)
+                            isDedicatedPortraitArt -> viewportWidthPx.coerceIn(900, 1280)
+                            else -> ((viewportHeightPx * 16) / 9).coerceIn(1440, 1920)
+                        }
+                        val targetQuality = if (lowEndDeviceMode) 80 else 88
+                        upgradeMicrosoftStoreArtworkUrl(rawUrl, targetWidthPx, targetQuality)
+                    }
+                }
+
                 // Full-bleed cover artwork with slow GPU-only drift (or tonal gradient fallback)
                 DriftingBackdropArt(
-                    artworkUrl = resolvedArtworkUrl,
+                    artworkUrl = highResArtworkUrl,
                     title = resolvedTitle,
+                    viewportWidthPx = viewportWidthPx,
+                    viewportHeightPx = viewportHeightPx,
+                    maxZoomDelta = if (!isLandscapeOrWide && !isDedicatedPortraitArt) 0.035f else 0.06f,
                     motionEnabled = motionEnabled,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -252,6 +322,7 @@ fun InGameLoadingOverlay(
                                 scope = scope,
                                 title = resolvedTitle,
                                 statusText = phaseStatusText,
+                                metaInfoLine = metaInfoLine,
                                 isReady = isNearlyReady,
                                 highPingWarning = highPingWarning,
                                 motionEnabled = motionEnabled,
@@ -284,6 +355,7 @@ fun InGameLoadingOverlay(
                                 scope = scope,
                                 title = resolvedTitle,
                                 statusText = phaseStatusText,
+                                metaInfoLine = metaInfoLine,
                                 isReady = isNearlyReady,
                                 highPingWarning = highPingWarning,
                                 motionEnabled = motionEnabled,
@@ -303,11 +375,12 @@ fun InGameLoadingOverlay(
                     }
                 }
 
-                // Thin bottom-edge progress line (flush to screen bottom, GPU scaleX)
-                BottomProgressLine(
+                // 4-segment thin bottom-edge progress bar (Connecting, Routing, Syncing, Ready)
+                FourSegmentProgressBar(
                     progress = clampedProgress,
                     motionEnabled = motionEnabled,
                     trackHeight = scope.rDp(3.5f),
+                    segmentGap = scope.rDp(3f),
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
@@ -318,9 +391,110 @@ fun InGameLoadingOverlay(
 }
 
 @Composable
+private fun rememberHasExternalKeyboardOrMouse(enabled: Boolean): Boolean {
+    val context = LocalContext.current
+    var connected by remember { mutableStateOf(hasExternalKeyboardOrMouseNow()) }
+
+    DisposableEffect(context, enabled) {
+        if (!enabled) {
+            return@DisposableEffect onDispose { }
+        }
+        connected = hasExternalKeyboardOrMouseNow()
+        val inputManager = context.getSystemService(Context.INPUT_SERVICE) as? InputManager
+        val listener = object : InputManager.InputDeviceListener {
+            override fun onInputDeviceAdded(deviceId: Int) {
+                connected = hasExternalKeyboardOrMouseNow()
+            }
+
+            override fun onInputDeviceRemoved(deviceId: Int) {
+                connected = hasExternalKeyboardOrMouseNow()
+            }
+
+            override fun onInputDeviceChanged(deviceId: Int) {
+                connected = hasExternalKeyboardOrMouseNow()
+            }
+        }
+        runCatching { inputManager?.registerInputDeviceListener(listener, null) }
+        onDispose {
+            runCatching { inputManager?.unregisterInputDeviceListener(listener) }
+        }
+    }
+
+    return connected
+}
+
+private fun hasExternalKeyboardOrMouseNow(): Boolean {
+    return runCatching {
+        for (id in InputDevice.getDeviceIds()) {
+            val dev = InputDevice.getDevice(id) ?: continue
+            if (dev.isVirtual) continue
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !dev.isExternal) continue
+            val src = dev.sources
+            val isMouse = (src and InputDevice.SOURCE_MOUSE) == InputDevice.SOURCE_MOUSE ||
+                (src and InputDevice.SOURCE_MOUSE_RELATIVE) == InputDevice.SOURCE_MOUSE_RELATIVE
+            val isAlphabeticKeyboard = (src and InputDevice.SOURCE_KEYBOARD) == InputDevice.SOURCE_KEYBOARD &&
+                dev.keyboardType == InputDevice.KEYBOARD_TYPE_ALPHABETIC
+            if (isMouse || isAlphabeticKeyboard) {
+                return@runCatching true
+            }
+        }
+        false
+    }.getOrDefault(false)
+}
+
+private fun stripLeadingEmojiFlags(raw: String): String {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty()) return ""
+    var idx = 0
+    while (idx < trimmed.length) {
+        val cp = trimmed.codePointAt(idx)
+        val isRegionalIndicator = cp in 0x1F1E6..0x1F1FF
+        val isFlagOrSpace = isRegionalIndicator || cp == 0x200D || cp == 0xFE0F || Character.isWhitespace(cp)
+        if (!isFlagOrSpace) break
+        idx += Character.charCount(cp)
+    }
+    return trimmed.substring(idx).trim()
+}
+
+private fun upgradeMicrosoftStoreArtworkUrl(
+    url: String,
+    targetWidthPx: Int,
+    quality: Int
+): String {
+    if (!url.contains("store-images.s-microsoft.com", ignoreCase = true)) {
+        return url
+    }
+    return runCatching {
+        val parsed = Uri.parse(url)
+        val builder = parsed.buildUpon().clearQuery()
+        for (param in parsed.queryParameterNames) {
+            if (
+                param.equals("w", ignoreCase = true) ||
+                param.equals("h", ignoreCase = true) ||
+                param.equals("q", ignoreCase = true) ||
+                param.equals("mode", ignoreCase = true)
+            ) {
+                continue
+            }
+            for (value in parsed.getQueryParameters(param)) {
+                builder.appendQueryParameter(param, value)
+            }
+        }
+        builder
+            .appendQueryParameter("w", targetWidthPx.toString())
+            .appendQueryParameter("q", quality.toString())
+            .build()
+            .toString()
+    }.getOrDefault(url)
+}
+
+@Composable
 private fun DriftingBackdropArt(
     artworkUrl: String?,
     title: String,
+    viewportWidthPx: Int,
+    viewportHeightPx: Int,
+    maxZoomDelta: Float,
     motionEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -365,11 +539,11 @@ private fun DriftingBackdropArt(
                     .fillMaxSize()
                     .graphicsLayer {
                         val t = driftState.value
-                        val scale = 1f + 0.06f * t
+                        val scale = 1f + maxZoomDelta * t
                         scaleX = scale
                         scaleY = scale
-                        translationX = -size.width * 0.012f * t
-                        translationY = -size.height * 0.01f * t
+                        translationX = -size.width * 0.01f * t
+                        translationY = -size.height * 0.008f * t
                     }
             } else {
                 Modifier.fillMaxSize()
@@ -378,6 +552,9 @@ private fun DriftingBackdropArt(
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(artworkUrl)
+                    .size(viewportWidthPx, viewportHeightPx)
+                    .scale(Scale.FILL)
+                    .precision(Precision.INEXACT)
                     .crossfade(if (motionEnabled) 220 else 0)
                     .build(),
                 contentDescription = stringResource(R.string.loading_artwork_cd, title),
@@ -435,6 +612,7 @@ private fun TitleAndStatusBlock(
     scope: AdaptivePopupScope,
     title: String,
     statusText: String,
+    metaInfoLine: String,
     isReady: Boolean,
     highPingWarning: String?,
     motionEnabled: Boolean,
@@ -448,7 +626,7 @@ private fun TitleAndStatusBlock(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(scope.rDp(8f))
+        verticalArrangement = Arrangement.spacedBy(scope.rDp(6f))
     ) {
         Text(
             text = title,
@@ -499,6 +677,33 @@ private fun TitleAndStatusBlock(
                     fontWeight = if (isReady) FontWeight.Medium else FontWeight.Normal,
                     fontSize = scope.rSp(14.5f),
                     lineHeight = scope.rSp(19f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        if (metaInfoLine.isNotEmpty()) {
+            AnimatedContent(
+                targetState = metaInfoLine,
+                transitionSpec = {
+                    if (motionEnabled) {
+                        fadeIn(animationSpec = tween(durationMillis = 220)) togetherWith
+                            fadeOut(animationSpec = tween(durationMillis = 160))
+                    } else {
+                        EnterTransition.None togetherWith ExitTransition.None
+                    }.using(SizeTransform(clip = false))
+                },
+                label = "loading_meta_info",
+                modifier = Modifier.fillMaxWidth()
+            ) { line ->
+                Text(
+                    text = line,
+                    color = TextSecondary.copy(alpha = 0.78f),
+                    fontFamily = SpaceGroteskFontFamily,
+                    fontWeight = FontWeight.Normal,
+                    fontSize = scope.rSp(12.5f),
+                    lineHeight = scope.rSp(16f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -661,32 +866,76 @@ private fun LaunchPrimaryButton(
 }
 
 @Composable
-private fun BottomProgressLine(
+private fun FourSegmentProgressBar(
     progress: Float,
     motionEnabled: Boolean,
     trackHeight: Dp,
+    segmentGap: Dp,
     modifier: Modifier = Modifier
 ) {
-    val animatedProgressState = animateFloatAsState(
-        targetValue = progress.coerceIn(0.04f, 1f),
+    val seg0Target = (progress / 0.28f).coerceIn(0f, 1f)
+    val seg1Target = ((progress - 0.28f) / 0.30f).coerceIn(0f, 1f)
+    val seg2Target = ((progress - 0.58f) / 0.27f).coerceIn(0f, 1f)
+    val seg3Target = ((progress - 0.85f) / 0.15f).coerceIn(0f, 1f)
+
+    Row(
+        modifier = modifier.height(trackHeight),
+        horizontalArrangement = Arrangement.spacedBy(segmentGap)
+    ) {
+        ProgressSegment(
+            targetFraction = seg0Target,
+            motionEnabled = motionEnabled,
+            label = "loading_seg_0",
+            modifier = Modifier.weight(1f)
+        )
+        ProgressSegment(
+            targetFraction = seg1Target,
+            motionEnabled = motionEnabled,
+            label = "loading_seg_1",
+            modifier = Modifier.weight(1f)
+        )
+        ProgressSegment(
+            targetFraction = seg2Target,
+            motionEnabled = motionEnabled,
+            label = "loading_seg_2",
+            modifier = Modifier.weight(1f)
+        )
+        ProgressSegment(
+            targetFraction = seg3Target,
+            motionEnabled = motionEnabled,
+            label = "loading_seg_3",
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ProgressSegment(
+    targetFraction: Float,
+    motionEnabled: Boolean,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    val animatedFillState = animateFloatAsState(
+        targetValue = targetFraction,
         animationSpec = if (motionEnabled) {
             tween(durationMillis = 420, easing = ProgressSmoothEasing)
         } else {
             snap()
         },
-        label = "bottom_progress_bar"
+        label = label
     )
 
     Box(
         modifier = modifier
-            .height(trackHeight)
-            .background(TextPrimary.copy(alpha = 0.12f))
+            .fillMaxSize()
+            .background(TextPrimary.copy(alpha = 0.14f))
     ) {
         Spacer(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    scaleX = animatedProgressState.value
+                    scaleX = animatedFillState.value
                     transformOrigin = TransformOrigin(0f, 0.5f)
                 }
                 .background(XboxNeonGreen)

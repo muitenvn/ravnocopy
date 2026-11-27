@@ -2206,6 +2206,11 @@ fun CloudBrowserScreen(
                 ?: matchedLaunchGame?.imageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
                 ?: if (isSpecificGameLaunchUrl) streamUiState.gameImageUrl?.takeIf { it.startsWith("http", ignoreCase = true) } else null
         }
+        val resolvedLaunchPortraitImageUrl = remember(matchedLaunchGame, streamUiState.gameImageUrl, isSpecificGameLaunchUrl) {
+            matchedLaunchGame?.imageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                ?: matchedLaunchGame?.heroImageUrl?.takeIf { it.startsWith("http", ignoreCase = true) }
+                ?: if (isSpecificGameLaunchUrl) streamUiState.gameImageUrl?.takeIf { it.startsWith("http", ignoreCase = true) } else null
+        }
         val launchResolutionTag = remember(config.lowEndDeviceMode, config.forceDesktopUserAgent, config.cellularMode) {
             if (config.lowEndDeviceMode || !config.forceDesktopUserAgent || config.cellularMode == com.example.data.CellularOptimizationMode.DATA_SAVER_HIGH_SPEED) {
                 "720p"
@@ -2216,11 +2221,12 @@ fun CloudBrowserScreen(
         IsolatedInGameLoadingOverlay(
             isLoading = isLoadingOverlayVisible,
             progress = pageLoadingProgress,
-            hasGamepad = gamepadStatus.hasPhysicalController,
+            hasGamepad = gamepadStatus.hasPhysicalController || isRemotePadConnected,
             gameProfile = gameProfile,
             gameTitleOverride = resolvedLaunchTitle,
             gameSubtitleOverride = resolvedLaunchSubtitle,
             gameImageUrl = resolvedLaunchImageUrl,
+            portraitGameImageUrl = resolvedLaunchPortraitImageUrl,
             supportsNativeTouch = matchedLaunchGame?.supportsTouch,
             targetResolutionTag = launchResolutionTag,
             targetFps = config.streamFpsCap.fps,
@@ -2297,6 +2303,7 @@ private fun IsolatedInGameLoadingOverlay(
     gameTitleOverride: String? = null,
     gameSubtitleOverride: String? = null,
     gameImageUrl: String? = null,
+    portraitGameImageUrl: String? = null,
     supportsNativeTouch: Boolean? = null,
     targetResolutionTag: String = "1080p",
     targetFps: Int = 60,
@@ -2320,6 +2327,7 @@ private fun IsolatedInGameLoadingOverlay(
         gameTitleOverride = gameTitleOverride,
         gameSubtitleOverride = gameSubtitleOverride,
         gameImageUrl = gameImageUrl,
+        portraitGameImageUrl = portraitGameImageUrl,
         supportsNativeTouch = supportsNativeTouch,
         targetResolutionTag = targetResolutionTag,
         targetFps = targetFps,

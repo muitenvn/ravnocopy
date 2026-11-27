@@ -245,5 +245,31 @@
     <string name="loading_ping_high">Hoch</string>
     <string name="loading_enter_now">Spiel starten</string>
     <string name="loading_skip_wait">Jetzt öffnen</string>
+    <string name="loading_ctrl_gamepad">Controller</string>
+    <string name="loading_ctrl_kb_mouse">Tastatur &amp; Maus</string>
+    <string name="loading_ctrl_touch">Touch</string>
     <string name="loading_artwork_cd">Spielcover für %1$s</string>
+    <!-- Remote Off-LAN Pad Relay -->
+    <string name="remote_pad_adv_title">Pad ohne gleiches WLAN verbinden</string>
+    <string name="remote_pad_adv_desc">Erzeugt einen Ende-zu-Ende-verschlüsselten 8-stelligen Code für Ravno Pad über 4G/5G oder anderes WLAN. Standardmäßig aus; LAN bleibt unverändert.</string>
+    <string name="remote_pad_confirm_title">Remote-Pad-Verbindung aktivieren?</string>
+    <string name="remote_pad_confirm_desc">Der TV erstellt einen 8-stelligen Code über ein kostenloses verschlüsseltes Relay (ohne Login). Läuft nach 15 Min. Inaktivität ab.</string>
+    <string name="remote_pad_confirm_enable">Remote aktivieren</string>
+    <string name="remote_pad_confirm_cancel">Abbrechen</string>
+    <string name="remote_pad_tab_lan">Gleiches WLAN (LAN)</string>
+    <string name="remote_pad_tab_remote">Anderes WLAN (Erweitert)</string>
+    <string name="remote_pad_enter_code_prompt">Code in Ravno Pad → IP eingeben → Erweitert eintragen</string>
+    <string name="remote_pad_status_connecting">Verbinde mit verschlüsseltem Relay…</string>
+    <string name="remote_pad_status_ready">Bereit · Ende-zu-Ende verschlüsselt (15 Min. gültig)</string>
+    <string name="remote_pad_status_connected">Remote verbunden: %1$s</string>
+    <string name="remote_pad_status_error">Relay nicht erreichbar · Neuer Versuch…</string>
+    <string name="remote_pad_status_locked">3 Fehlversuche · Gesperrt %1$s</string>
+    <string name="remote_pad_btn_new_code">Neuer Code</string>
+    <string name="remote_pad_btn_turn_off">Remote ausschalten</string>
+    <string name="remote_pad_btn_open_dialog">Kopplungsansicht öffnen</string>
+    <string name="remote_pad_badge_lan">Lokales Netzwerk (LAN)</string>
+    <string name="remote_pad_badge_remote">Remote · Verschlüsselt</string>
+    <string name="remote_pad_step_2_remote">IP eingeben → Erweitert wählen</string>
+    <string name="remote_pad_step_3_remote">8-stelligen Code eingeben</string>
+    <string name="remote_pad_bottom_notice_remote">Verschlüsselter 8-Zeichen-Code · Läuft nach 15 Min. ab · 3 Fehler sperren 3 Min.</string>
 </resources>

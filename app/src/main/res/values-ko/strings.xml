@@ -245,5 +245,31 @@
     <string name="loading_ping_high">높음</string>
     <string name="loading_enter_now">게임 입장</string>
     <string name="loading_skip_wait">바로 열기</string>
+    <string name="loading_ctrl_gamepad">컨트롤러</string>
+    <string name="loading_ctrl_kb_mouse">키보드 및 마우스</string>
+    <string name="loading_ctrl_touch">터치</string>
     <string name="loading_artwork_cd">%1$s 게임 커버 이미지</string>
+    <!-- Remote Off-LAN Pad Relay -->
+    <string name="remote_pad_adv_title">다른 Wi-Fi에서 Pad 연결</string>
+    <string name="remote_pad_adv_desc">4G/5G 또는 다른 Wi-Fi에서 Ravno Pad를 연결하는 종단간 암호화 8자리 코드를 생성합니다. 기본 꺼짐이며 LAN은 그대로 유지됩니다.</string>
+    <string name="remote_pad_confirm_title">외부 네트워크 Pad 연결을 켤까요?</string>
+    <string name="remote_pad_confirm_desc">무료 암호화 릴레이를 통해 8자리 코드를 생성합니다(로그인 불필요). 15분 동안 미사용 시 자동 만료됩니다.</string>
+    <string name="remote_pad_confirm_enable">원격 연결 켜기</string>
+    <string name="remote_pad_confirm_cancel">취소</string>
+    <string name="remote_pad_tab_lan">같은 Wi-Fi (LAN)</string>
+    <string name="remote_pad_tab_remote">다른 Wi-Fi (고급)</string>
+    <string name="remote_pad_enter_code_prompt">Ravno Pad → IP 입력 → 고급 에서 이 8자리 코드를 입력하세요</string>
+    <string name="remote_pad_status_connecting">암호화 릴레이 연결 중…</string>
+    <string name="remote_pad_status_ready">대기 중 · 종단간 암호화 (15분 후 만료)</string>
+    <string name="remote_pad_status_connected">원격 연결됨: %1$s</string>
+    <string name="remote_pad_status_error">릴레이 연결 불가 · 재시도 중…</string>
+    <string name="remote_pad_status_locked">3회 오류 · %1$s 잠금</string>
+    <string name="remote_pad_btn_new_code">새 코드</string>
+    <string name="remote_pad_btn_turn_off">원격 끄기</string>
+    <string name="remote_pad_btn_open_dialog">페어링 화면 열기</string>
+    <string name="remote_pad_badge_lan">로컬 네트워크 (LAN)</string>
+    <string name="remote_pad_badge_remote">원격 · 암호화됨</string>
+    <string name="remote_pad_step_2_remote">IP 입력 → 고급 선택</string>
+    <string name="remote_pad_step_3_remote">8자리 코드 입력</string>
+    <string name="remote_pad_bottom_notice_remote">종단간 암호화 8자리 코드 · 15분 후 만료 · 3회 오류 시 3분 잠금</string>
 </resources>

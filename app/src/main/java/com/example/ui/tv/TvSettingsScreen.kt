@@ -58,8 +58,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import com.example.cloudplay.GamepadDetector
 import com.example.cloudplay.RemotePadTvServer
+import com.example.cloudplay.TvRemoteRelayStatus
 import com.example.data.AppConfig
 import com.example.data.AppLanguage
 import com.example.data.AppLogger
@@ -131,6 +136,7 @@ internal fun TvSettingsScreen(
     var showResetAdvancedConfirmDialog by remember { mutableStateOf(false) }
     var showResetGamepadConfirmDialog by remember { mutableStateOf(false) }
     var showClearCookiesConfirmDialog by remember { mutableStateOf(false) }
+    var showEnableRemotePadConfirmDialog by remember { mutableStateOf(false) }
     var showRemotePadDialog by rememberSaveable { mutableStateOf(false) }
     var activeRemapSourceBtn by remember { mutableStateOf<Int?>(null) }
     var showVisualControllerMapper by remember { mutableStateOf(false) }
@@ -1039,6 +1045,37 @@ internal fun TvSettingsScreen(
                             )
                         }
 
+                        // 1b. Kết nối Ravno Pad không cần chung Wi-Fi (mặc định tắt, mã 8 ký tự mã hóa hai đầu)
+                        item(key = "tv_adv_remote_pad_toggle") {
+                            TvSettingToggleRow(
+                                title = stringResource(R.string.remote_pad_adv_title),
+                                subtitle = stringResource(R.string.remote_pad_adv_desc),
+                                checked = remotePadServerState.remoteRelayEnabled,
+                                onCheckedChange = { wantEnable ->
+                                    if (wantEnable) {
+                                        showEnableRemotePadConfirmDialog = true
+                                    } else {
+                                        RemotePadTvServer.disableRemoteRelay()
+                                    }
+                                },
+                                scale = scale,
+                                onMoveLeftToCategory = moveFocusToCategory,
+                                testTag = "tv_adv_remote_pad_toggle_row"
+                            )
+                        }
+
+                        if (remotePadServerState.remoteRelayEnabled) {
+                            item(key = "tv_adv_remote_pad_code_card") {
+                                TvRemotePadAdvancedCodeCard(
+                                    serverState = remotePadServerState,
+                                    scale = scale,
+                                    onRegenerateCode = { RemotePadTvServer.regenerateRemoteCode() },
+                                    onOpenPairingDialog = { showRemotePadDialog = true },
+                                    onTurnOff = { RemotePadTvServer.disableRemoteRelay() }
+                                )
+                            }
+                        }
+
                         // 2. Màu sắc hình ảnh (Độ tương phản, Độ tươi màu, Độ sáng) + Đặt lại màu
                         item(key = "tv_adv_contrast") {
                             TvSettingSliderRow(
@@ -1581,6 +1618,22 @@ internal fun TvSettingsScreen(
             },
             onDismiss = { showClearCookiesConfirmDialog = false },
             testTagPrefix = "tv_clear_cookies_dialog"
+        )
+    }
+
+    if (showEnableRemotePadConfirmDialog) {
+        TvConfirmDialog(
+            title = stringResource(R.string.remote_pad_confirm_title),
+            description = stringResource(R.string.remote_pad_confirm_desc),
+            confirmText = stringResource(R.string.remote_pad_confirm_enable),
+            cancelText = stringResource(R.string.remote_pad_confirm_cancel),
+            confirmVariant = TvButtonVariant.PRIMARY,
+            onConfirm = {
+                showEnableRemotePadConfirmDialog = false
+                RemotePadTvServer.enableRemoteRelay(context)
+            },
+            onDismiss = { showEnableRemotePadConfirmDialog = false },
+            testTagPrefix = "tv_enable_remote_pad_dialog"
         )
     }
 

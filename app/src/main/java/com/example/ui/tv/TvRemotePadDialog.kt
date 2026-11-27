@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -55,8 +56,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.R
 import com.example.cloudplay.RemotePadTvServer
+import com.example.cloudplay.TvPadTransportMode
 import com.example.cloudplay.TvRemotePadServerState
+import com.example.cloudplay.TvRemoteRelayStatus
 import com.example.data.AppConfig
 import com.example.ui.components.GamepadSurfaceController
 import com.example.ui.theme.JetBrainsMonoFontFamily
@@ -79,9 +83,17 @@ internal fun TvRemotePadDialog(
     val context = LocalContext.current
     val serverState by RemotePadTvServer.state.collectAsState()
     val defaultFocusRequester = remember { FocusRequester() }
+    var showRemoteMode by rememberSaveable { mutableStateOf(serverState.remoteRelayEnabled) }
+    var showEnableRemoteConfirmDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         RemotePadTvServer.onPairingScreenOpened(context)
+    }
+
+    LaunchedEffect(serverState.remoteRelayEnabled) {
+        if (!serverState.remoteRelayEnabled) {
+            showRemoteMode = false
+        }
     }
 
     Dialog(
@@ -193,11 +205,29 @@ internal fun TvRemotePadDialog(
                             TvRemotePadPairingBody(
                                 config = config,
                                 serverState = serverState,
+                                showRemoteMode = showRemoteMode && serverState.remoteRelayEnabled,
                                 scale = scale,
                                 cardCorner = cardCorner,
                                 defaultFocusRequester = defaultFocusRequester,
+                                onSelectLanMode = {
+                                    showRemoteMode = false
+                                },
+                                onSelectRemoteMode = {
+                                    if (serverState.remoteRelayEnabled) {
+                                        showRemoteMode = true
+                                    } else {
+                                        showEnableRemoteConfirmDialog = true
+                                    }
+                                },
                                 onRegeneratePin = {
                                     RemotePadTvServer.regeneratePin()
+                                },
+                                onRegenerateRemoteCode = {
+                                    RemotePadTvServer.regenerateRemoteCode()
+                                },
+                                onDisableRemoteMode = {
+                                    RemotePadTvServer.disableRemoteRelay()
+                                    showRemoteMode = false
                                 },
                                 onForgetAllRemembered = {
                                     RemotePadTvServer.forgetDevice(null)
@@ -218,13 +248,14 @@ internal fun TvRemotePadDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalArrangement = Arrangement.spacedBy((6.dp * scale).coerceAtLeast(4.dp))
                     ) {
-                        val bottomNotice = if (serverState.status == TvServiceStatus.HAS_CONTROLLER) {
-                            config.tr(
+                        val bottomNotice = when {
+                            serverState.status == TvServiceStatus.HAS_CONTROLLER -> config.tr(
                                 "Tay cầm thật và điện thoại dùng song song · Tự nhả nút an toàn khi mất mạng",
                                 "Physical & phone controllers work together · Auto-releases buttons on disconnect"
                             )
-                        } else {
-                            config.tr(
+                            showRemoteMode && serverState.remoteRelayEnabled ->
+                                stringResource(R.string.remote_pad_bottom_notice_remote)
+                            else -> config.tr(
                                 "Mã 4 số đổi mới mỗi lần mở · Sai 3 lần tạm khóa 3 phút",
                                 "4-digit code refreshes on open · 3 wrong tries locks for 3 minutes"
                             )
@@ -248,6 +279,23 @@ internal fun TvRemotePadDialog(
             }
         }
     }
+
+    if (showEnableRemoteConfirmDialog) {
+        TvConfirmDialog(
+            title = stringResource(R.string.remote_pad_confirm_title),
+            description = stringResource(R.string.remote_pad_confirm_desc),
+            confirmText = stringResource(R.string.remote_pad_confirm_enable),
+            cancelText = stringResource(R.string.remote_pad_confirm_cancel),
+            confirmVariant = TvButtonVariant.PRIMARY,
+            onConfirm = {
+                showEnableRemoteConfirmDialog = false
+                RemotePadTvServer.enableRemoteRelay(context)
+                showRemoteMode = true
+            },
+            onDismiss = { showEnableRemoteConfirmDialog = false },
+            testTagPrefix = "tv_dialog_enable_remote_pad"
+        )
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -255,10 +303,15 @@ internal fun TvRemotePadDialog(
 private fun TvRemotePadPairingBody(
     config: AppConfig,
     serverState: TvRemotePadServerState,
+    showRemoteMode: Boolean,
     scale: Float,
     cardCorner: Dp,
     defaultFocusRequester: FocusRequester,
+    onSelectLanMode: () -> Unit,
+    onSelectRemoteMode: () -> Unit,
     onRegeneratePin: () -> Unit,
+    onRegenerateRemoteCode: () -> Unit,
+    onDisableRemoteMode: () -> Unit,
     onForgetAllRemembered: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -271,6 +324,165 @@ private fun TvRemotePadPairingBody(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy((12.dp * scale).coerceAtLeast(8.dp), Alignment.CenterVertically)
     ) {
+        // Thanh chuyển chế độ ngay tại màn hình mã: Cùng Wi-Fi (LAN) <-> Khác Wi-Fi (Nâng cao)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy((8.dp * scale).coerceAtLeast(6.dp), Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy((6.dp * scale).coerceAtLeast(4.dp)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("tv_remote_pad_mode_switcher")
+        ) {
+            TvChip(
+                text = stringResource(R.string.remote_pad_tab_lan),
+                selected = !showRemoteMode,
+                scale = scale * 0.95f,
+                onClick = onSelectLanMode,
+                modifier = Modifier.testTag("tv_remote_pad_tab_lan")
+            )
+            TvChip(
+                text = stringResource(R.string.remote_pad_tab_remote),
+                selected = showRemoteMode,
+                scale = scale * 0.95f,
+                onClick = onSelectRemoteMode,
+                modifier = Modifier.testTag("tv_remote_pad_tab_remote")
+            )
+        }
+
+        if (showRemoteMode) {
+            Text(
+                text = stringResource(R.string.remote_pad_enter_code_prompt),
+                color = TvMuted,
+                fontFamily = SpaceGroteskFontFamily,
+                fontSize = (15f * scale).coerceAtLeast(12f).sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
+
+            val isRemoteLocked = serverState.remoteLockoutRemainingSec > 0 ||
+                serverState.remoteRelayStatus == TvRemoteRelayStatus.LOCKED_OUT
+            val rawCode = serverState.remotePairingCode.ifBlank { "---- ----" }
+            val parts = rawCode.split("-", " ").filter { it.isNotBlank() }
+            val leftPart = if (isRemoteLocked) "––––" else parts.getOrElse(0) { "----" }
+            val rightPart = if (isRemoteLocked) "––––" else parts.getOrElse(1) { "----" }
+            val codeBorder = when {
+                isRemoteLocked || serverState.remoteRelayStatus == TvRemoteRelayStatus.ERROR -> TvDanger
+                serverState.remoteRelayStatus == TvRemoteRelayStatus.READY -> TvCyan
+                else -> TvLine
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy((10.dp * scale).coerceAtLeast(8.dp)),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.testTag("tv_remote_pad_8char_code_box")
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(cardCorner))
+                        .background(TvSurface2)
+                        .border(1.5.dp, codeBorder, RoundedCornerShape(cardCorner))
+                        .padding(
+                            horizontal = (24.dp * scale).coerceAtLeast(16.dp),
+                            vertical = (16.dp * scale).coerceAtLeast(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$leftPart – $rightPart",
+                        color = if (isRemoteLocked) TvMuted else TvInk,
+                        fontFamily = JetBrainsMonoFontFamily,
+                        fontSize = (42f * scale).coerceAtLeast(26f).sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (2.5f * scale).sp
+                    )
+                }
+            }
+
+            val remoteStatusDot = when (serverState.remoteRelayStatus) {
+                TvRemoteRelayStatus.READY -> TvCyan
+                TvRemoteRelayStatus.CONNECTED -> TvAccent
+                TvRemoteRelayStatus.CONNECTING -> TvWarn
+                TvRemoteRelayStatus.LOCKED_OUT, TvRemoteRelayStatus.ERROR -> TvDanger
+                TvRemoteRelayStatus.OFF -> TvMuted
+            }
+            val remoteStatusText = when (serverState.remoteRelayStatus) {
+                TvRemoteRelayStatus.CONNECTING -> stringResource(R.string.remote_pad_status_connecting)
+                TvRemoteRelayStatus.READY -> stringResource(R.string.remote_pad_status_ready)
+                TvRemoteRelayStatus.CONNECTED -> stringResource(R.string.remote_pad_status_connected, serverState.connectedDeviceName)
+                TvRemoteRelayStatus.ERROR -> stringResource(R.string.remote_pad_status_error)
+                TvRemoteRelayStatus.LOCKED_OUT -> {
+                    val mins = serverState.remoteLockoutRemainingSec / 60
+                    val secs = serverState.remoteLockoutRemainingSec % 60
+                    stringResource(R.string.remote_pad_status_locked, "%d:%02d".format(mins, secs))
+                }
+                TvRemoteRelayStatus.OFF -> stringResource(R.string.remote_pad_status_connecting)
+            }
+
+            TvFlexibleInfoChip(
+                leadingDotColor = remoteStatusDot,
+                text = remoteStatusText,
+                textColor = if (remoteStatusDot == TvCyan || remoteStatusDot == TvAccent) TvInk else remoteStatusDot,
+                scale = scale
+            )
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy((12.dp * scale).coerceAtLeast(8.dp), Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy((8.dp * scale).coerceAtLeast(6.dp)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TvButton(
+                    text = stringResource(R.string.remote_pad_btn_new_code),
+                    variant = TvButtonVariant.PRIMARY,
+                    scale = scale,
+                    focusRequester = defaultFocusRequester,
+                    onClick = onRegenerateRemoteCode,
+                    modifier = Modifier
+                        .widthIn(min = (132.dp * scale).coerceAtLeast(100.dp))
+                        .testTag("tv_remote_pad_regenerate_remote_btn")
+                )
+                TvButton(
+                    text = stringResource(R.string.remote_pad_btn_turn_off),
+                    variant = TvButtonVariant.DANGER,
+                    scale = scale,
+                    onClick = onDisableRemoteMode,
+                    modifier = Modifier
+                        .widthIn(min = (132.dp * scale).coerceAtLeast(100.dp))
+                        .testTag("tv_remote_pad_disable_remote_btn")
+                )
+                TvButton(
+                    text = config.tr("Đóng", "Close"),
+                    variant = TvButtonVariant.DEFAULT,
+                    scale = scale,
+                    onClick = onClose,
+                    modifier = Modifier
+                        .widthIn(min = (120.dp * scale).coerceAtLeast(92.dp))
+                        .testTag("tv_remote_pad_close_btn")
+                )
+            }
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy((8.dp * scale).coerceAtLeast(6.dp), Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy((6.dp * scale).coerceAtLeast(4.dp)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TvStepCompactChip(
+                    stepNumber = "1",
+                    text = config.tr("Mở Ravno Pad", "Open Ravno Pad"),
+                    scale = scale
+                )
+                TvStepCompactChip(
+                    stepNumber = "2",
+                    text = stringResource(R.string.remote_pad_step_2_remote),
+                    scale = scale
+                )
+                TvStepCompactChip(
+                    stepNumber = "3",
+                    text = stringResource(R.string.remote_pad_step_3_remote),
+                    scale = scale
+                )
+            }
+            return@Column
+        }
+
         Text(
             text = config.tr("Nhập mã này trên điện thoại", "Enter this code on your phone"),
             color = TvMuted,
@@ -536,14 +748,17 @@ private fun TvRemotePadConnectedBody(
             textAlign = TextAlign.Center
         )
 
-        // Chip trạng thái kết nối xanh lá
+        // Chip trạng thái kết nối + nhãn LAN / Kết nối từ xa
+        val isRemoteTransport = serverState.activeTransportMode == TvPadTransportMode.REMOTE_RELAY
+        val transportBadge = if (isRemoteTransport) {
+            stringResource(R.string.remote_pad_badge_remote)
+        } else {
+            stringResource(R.string.remote_pad_badge_lan)
+        }
         TvFlexibleInfoChip(
-            leadingDotColor = TvAccent,
-            text = config.tr(
-                "Đã kết nối · Tay cầm ${serverState.connectedPlayerIndex} · Ổn định",
-                "Connected · Controller ${serverState.connectedPlayerIndex} · Stable"
-            ),
-            textColor = TvAccent,
+            leadingDotColor = if (isRemoteTransport) TvCyan else TvAccent,
+            text = "${config.tr("Đã kết nối", "Connected")} · $transportBadge · #${serverState.connectedPlayerIndex}",
+            textColor = if (isRemoteTransport) TvCyan else TvAccent,
             scale = scale
         )
 
@@ -800,5 +1015,126 @@ private fun TvStepCompactChip(
             fontFamily = SpaceGroteskFontFamily,
             fontSize = (12f * scale).coerceAtLeast(9.5f).sp
         )
+    }
+}
+
+/**
+ * Thẻ hiển thị mã kết nối 8 ký tự ngay trong tab Chế độ nâng cao của Cài đặt TV.
+ * Đầy đủ trạng thái, nút Đổi mã mới, Mở màn ghép đôi và Tắt khác mạng (điều khiển D-Pad/A/B).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun TvRemotePadAdvancedCodeCard(
+    serverState: TvRemotePadServerState,
+    scale: Float,
+    onRegenerateCode: () -> Unit,
+    onOpenPairingDialog: () -> Unit,
+    onTurnOff: () -> Unit
+) {
+    val corner = (14.dp * scale).coerceAtLeast(10.dp)
+    val isLocked = serverState.remoteLockoutRemainingSec > 0 ||
+        serverState.remoteRelayStatus == TvRemoteRelayStatus.LOCKED_OUT
+    val displayCode = when {
+        isLocked -> "–––– – ––––"
+        serverState.remotePairingCode.isNotBlank() -> serverState.remotePairingCode.replace("-", " – ")
+        else -> "---- – ----"
+    }
+    val statusDotColor = when (serverState.remoteRelayStatus) {
+        TvRemoteRelayStatus.READY -> TvCyan
+        TvRemoteRelayStatus.CONNECTED -> TvAccent
+        TvRemoteRelayStatus.CONNECTING -> TvWarn
+        TvRemoteRelayStatus.LOCKED_OUT, TvRemoteRelayStatus.ERROR -> TvDanger
+        TvRemoteRelayStatus.OFF -> TvMuted
+    }
+    val statusLabel = when (serverState.remoteRelayStatus) {
+        TvRemoteRelayStatus.CONNECTING -> stringResource(R.string.remote_pad_status_connecting)
+        TvRemoteRelayStatus.READY -> stringResource(R.string.remote_pad_status_ready)
+        TvRemoteRelayStatus.CONNECTED -> stringResource(R.string.remote_pad_status_connected, serverState.connectedDeviceName)
+        TvRemoteRelayStatus.ERROR -> stringResource(R.string.remote_pad_status_error)
+        TvRemoteRelayStatus.LOCKED_OUT -> {
+            val mins = serverState.remoteLockoutRemainingSec / 60
+            val secs = serverState.remoteLockoutRemainingSec % 60
+            stringResource(R.string.remote_pad_status_locked, "%d:%02d".format(mins, secs))
+        }
+        TvRemoteRelayStatus.OFF -> stringResource(R.string.remote_pad_status_connecting)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(corner))
+            .background(TvSurface)
+            .border(1.dp, if (serverState.remoteRelayStatus == TvRemoteRelayStatus.READY) TvCyan else TvLine, RoundedCornerShape(corner))
+            .padding((16.dp * scale).coerceAtLeast(12.dp))
+            .testTag("tv_adv_remote_pad_code_card"),
+        verticalArrangement = Arrangement.spacedBy((10.dp * scale).coerceAtLeast(8.dp))
+    ) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy((6.dp * scale).coerceAtLeast(4.dp))
+        ) {
+            Text(
+                text = stringResource(R.string.remote_pad_enter_code_prompt),
+                color = TvMuted,
+                fontFamily = SpaceGroteskFontFamily,
+                fontSize = (13f * scale).coerceAtLeast(11f).sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            TvFlexibleInfoChip(
+                leadingDotColor = statusDotColor,
+                text = statusLabel,
+                textColor = if (statusDotColor == TvCyan || statusDotColor == TvAccent) TvInk else statusDotColor,
+                scale = scale * 0.92f
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape((12.dp * scale).coerceAtLeast(9.dp)))
+                .background(TvSurface2)
+                .border(1.dp, TvLine, RoundedCornerShape((12.dp * scale).coerceAtLeast(9.dp)))
+                .padding(vertical = (12.dp * scale).coerceAtLeast(9.dp), horizontal = (16.dp * scale).coerceAtLeast(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = displayCode,
+                color = if (isLocked) TvMuted else TvInk,
+                fontFamily = JetBrainsMonoFontFamily,
+                fontSize = (30f * scale).coerceAtLeast(21f).sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = (2f * scale).sp,
+                modifier = Modifier.testTag("tv_adv_remote_pad_code_text")
+            )
+        }
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy((8.dp * scale).coerceAtLeast(6.dp)),
+            verticalArrangement = Arrangement.spacedBy((6.dp * scale).coerceAtLeast(4.dp))
+        ) {
+            TvButton(
+                text = stringResource(R.string.remote_pad_btn_new_code),
+                variant = TvButtonVariant.PRIMARY,
+                scale = scale * 0.9f,
+                onClick = onRegenerateCode,
+                modifier = Modifier.testTag("tv_adv_remote_pad_new_code_btn")
+            )
+            TvButton(
+                text = stringResource(R.string.remote_pad_btn_open_dialog),
+                variant = TvButtonVariant.DEFAULT,
+                scale = scale * 0.9f,
+                onClick = onOpenPairingDialog,
+                modifier = Modifier.testTag("tv_adv_remote_pad_open_dialog_btn")
+            )
+            TvButton(
+                text = stringResource(R.string.remote_pad_btn_turn_off),
+                variant = TvButtonVariant.DANGER,
+                scale = scale * 0.9f,
+                onClick = onTurnOff,
+                modifier = Modifier.testTag("tv_adv_remote_pad_turn_off_btn")
+            )
+        }
     }
 }

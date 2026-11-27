@@ -61,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import com.muitenvn.cloudplay.protocol.AuthFailReason
+import com.muitenvn.cloudplay.protocol.RemotePadRelayCrypto
 import com.muitenvn.cloudplay.protocol.TvServiceStatus
 import com.muitenvn.cloudplay.protocol.VersionCheckResult
 
@@ -172,7 +173,9 @@ fun CloudPlayPadRootScreen() {
                     onRescan = { PadNetworkClient.rescan(context) },
                     onCycleLanguage = { PadNetworkClient.cycleLanguage(context) },
                     onSelectTv = { PadNetworkClient.onSelectTv(it) },
-                    onProbeManualIp = { PadNetworkClient.probeManualIp(it) }
+                    onProbeManualIp = { PadNetworkClient.probeManualIp(it) },
+                    onConnectRemoteCode = { PadNetworkClient.connectWithRemoteCode(it) },
+                    onClearRemoteStatus = { PadNetworkClient.clearRemoteStatus() }
                 )
             }
 
@@ -232,11 +235,15 @@ private fun PadFindTvScreen(
     onRescan: () -> Unit,
     onCycleLanguage: () -> Unit,
     onSelectTv: (DiscoveredTvDevice) -> Unit,
-    onProbeManualIp: (String) -> Unit
+    onProbeManualIp: (String) -> Unit,
+    onConnectRemoteCode: (String) -> Unit,
+    onClearRemoteStatus: () -> Unit
 ) {
     val lang = state.language
     var manualIp by remember { mutableStateOf("") }
+    var remoteCode by remember { mutableStateOf("") }
     var showManualIpRow by remember { mutableStateOf(false) }
+    var manualAdvancedTab by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -519,54 +526,229 @@ private fun PadFindTvScreen(
             }
 
             if (showManualIpRow) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(m.itemGap),
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(m.cardRadius))
+                        .background(PadSurface)
+                        .border(m.strokeThin, PadBorder, RoundedCornerShape(m.cardRadius))
+                        .padding(m.cardPad * 0.85f),
+                    verticalArrangement = Arrangement.spacedBy(m.itemGap * 0.75f)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(m.buttonRadius))
-                            .background(PadSurface)
-                            .border(m.strokeThin, PadBorder, RoundedCornerShape(m.buttonRadius))
-                            .padding(horizontal = m.cardPad, vertical = m.cardPad * 0.75f)
-                            .testTag("pad_manual_ip_input")
+                    // Hai tab nhỏ ngay trong hộp Nhập IP: IP (LAN) | Nâng cao (Mã)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(m.itemGap * 0.6f)
                     ) {
-                        if (manualIp.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(m.buttonRadius * 0.85f))
+                                .background(if (!manualAdvancedTab) PadSelected else PadSurface2)
+                                .border(
+                                    m.strokeThin,
+                                    if (!manualAdvancedTab) PadAccent else PadBorder,
+                                    RoundedCornerShape(m.buttonRadius * 0.85f)
+                                )
+                                .clickable {
+                                    manualAdvancedTab = false
+                                    onClearRemoteStatus()
+                                }
+                                .padding(horizontal = m.cardPad * 0.65f, vertical = m.cardPad * 0.5f)
+                                .testTag("pad_manual_tab_ip"),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                text = "IP TV (192.168.1.x)",
-                                color = PadMuted,
-                                fontSize = m.captionFont
+                                text = PadStrings.manualTabIp(lang),
+                                color = if (!manualAdvancedTab) PadAccent else PadMuted,
+                                fontSize = m.captionFont,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
                             )
                         }
-                        BasicTextField(
-                            value = manualIp,
-                            onValueChange = { manualIp = it },
-                            singleLine = true,
-                            textStyle = TextStyle(
-                                color = PadInk,
-                                fontSize = m.bodyFont,
-                                fontFamily = FontFamily.Monospace
-                            ),
-                            cursorBrush = SolidColor(PadAccent),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(m.buttonRadius * 0.85f))
+                                .background(if (manualAdvancedTab) PadSelected else PadSurface2)
+                                .border(
+                                    m.strokeThin,
+                                    if (manualAdvancedTab) PadCyan else PadBorder,
+                                    RoundedCornerShape(m.buttonRadius * 0.85f)
+                                )
+                                .clickable { manualAdvancedTab = true }
+                                .padding(horizontal = m.cardPad * 0.65f, vertical = m.cardPad * 0.5f)
+                                .testTag("pad_manual_tab_advanced"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = PadStrings.manualTabAdvanced(lang),
+                                color = if (manualAdvancedTab) PadCyan else PadMuted,
+                                fontSize = m.captionFont,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
                     }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(m.buttonRadius))
-                            .background(PadAccent)
-                            .clickable { onProbeManualIp(manualIp) }
-                            .padding(horizontal = m.cardPad, vertical = m.cardPad * 0.75f)
-                            .testTag("pad_manual_ip_btn")
-                    ) {
-                        Text(
-                            text = PadStrings.tr(lang, "Tìm IP", "Connect IP"),
-                            color = PadOnAccent,
-                            fontSize = m.bodyFont,
-                            fontWeight = FontWeight.ExtraBold
-                        )
+
+                    if (!manualAdvancedTab) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(m.itemGap),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(m.buttonRadius))
+                                    .background(PadSurface2)
+                                    .border(m.strokeThin, PadBorder, RoundedCornerShape(m.buttonRadius))
+                                    .padding(horizontal = m.cardPad, vertical = m.cardPad * 0.75f)
+                                    .testTag("pad_manual_ip_input")
+                            ) {
+                                if (manualIp.isEmpty()) {
+                                    Text(
+                                        text = "IP TV (192.168.1.x)",
+                                        color = PadMuted,
+                                        fontSize = m.captionFont
+                                    )
+                                }
+                                BasicTextField(
+                                    value = manualIp,
+                                    onValueChange = { manualIp = it },
+                                    singleLine = true,
+                                    textStyle = TextStyle(
+                                        color = PadInk,
+                                        fontSize = m.bodyFont,
+                                        fontFamily = FontFamily.Monospace
+                                    ),
+                                    cursorBrush = SolidColor(PadAccent),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(m.buttonRadius))
+                                    .background(PadAccent)
+                                    .clickable { onProbeManualIp(manualIp) }
+                                    .padding(horizontal = m.cardPad, vertical = m.cardPad * 0.75f)
+                                    .testTag("pad_manual_ip_btn")
+                            ) {
+                                Text(
+                                    text = PadStrings.tr(lang, "Tìm IP", "Connect IP"),
+                                    color = PadOnAccent,
+                                    fontSize = m.bodyFont,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+                        }
+                    } else {
+                        val isRemoteReady = RemotePadRelayCrypto.isValidCode(remoteCode) &&
+                            !state.isRemoteConnecting &&
+                            state.lockoutRemainingSec == 0
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(m.itemGap),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(m.buttonRadius))
+                                    .background(PadSurface2)
+                                    .border(
+                                        m.strokeThin,
+                                        if (RemotePadRelayCrypto.isValidCode(remoteCode)) PadCyan else PadBorder,
+                                        RoundedCornerShape(m.buttonRadius)
+                                    )
+                                    .padding(horizontal = m.cardPad, vertical = m.cardPad * 0.75f)
+                                    .testTag("pad_remote_code_input")
+                            ) {
+                                if (remoteCode.isEmpty()) {
+                                    Text(
+                                        text = PadStrings.remoteCodePlaceholder(lang),
+                                        color = PadMuted,
+                                        fontSize = m.captionFont
+                                    )
+                                }
+                                BasicTextField(
+                                    value = remoteCode,
+                                    onValueChange = { raw ->
+                                        val cleaned = raw.uppercase()
+                                            .filter { ch -> ch.isLetterOrDigit() || ch == '-' }
+                                            .take(9)
+                                        remoteCode = cleaned
+                                        if (state.remoteStatusCode.isNotEmpty() && !state.isRemoteConnecting) {
+                                            onClearRemoteStatus()
+                                        }
+                                    },
+                                    singleLine = true,
+                                    textStyle = TextStyle(
+                                        color = PadInk,
+                                        fontSize = m.bodyFont,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    cursorBrush = SolidColor(PadCyan),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(m.buttonRadius))
+                                    .background(if (isRemoteReady) PadCyan else PadSurface2)
+                                    .border(
+                                        m.strokeThin,
+                                        if (isRemoteReady) PadCyan else PadBorder,
+                                        RoundedCornerShape(m.buttonRadius)
+                                    )
+                                    .clickable(enabled = isRemoteReady) {
+                                        onConnectRemoteCode(remoteCode)
+                                    }
+                                    .padding(horizontal = m.cardPad, vertical = m.cardPad * 0.75f)
+                                    .testTag("pad_remote_code_connect_btn")
+                            ) {
+                                Text(
+                                    text = PadStrings.remoteConnectBtn(lang),
+                                    color = if (isRemoteReady) PadOnAccent else PadMuted,
+                                    fontSize = m.bodyFont,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+                        }
+
+                        if (state.remoteStatusCode.isNotEmpty()) {
+                            val mins = state.lockoutRemainingSec / 60
+                            val secs = state.lockoutRemainingSec % 60
+                            val lockTimeStr = String.format("%d:%02d", mins, secs)
+                            val (statusMsg, statusColor) = when (state.remoteStatusCode) {
+                                "CONNECTING" -> PadStrings.remoteStatusConnecting(lang) to PadCyan
+                                "HANDSHAKE" -> PadStrings.remoteStatusHandshake(lang) to PadCyan
+                                "TRYING_LAN" -> PadStrings.remoteStatusTryingLan(lang) to PadAccent
+                                "INVALID_CODE" -> PadStrings.remoteStatusInvalidCode(lang) to PadWarn
+                                "BROKER_ERROR" -> PadStrings.remoteStatusBrokerError(lang) to PadDanger
+                                "TIMEOUT" -> PadStrings.remoteStatusTimeout(lang) to PadWarn
+                                "LOCKED_OUT" -> PadStrings.remoteStatusLockedOut(lang, lockTimeStr) to PadDanger
+                                "VERSION_MISMATCH" -> when (state.versionMismatchResult) {
+                                    VersionCheckResult.NEED_UPDATE_CLOUDPLAY -> PadStrings.needUpdateCloudPlay(lang) to PadDanger
+                                    VersionCheckResult.NEED_UPDATE_PAD -> PadStrings.needUpdateCloudPlayPad(lang) to PadDanger
+                                    VersionCheckResult.COMPATIBLE -> "" to PadMuted
+                                }
+                                else -> "" to PadMuted
+                            }
+                            if (statusMsg.isNotEmpty()) {
+                                Text(
+                                    text = statusMsg,
+                                    color = statusColor,
+                                    fontSize = m.captionFont,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("pad_remote_status_text")
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -973,17 +1155,19 @@ private fun PadDisconnectedSummaryScreen(
     val lang = state.language
     val tvName = state.selectedTv?.tvName.orEmpty().ifBlank { "Ravno TV" }
 
-    val subtitleText = when (state.disconnectReasonCode) {
-        "FORGOTTEN" -> PadStrings.tr(
+    val subtitleText = when {
+        state.disconnectReasonCode == "FORGOTTEN" -> PadStrings.tr(
             lang = lang,
             vi = "TV ($tvName) đã quên thiết bị này. Mọi nút bấm đã tự động nhả về trạng thái nghỉ.",
             en = "TV ($tvName) forgot this device. All buttons were automatically released to neutral."
         )
-        "TV_DISCONNECT" -> PadStrings.tr(
+        state.disconnectReasonCode == "TV_DISCONNECT" -> PadStrings.tr(
             lang = lang,
             vi = "TV ($tvName) đã ngắt kết nối tay cầm. Mọi nút bấm đã tự động nhả về trạng thái nghỉ.",
             en = "TV ($tvName) disconnected the controller. All buttons were automatically released to neutral."
         )
+        state.activeTransportMode == PadTransportMode.REMOTE_RELAY ->
+            PadStrings.remoteDisconnectedSubtitle(lang, tvName)
         else -> PadStrings.tr(
             lang = lang,
             vi = "Kiểm tra TV còn mở và cùng Wi-Fi. Mọi nút bấm đã tự động nhả để nhân vật không bị kẹt nút.",
@@ -1057,7 +1241,7 @@ private fun PadDisconnectedSummaryScreen(
                 textAlign = TextAlign.Center
             )
 
-            if (state.isAutoReconnecting || state.isConnecting) {
+            if (state.isAutoReconnecting || state.isConnecting || state.isRemoteConnecting) {
                 Text(
                     text = PadStrings.tr(
                         lang = lang,

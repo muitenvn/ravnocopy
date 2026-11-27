@@ -1306,11 +1306,13 @@ internal fun PadLandscapeControllerScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(unit * 0.9f)
                 ) {
+                    val isRemoteRelay = state.activeTransportMode == PadTransportMode.REMOTE_RELAY
+                    val statusTint = if (isRemoteRelay) OfficialHudCyan else OfficialHudAccent
                     Box(
                         modifier = Modifier
                             .size(unit * 1.3f)
                             .clip(CircleShape)
-                            .background(OfficialHudAccent)
+                            .background(statusTint)
                     )
                     val tvTitle = state.selectedTv?.tvName.orEmpty().ifBlank { "Ravno TV" }
                     Text(
@@ -1321,10 +1323,19 @@ internal fun PadLandscapeControllerScreen(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    if (isRemoteRelay) {
+                        Text(
+                            text = "· ${PadStrings.remoteTransportBadge(lang)}",
+                            color = OfficialHudCyan,
+                            fontSize = fontTiny,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.testTag("pad_transport_mode_badge")
+                        )
+                    }
                     val pingStr = state.measuredPingMs?.let { "$it ms" } ?: "-- ms"
                     Text(
                         text = "· $pingStr",
-                        color = OfficialHudAccent,
+                        color = statusTint,
                         fontFamily = FontFamily.Monospace,
                         fontSize = fontTiny,
                         fontWeight = FontWeight.Bold,

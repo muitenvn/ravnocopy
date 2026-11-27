@@ -14,6 +14,7 @@ import com.muitenvn.cloudplay.protocol.RemoteControlFrame
 import com.muitenvn.cloudplay.protocol.RemotePadButtons
 import com.muitenvn.cloudplay.protocol.RemotePadCrypto
 import com.muitenvn.cloudplay.protocol.RemotePadProtocol
+import com.muitenvn.cloudplay.protocol.RemotePadRelayCrypto
 import com.muitenvn.cloudplay.protocol.RemotePadState
 import com.muitenvn.cloudplay.protocol.RemotePadUdpCodec
 import com.muitenvn.cloudplay.protocol.TvServiceStatus
@@ -72,7 +73,15 @@ data class TvRemotePadServerState(
     val rememberedDevices: List<PairedPhoneDevice> = emptyList(),
     val versionMismatchNoticeVi: String = "",
     val versionMismatchNoticeEn: String = "",
-    val pairPromptTick: Long = 0L
+    val pairPromptTick: Long = 0L,
+    val remoteRelayEnabled: Boolean = false,
+    val remoteRelayStatus: TvRemoteRelayStatus = TvRemoteRelayStatus.OFF,
+    val remotePairingCode: String = "",
+    val remoteBrokerSlot: Int = 0,
+    val remoteCodeExpiresAtElapsedMs: Long = 0L,
+    val remoteFailedAttempts: Int = 0,
+    val remoteLockoutRemainingSec: Int = 0,
+    val activeTransportMode: TvPadTransportMode = TvPadTransportMode.NONE
 )
 
 /**
@@ -129,6 +138,15 @@ object RemotePadTvServer {
 
     private val lastReceivedUdpSequence = AtomicLong(-1L)
     private val lastUdpPacketElapsedMs = AtomicLong(0L)
+
+    private data class PendingLanQuickToken(
+        val tokenHex: String,
+        val deviceId: String,
+        val deviceName: String,
+        val expiresAtElapsedMs: Long
+    )
+
+    private val pendingLanQuickTokenRef = AtomicReference<PendingLanQuickToken?>(null)
 
     @Volatile
     private var lastAppliedPadState: RemotePadState = RemotePadState.NEUTRAL
@@ -240,6 +258,127 @@ object RemotePadTvServer {
         }
     }
 
+    fun enableRemoteRelay(context: Context) {
+        RemotePadTvRelayManager.enable(context)
+    }
+
+    fun disableRemoteRelay() {
+        RemotePadTvRelayManager.disable()
+    }
+
+    fun regenerateRemoteCode() {
+        RemotePadTvRelayManager.regenerateCode()
+    }
+
+    internal fun registerPendingLanQuickToken(
+        quickTokenHex: String,
+        deviceId: String,
+        deviceName: String,
+        expiresAtElapsedMs: Long
+    ) {
+        pendingLanQuickTokenRef.set(
+            PendingLanQuickToken(
+                tokenHex = quickTokenHex,
+                deviceId = deviceId,
+                deviceName = deviceName,
+                expiresAtElapsedMs = expiresAtElapsedMs
+            )
+        )
+    }
+
+    internal fun getCurrentGameSyncInfo(): Triple<String, String, String> {
+        return Triple(currentActiveGameKey, currentActiveGameTitle, currentActivePresetName)
+    }
+
+    internal fun updateRemoteRelayState(
+        enabled: Boolean,
+        status: TvRemoteRelayStatus,
+        pairingCode: String,
+        brokerSlot: Int,
+        expiresAtElapsedMs: Long,
+        failedAttempts: Int,
+        lockoutRemainingSec: Int
+    ) {
+        _state.update { cur ->
+            cur.copy(
+                remoteRelayEnabled = enabled,
+                remoteRelayStatus = status,
+                remotePairingCode = pairingCode,
+                remoteBrokerSlot = brokerSlot,
+                remoteCodeExpiresAtElapsedMs = expiresAtElapsedMs,
+                remoteFailedAttempts = failedAttempts,
+                remoteLockoutRemainingSec = lockoutRemainingSec
+            )
+        }
+    }
+
+    internal fun reportRemoteVersionMismatch(clientVersion: Int, result: VersionCheckResult) {
+        val (vi, en) = when (result) {
+            VersionCheckResult.NEED_UPDATE_CLOUDPLAY ->
+                "Cần cập nhật Ravno (TV đang dùng giao thức v${RemotePadProtocol.PROTOCOL_VERSION}, điện thoại dùng v$clientVersion)." to
+                    "Need to update Ravno (TV uses protocol v${RemotePadProtocol.PROTOCOL_VERSION}, phone uses v$clientVersion)."
+            VersionCheckResult.NEED_UPDATE_PAD ->
+                "Cần cập nhật Ravno Pad trên điện thoại (TV dùng v${RemotePadProtocol.PROTOCOL_VERSION}, điện thoại dùng v$clientVersion)." to
+                    "Need to update Ravno Pad on phone (TV uses v${RemotePadProtocol.PROTOCOL_VERSION}, phone uses v$clientVersion)."
+            VersionCheckResult.COMPATIBLE -> "" to ""
+        }
+        _state.update { it.copy(versionMismatchNoticeVi = vi, versionMismatchNoticeEn = en) }
+    }
+
+    internal fun onRemoteRelaySessionConnected(
+        deviceId: String,
+        deviceName: String,
+        brokerSlot: Int,
+        pairingCode: String
+    ) {
+        // Nếu đang có phiên LAN cũ, đóng sạch trước khi nhận phiên từ xa
+        activeClientSocketRef.getAndSet(null)?.let { old -> runCatching { old.close() } }
+        activeClientWriterRef.set(null)
+        activeUdpSessionToken = null
+        lastReceivedUdpSequence.set(-1L)
+        lastUdpPacketElapsedMs.set(SystemClock.elapsedRealtime())
+        lastAppliedPadState = RemotePadState.NEUTRAL
+
+        _state.update { cur ->
+            cur.copy(
+                status = TvServiceStatus.HAS_CONTROLLER,
+                connectedDeviceId = deviceId,
+                connectedDeviceName = deviceName,
+                connectedPlayerIndex = 1,
+                activeTransportMode = TvPadTransportMode.REMOTE_RELAY,
+                remoteRelayEnabled = true,
+                remoteRelayStatus = TvRemoteRelayStatus.CONNECTED,
+                remotePairingCode = pairingCode,
+                remoteBrokerSlot = brokerSlot,
+                remoteFailedAttempts = 0,
+                remoteLockoutRemainingSec = 0,
+                versionMismatchNoticeVi = "",
+                versionMismatchNoticeEn = ""
+            )
+        }
+        refreshNsdRegistration()
+    }
+
+    internal fun onRemoteRelayInputState(decoded: RemotePadState) {
+        lastUdpPacketElapsedMs.set(SystemClock.elapsedRealtime())
+        applyIncomingPadState(decoded)
+    }
+
+    internal fun onRemoteRelaySessionDisconnected() {
+        forceReleaseAllInputsToNeutral()
+        if (_state.value.activeTransportMode == TvPadTransportMode.REMOTE_RELAY) {
+            _state.update { cur ->
+                cur.copy(
+                    status = TvServiceStatus.WAITING_FOR_PAIR,
+                    connectedDeviceId = "",
+                    connectedDeviceName = "",
+                    activeTransportMode = TvPadTransportMode.NONE
+                )
+            }
+            refreshNsdRegistration()
+        }
+    }
+
     fun startServerIfNeeded(context: Context) {
         ensureInitialized(context)
         startUdpReceiverIfNeeded()
@@ -333,7 +472,12 @@ object RemotePadTvServer {
                 val lastPktAt = lastUdpPacketElapsedMs.get()
                 if (!lastAppliedPadState.isNeutral() && lastPktAt > 0L) {
                     val elapsed = SystemClock.elapsedRealtime() - lastPktAt
-                    if (elapsed >= RemotePadProtocol.WATCHDOG_RELEASE_TIMEOUT_MS) {
+                    val timeoutMs = if (_state.value.activeTransportMode == TvPadTransportMode.REMOTE_RELAY) {
+                        RemotePadProtocol.REMOTE_RELAY_WATCHDOG_TIMEOUT_MS
+                    } else {
+                        RemotePadProtocol.WATCHDOG_RELEASE_TIMEOUT_MS
+                    }
+                    if (elapsed >= timeoutMs) {
                         forceReleaseAllInputsToNeutral()
                     }
                 }
@@ -622,6 +766,57 @@ object RemotePadTvServer {
                     )
                 }
 
+                is RemoteControlFrame.AuthWithQuickToken -> {
+                    if (!verifyClientProtocolVersion(authFrame.protocolVersion, writer)) {
+                        runCatching { client.close() }
+                        return
+                    }
+                    val pending = pendingLanQuickTokenRef.get()
+                    val now = SystemClock.elapsedRealtime()
+                    val validQuick = pending != null &&
+                        now <= pending.expiresAtElapsedMs &&
+                        RemotePadRelayCrypto.verifyQuickTokenProofHmac(
+                            expectedQuickTokenHex = pending.tokenHex,
+                            tvNonceHex = nonceHex,
+                            clientDeviceId = authFrame.deviceId,
+                            candidateHmacHex = authFrame.quickTokenHmacHex
+                        )
+                    if (!validQuick || pending == null) {
+                        sendFrame(
+                            writer,
+                            RemoteControlFrame.AuthFail(
+                                protocolVersion = RemotePadProtocol.PROTOCOL_VERSION,
+                                reason = AuthFailReason.TOKEN_REVOKED
+                            )
+                        )
+                        runCatching { client.close() }
+                        return
+                    }
+                    pendingLanQuickTokenRef.compareAndSet(pending, null)
+                    RemotePadTvRelayManager.onUpgradedToDirectLan()
+
+                    val rememberTokenHex = RemotePadCrypto.generateRememberTokenHex()
+                    val cleanName = authFrame.deviceName.trim().ifBlank { pending.deviceName }
+                    val cleanId = authFrame.deviceId.trim().ifBlank { pending.deviceId }
+                    savePairedDevice(
+                        PairedPhoneDevice(
+                            deviceId = cleanId,
+                            deviceName = cleanName,
+                            rememberTokenHex = rememberTokenHex,
+                            pairedAtEpochMs = System.currentTimeMillis()
+                        )
+                    )
+                    establishAuthenticatedSession(
+                        client = client,
+                        reader = reader,
+                        writer = writer,
+                        deviceId = cleanId,
+                        deviceName = cleanName,
+                        rememberTokenHex = rememberTokenHex,
+                        tvNonceHex = nonceHex
+                    )
+                }
+
                 else -> {
                     runCatching { client.close() }
                 }
@@ -707,6 +902,7 @@ object RemotePadTvServer {
                 connectedDeviceId = deviceId,
                 connectedDeviceName = deviceName,
                 connectedPlayerIndex = 1,
+                activeTransportMode = TvPadTransportMode.LAN,
                 versionMismatchNoticeVi = "",
                 versionMismatchNoticeEn = ""
             )
@@ -771,7 +967,8 @@ object RemotePadTvServer {
                     cur.copy(
                         status = TvServiceStatus.WAITING_FOR_PAIR,
                         connectedDeviceId = "",
-                        connectedDeviceName = ""
+                        connectedDeviceName = "",
+                        activeTransportMode = TvPadTransportMode.NONE
                     )
                 }
                 refreshNsdRegistration()
@@ -803,6 +1000,10 @@ object RemotePadTvServer {
         currentActiveGameKey = cleanKey
         currentActiveGameTitle = cleanTitle
         currentActivePresetName = cleanPreset
+        if (_state.value.activeTransportMode == TvPadTransportMode.REMOTE_RELAY) {
+            RemotePadTvRelayManager.sendLayoutSync(cleanPreset, cleanKey, cleanTitle)
+            return
+        }
         val writer = activeClientWriterRef.get() ?: return
         scope.launch {
             sendFrame(
@@ -817,6 +1018,9 @@ object RemotePadTvServer {
     }
 
     fun sendRumbleToPhone(durationMs: Int = 180, strongMagnitude: Float = 0.85f, weakMagnitude: Float = 0.65f): Boolean {
+        if (_state.value.activeTransportMode == TvPadTransportMode.REMOTE_RELAY) {
+            return RemotePadTvRelayManager.sendRumble(durationMs, strongMagnitude, weakMagnitude)
+        }
         val writer = activeClientWriterRef.get() ?: return false
         scope.launch {
             sendFrame(
@@ -832,6 +1036,10 @@ object RemotePadTvServer {
     }
 
     fun disconnectActivePhone() {
+        if (_state.value.activeTransportMode == TvPadTransportMode.REMOTE_RELAY) {
+            RemotePadTvRelayManager.disconnectActiveRemoteClient(reason = "TV_DISCONNECT", rotateCodeAfter = true)
+            return
+        }
         val writer = activeClientWriterRef.getAndSet(null)
         val socket = activeClientSocketRef.getAndSet(null)
         activeUdpSessionToken = null
@@ -851,6 +1059,7 @@ object RemotePadTvServer {
                 status = TvServiceStatus.WAITING_FOR_PAIR,
                 connectedDeviceId = "",
                 connectedDeviceName = "",
+                activeTransportMode = TvPadTransportMode.NONE,
                 currentPin = RemotePadCrypto.generateFourDigitPin()
             )
         }
@@ -869,6 +1078,9 @@ object RemotePadTvServer {
 
         val shouldDisconnect = deviceId.isNullOrBlank() || _state.value.connectedDeviceId == deviceId
         if (shouldDisconnect) {
+            if (_state.value.activeTransportMode == TvPadTransportMode.REMOTE_RELAY) {
+                RemotePadTvRelayManager.disconnectActiveRemoteClient(reason = "FORGOTTEN", rotateCodeAfter = true)
+            }
             val writer = activeClientWriterRef.getAndSet(null)
             val socket = activeClientSocketRef.getAndSet(null)
             activeUdpSessionToken = null
@@ -891,6 +1103,7 @@ object RemotePadTvServer {
                 status = if (shouldDisconnect) TvServiceStatus.WAITING_FOR_PAIR else cur.status,
                 connectedDeviceId = if (shouldDisconnect) "" else cur.connectedDeviceId,
                 connectedDeviceName = if (shouldDisconnect) "" else cur.connectedDeviceName,
+                activeTransportMode = if (shouldDisconnect) TvPadTransportMode.NONE else cur.activeTransportMode,
                 currentPin = RemotePadCrypto.generateFourDigitPin()
             )
         }
