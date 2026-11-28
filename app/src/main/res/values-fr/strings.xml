@@ -287,4 +287,26 @@
     <string name="log_export_success">%1$d lignes exportées (%2$s)</string>
     <string name="log_export_failed">Impossible d\'exporter le journal</string>
     <string name="log_export_share_title">Partager le journal Ravno</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">Choisir</string>
+    <string name="popup_hint_back">Retour</string>
+    <string name="confirm_reset_gamepad_title">Réinitialiser la disposition ?</string>
+    <string name="confirm_reset_gamepad_msg_phone">Rétablir la position par défaut des boutons ? Les modes séparés et les boutons masqués seront conservés.</string>
+    <string name="confirm_reset_gamepad_msg_all">Rétablir par défaut les positions, tailles, opacité, modes d\'appui, boutons personnalisés et boutons masqués ?</string>
+    <string name="confirm_reset_gamepad_msg_tv">Rétablir par défaut la position et la taille de tous les boutons de la manette virtuelle ?</string>
+    <string name="confirm_reset_gamepad_btn">Réinitialiser</string>
+    <string name="confirm_reset_advanced_title">Réinitialiser les options avancées ?</string>
+    <string name="confirm_reset_advanced_msg_phone">Seuls les réglages de la section Avancé seront réinitialisés (couleurs, zones mortes, mappage des boutons, région Xbox en en-US et options réseau). Votre connexion Xbox, historique, bibliothèque et réglages de base ne seront PAS modifiés.</string>
+    <string name="confirm_reset_advanced_msg_tv">Réinitialise uniquement les réglages Avancés (interface en Auto, couleurs, zones mortes, mappage des boutons et région Xbox en en-US). Votre connexion Xbox et votre historique sont conservés.</string>
+    <string name="confirm_reset_advanced_btn">Restaurer</string>
+    <string name="confirm_clear_history_title">Effacer tout l\'historique ?</string>
+    <string name="confirm_clear_history_msg">Toutes les sessions de jeu enregistrées seront supprimées définitivement.</string>
+    <string name="confirm_clear_history_btn">Tout effacer</string>
+    <string name="confirm_tv_exit_title">Quitter la session de jeu ?</string>
+    <string name="confirm_tv_exit_msg">Le flux cloud en cours va se fermer et revenir à l\'accueil. Votre progression enregistrée sur Xbox Cloud est préservée.</string>
+    <string name="confirm_tv_exit_stay_btn">Rester</string>
+    <string name="confirm_clear_cookies_title">Effacer la session Xbox ?</string>
+    <string name="confirm_clear_cookies_msg">Tous les cookies et données de connexion WebView enregistrés seront effacés afin de vous reconnecter.</string>
+    <string name="confirm_clear_cookies_btn">Déconnexion</string>
 </resources>

@@ -65,6 +65,8 @@ import com.example.R
 import com.example.cloudplay.GamepadDetector
 import com.example.cloudplay.RemotePadTvServer
 import com.example.cloudplay.TvRemoteRelayStatus
+import com.example.ui.components.AdaptiveConfirmPopupDialog
+import com.example.ui.components.PopupButtonVariant
 import com.example.data.AppConfig
 import com.example.data.AppLanguage
 import com.example.data.AppLogger
@@ -1554,15 +1556,11 @@ internal fun TvSettingsScreen(
     }
 
     if (showResetAdvancedConfirmDialog) {
-        TvConfirmDialog(
-            title = config.tr("Khôi phục mặc định mục Nâng cao?", "Restore Advanced Defaults?"),
-            description = config.tr(
-                "Chỉ đặt lại các tùy chỉnh trong mục Nâng cao (giao diện về Tự động, màu sắc hình ảnh, vùng chết cần, đổi nút tay cầm, thị trường Xbox về en-US). Phiên đăng nhập Xbox và lịch sử chơi được giữ nguyên.",
-                "Resets only Advanced settings (interface mode to Auto, image colors, stick deadzones, button remaps, Xbox market to en-US). Your Xbox login and play history are preserved."
-            ),
-            confirmText = config.tr("Khôi phục", "Restore"),
-            cancelText = config.tr("Hủy", "Cancel"),
-            confirmVariant = TvButtonVariant.PRIMARY,
+        AdaptiveConfirmPopupDialog(
+            title = stringResource(R.string.confirm_reset_advanced_title),
+            message = stringResource(R.string.confirm_reset_advanced_msg_tv),
+            confirmText = stringResource(R.string.confirm_reset_advanced_btn),
+            dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
                 SettingsRepository.resetAdvancedSettingsOnly()
                 showResetAdvancedConfirmDialog = false
@@ -1573,20 +1571,20 @@ internal fun TvSettingsScreen(
                 ).show()
             },
             onDismiss = { showResetAdvancedConfirmDialog = false },
-            testTagPrefix = "tv_reset_advanced_dialog"
+            dialogTestTag = "tv_reset_advanced_dialog",
+            confirmButtonTestTag = "tv_reset_advanced_dialog_confirm_btn",
+            dismissButtonTestTag = "tv_reset_advanced_dialog_cancel_btn",
+            confirmVariant = PopupButtonVariant.DANGER,
+            defaultFocusOnDismiss = true
         )
     }
 
     if (showResetGamepadConfirmDialog) {
-        TvConfirmDialog(
-            title = config.tr("Đặt lại bố cục tay cầm?", "Reset Gamepad Layout?"),
-            description = config.tr(
-                "Khôi phục toàn bộ vị trí và kích thước nút tay cầm ảo về mặc định?",
-                "Restore all virtual gamepad button positions and sizes to default?"
-            ),
-            confirmText = config.tr("Đặt lại", "Reset"),
-            cancelText = config.tr("Hủy", "Cancel"),
-            confirmVariant = TvButtonVariant.DANGER,
+        AdaptiveConfirmPopupDialog(
+            title = stringResource(R.string.confirm_reset_gamepad_title),
+            message = stringResource(R.string.confirm_reset_gamepad_msg_tv),
+            confirmText = stringResource(R.string.confirm_reset_gamepad_btn),
+            dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
                 SettingsRepository.clearAllPerGameLayouts()
                 SettingsRepository.resetGamepadCustomOffsets()
@@ -1598,42 +1596,49 @@ internal fun TvSettingsScreen(
                 ).show()
             },
             onDismiss = { showResetGamepadConfirmDialog = false },
-            testTagPrefix = "tv_reset_gamepad_dialog"
+            dialogTestTag = "tv_reset_gamepad_dialog",
+            confirmButtonTestTag = "tv_reset_gamepad_dialog_confirm_btn",
+            dismissButtonTestTag = "tv_reset_gamepad_dialog_cancel_btn",
+            confirmVariant = PopupButtonVariant.DANGER,
+            defaultFocusOnDismiss = true
         )
     }
 
     if (showClearCookiesConfirmDialog) {
-        TvConfirmDialog(
-            title = config.tr("Xóa phiên đăng nhập Xbox?", "Clear Xbox Login Session?"),
-            description = config.tr(
-                "Toàn bộ dữ liệu đăng nhập WebView hiện tại sẽ được làm mới để bạn đăng nhập lại tài khoản Microsoft/Xbox.",
-                "All saved WebView cookies and login data will be cleared so you can sign in again."
-            ),
-            confirmText = config.tr("Xóa phiên", "Sign Out"),
-            cancelText = config.tr("Hủy", "Cancel"),
-            confirmVariant = TvButtonVariant.DANGER,
+        AdaptiveConfirmPopupDialog(
+            title = stringResource(R.string.confirm_clear_cookies_title),
+            message = stringResource(R.string.confirm_clear_cookies_msg),
+            confirmText = stringResource(R.string.confirm_clear_cookies_btn),
+            dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
                 showClearCookiesConfirmDialog = false
                 onClearCookies()
             },
             onDismiss = { showClearCookiesConfirmDialog = false },
-            testTagPrefix = "tv_clear_cookies_dialog"
+            dialogTestTag = "tv_clear_cookies_dialog",
+            confirmButtonTestTag = "tv_clear_cookies_dialog_confirm_btn",
+            dismissButtonTestTag = "tv_clear_cookies_dialog_cancel_btn",
+            confirmVariant = PopupButtonVariant.DANGER,
+            defaultFocusOnDismiss = true
         )
     }
 
     if (showEnableRemotePadConfirmDialog) {
-        TvConfirmDialog(
+        AdaptiveConfirmPopupDialog(
             title = stringResource(R.string.remote_pad_confirm_title),
-            description = stringResource(R.string.remote_pad_confirm_desc),
+            message = stringResource(R.string.remote_pad_confirm_desc),
             confirmText = stringResource(R.string.remote_pad_confirm_enable),
-            cancelText = stringResource(R.string.remote_pad_confirm_cancel),
-            confirmVariant = TvButtonVariant.PRIMARY,
+            dismissText = stringResource(R.string.remote_pad_confirm_cancel),
             onConfirm = {
                 showEnableRemotePadConfirmDialog = false
                 RemotePadTvServer.enableRemoteRelay(context)
             },
             onDismiss = { showEnableRemotePadConfirmDialog = false },
-            testTagPrefix = "tv_enable_remote_pad_dialog"
+            dialogTestTag = "tv_enable_remote_pad_dialog",
+            confirmButtonTestTag = "tv_enable_remote_pad_dialog_confirm_btn",
+            dismissButtonTestTag = "tv_enable_remote_pad_dialog_cancel_btn",
+            confirmVariant = PopupButtonVariant.PRIMARY,
+            defaultFocusOnDismiss = true
         )
     }
 

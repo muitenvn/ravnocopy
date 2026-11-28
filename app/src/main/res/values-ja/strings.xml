@@ -287,4 +287,26 @@
     <string name="log_export_success">%1$d行を出力しました (%2$s)</string>
     <string name="log_export_failed">ログファイルを出力できませんでした</string>
     <string name="log_export_share_title">Ravnoログファイルを共有</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">選択</string>
+    <string name="popup_hint_back">戻る</string>
+    <string name="confirm_reset_gamepad_title">デフォルト配置に戻しますか？</string>
+    <string name="confirm_reset_gamepad_msg_phone">ボタン位置を初期配置に戻しますか？分割モードと非表示ボタンはそのまま保持されます。</string>
+    <string name="confirm_reset_gamepad_msg_all">すべてのボタンの位置・サイズ・透明度・押し方・カスタムボタン・非表示ボタンを初期値に戻しますか？</string>
+    <string name="confirm_reset_gamepad_msg_tv">仮想ゲームパッドのボタン位置とサイズをすべて初期値に戻しますか？</string>
+    <string name="confirm_reset_gamepad_btn">リセット</string>
+    <string name="confirm_reset_advanced_title">詳細設定を初期値に戻しますか？</string>
+    <string name="confirm_reset_advanced_msg_phone">詳細セクションの設定（映像カラー、スティックデッドゾーン、ボタン割り当て、Xbox地域 en-US、ネットワーク技術スイッチ）のみ初期値に戻します。Xboxログイン、プレイ履歴、ライブラリ、基本設定は維持されます。</string>
+    <string name="confirm_reset_advanced_msg_tv">詳細設定（UIモードを自動、映像カラー、スティックデッドゾーン、ボタン割り当て、Xbox地域を en-US）のみ初期値に戻します。Xboxログインと履歴は保持されます。</string>
+    <string name="confirm_reset_advanced_btn">復元</string>
+    <string name="confirm_clear_history_title">履歴をすべて削除しますか？</string>
+    <string name="confirm_clear_history_msg">記録されたすべてのプレイセッションが完全に削除されます。</string>
+    <string name="confirm_clear_history_btn">すべて削除</string>
+    <string name="confirm_tv_exit_title">ゲームセッションを終了しますか？</string>
+    <string name="confirm_tv_exit_msg">現在のクラウド配信を閉じてホームに戻ります。Xbox Cloud に保存された進行状況は保持されます。</string>
+    <string name="confirm_tv_exit_stay_btn">続ける</string>
+    <string name="confirm_clear_cookies_title">Xbox ログイン情報を削除しますか？</string>
+    <string name="confirm_clear_cookies_msg">保存された WebView の Cookie とログインデータを消去し、再サインインできるようにします。</string>
+    <string name="confirm_clear_cookies_btn">サインアウト</string>
 </resources>

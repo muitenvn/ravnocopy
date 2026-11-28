@@ -287,4 +287,26 @@
     <string name="log_export_success">已导出 %1$d 行 (%2$s)</string>
     <string name="log_export_failed">无法导出日志文件</string>
     <string name="log_export_share_title">分享 Ravno 日志文件</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">选择</string>
+    <string name="popup_hint_back">返回</string>
+    <string name="confirm_reset_gamepad_title">恢复默认布局？</string>
+    <string name="confirm_reset_gamepad_msg_phone">将自定义按键坐标恢复为默认位置？分体模式和隐藏按键列表将保留。</string>
+    <string name="confirm_reset_gamepad_msg_all">将所有按键位置、大小、透明度、按压方式、自定义按键和隐藏按键恢复为默认？</string>
+    <string name="confirm_reset_gamepad_msg_tv">将所有虚拟手柄按键的位置和大小恢复为默认？</string>
+    <string name="confirm_reset_gamepad_btn">重置</string>
+    <string name="confirm_reset_advanced_title">恢复高级选项默认值？</string>
+    <string name="confirm_reset_advanced_msg_phone">仅重置“高级”分区内的设置（画面色彩、摇杆死区、按键映射、Xbox 市场重置为 en-US 及网络技术开关）。您的 Xbox 登录、游玩历史、游戏库和基础设置不受影响。</string>
+    <string name="confirm_reset_advanced_msg_tv">仅重置高级设置（界面模式恢复自动、画面色彩、摇杆死区、按键映射、Xbox 市场恢复 en-US）。您的 Xbox 登录与游玩历史将保留。</string>
+    <string name="confirm_reset_advanced_btn">恢复</string>
+    <string name="confirm_clear_history_title">清空全部历史记录？</string>
+    <string name="confirm_clear_history_msg">所有已保存的游玩会话记录将被永久删除。</string>
+    <string name="confirm_clear_history_btn">全部删除</string>
+    <string name="confirm_tv_exit_title">退出游戏会话？</string>
+    <string name="confirm_tv_exit_msg">当前云游戏串流将关闭并返回主页。您在 Xbox Cloud 保存的进度将保留。</string>
+    <string name="confirm_tv_exit_stay_btn">留下</string>
+    <string name="confirm_clear_cookies_title">清除 Xbox 登录会话？</string>
+    <string name="confirm_clear_cookies_msg">将清除所有已保存的 WebView Cookie 与登录数据，以便重新登录 Microsoft/Xbox 账号。</string>
+    <string name="confirm_clear_cookies_btn">退出登录</string>
 </resources>

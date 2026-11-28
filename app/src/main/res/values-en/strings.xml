@@ -287,4 +287,26 @@
     <string name="log_export_success">Exported %1$d lines (%2$s)</string>
     <string name="log_export_failed">Could not export log file</string>
     <string name="log_export_share_title">Share Ravno Log File</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">Select</string>
+    <string name="popup_hint_back">Back</string>
+    <string name="confirm_reset_gamepad_title">Reset Default Layout?</string>
+    <string name="confirm_reset_gamepad_msg_phone">Restore custom button coordinates to their default positions? Split modes and hidden buttons will be kept.</string>
+    <string name="confirm_reset_gamepad_msg_all">Restore all button positions, sizes, opacity, press modes, custom buttons, and hidden buttons to default?</string>
+    <string name="confirm_reset_gamepad_msg_tv">Restore all virtual gamepad button positions and sizes to default?</string>
+    <string name="confirm_reset_gamepad_btn">Reset</string>
+    <string name="confirm_reset_advanced_title">Restore Advanced Defaults?</string>
+    <string name="confirm_reset_advanced_msg_phone">This will reset only the settings inside the Advanced section (image colors, stick deadzones, button remaps, Xbox market to en-US, and technical network switches). Your Xbox login, session history, game library, and basic settings will NOT be affected.</string>
+    <string name="confirm_reset_advanced_msg_tv">Resets only Advanced settings (interface mode to Auto, image colors, stick deadzones, button remaps, Xbox market to en-US). Your Xbox login and play history are preserved.</string>
+    <string name="confirm_reset_advanced_btn">Restore</string>
+    <string name="confirm_clear_history_title">Clear All History?</string>
+    <string name="confirm_clear_history_msg">All recorded play sessions will be permanently removed.</string>
+    <string name="confirm_clear_history_btn">Delete All</string>
+    <string name="confirm_tv_exit_title">Exit Game Session?</string>
+    <string name="confirm_tv_exit_msg">The current cloud gaming stream will close and return to Home. Your Xbox Cloud saved progress is preserved.</string>
+    <string name="confirm_tv_exit_stay_btn">Stay</string>
+    <string name="confirm_clear_cookies_title">Clear Xbox Login Session?</string>
+    <string name="confirm_clear_cookies_msg">All saved WebView cookies and login data will be cleared so you can sign in again.</string>
+    <string name="confirm_clear_cookies_btn">Sign Out</string>
 </resources>

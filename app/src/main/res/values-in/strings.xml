@@ -287,4 +287,26 @@
     <string name="log_export_success">Diekspor %1$d baris (%2$s)</string>
     <string name="log_export_failed">Gagal mengekspor file log</string>
     <string name="log_export_share_title">Bagikan File Log Ravno</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">Pilih</string>
+    <string name="popup_hint_back">Kembali</string>
+    <string name="confirm_reset_gamepad_title">Atur Ulang Tata Letak?</string>
+    <string name="confirm_reset_gamepad_msg_phone">Pulihkan koordinat tombol ke posisi bawaan? Mode pisah dan tombol tersembunyi tetap dipertahankan.</string>
+    <string name="confirm_reset_gamepad_msg_all">Pulihkan semua posisi, ukuran, transparansi, mode tekan, tombol kustom, dan tombol tersembunyi ke bawaan?</string>
+    <string name="confirm_reset_gamepad_msg_tv">Pulihkan semua posisi dan ukuran tombol gamepad virtual ke bawaan?</string>
+    <string name="confirm_reset_gamepad_btn">Atur Ulang</string>
+    <string name="confirm_reset_advanced_title">Pulihkan Pengaturan Lanjutan?</string>
+    <string name="confirm_reset_advanced_msg_phone">Hanya mengatur ulang pengaturan di bagian Lanjutan (warna gambar, zona mati stik, pemetaan tombol, wilayah Xbox ke en-US, dan sakelar jaringan teknis). Login Xbox, riwayat main, pustaka game, dan pengaturan dasar tetap aman.</string>
+    <string name="confirm_reset_advanced_msg_tv">Hanya mengatur ulang pengaturan Lanjutan (mode antarmuka ke Otomatis, warna gambar, zona mati stik, pemetaan tombol, wilayah Xbox ke en-US). Login Xbox dan riwayat main tetap dipertahankan.</string>
+    <string name="confirm_reset_advanced_btn">Pulihkan</string>
+    <string name="confirm_clear_history_title">Hapus Semua Riwayat?</string>
+    <string name="confirm_clear_history_msg">Semua sesi bermain yang tersimpan akan dihapus secara permanen.</string>
+    <string name="confirm_clear_history_btn">Hapus Semua</string>
+    <string name="confirm_tv_exit_title">Keluar dari Sesi Game?</string>
+    <string name="confirm_tv_exit_msg">Streaming cloud saat ini akan ditutup dan kembali ke Beranda. Progres yang tersimpan di Xbox Cloud tetap aman.</string>
+    <string name="confirm_tv_exit_stay_btn">Tetap</string>
+    <string name="confirm_clear_cookies_title">Hapus Sesi Login Xbox?</string>
+    <string name="confirm_clear_cookies_msg">Semua cookie dan data login WebView yang tersimpan akan dihapus agar Anda dapat masuk kembali.</string>
+    <string name="confirm_clear_cookies_btn">Keluar Akun</string>
 </resources>

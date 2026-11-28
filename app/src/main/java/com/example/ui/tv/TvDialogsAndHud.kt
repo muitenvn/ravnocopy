@@ -43,140 +43,26 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import com.example.R
 import com.example.cloudplay.ScreenRecorderState
 import com.example.cloudplay.StreamTelemetry
 import com.example.data.AppConfig
 import com.example.data.AppLogger
 import com.example.data.XboxWebUiMode
+import com.example.ui.components.AdaptiveConfirmPopupDialog
 import com.example.ui.components.GamepadSurfaceController
 import com.example.ui.components.GamepadUiNavigation
+import com.example.ui.components.PopupButtonVariant
 import com.example.ui.components.gamepadClickable
 import com.example.ui.theme.JetBrainsMonoFontFamily
 import com.example.ui.theme.SpaceGroteskFontFamily
 import com.example.vpn.NetworkMode
 import com.example.vpn.VpnConnectionState
-
-/**
- * Hộp thoại xác nhận chuẩn TV (#s-dlg -> .dlg trong tv-mockup.html):
- * - Nền phẳng TvSurface2, viền 1dp TvLine, bo góc 22dp.
- * - Focus bị giữ trong hộp thoại, mặc định nằm ở nút an toàn (Hủy / Ở lại).
- * - Bấm A để chọn, B để đóng/hủy, kèm gợi ý phím ở dưới.
- */
-@Composable
-internal fun TvConfirmDialog(
-    title: String,
-    description: String,
-    confirmText: String,
-    cancelText: String,
-    confirmVariant: TvButtonVariant = TvButtonVariant.DANGER,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-    testTagPrefix: String = "tv_confirm_dialog"
-) {
-    val defaultCancelFocusRequester = remember { FocusRequester() }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0x99040806))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onDismiss
-                )
-                .windowInsetsPadding(WindowInsets.safeDrawing),
-            contentAlignment = Alignment.Center
-        ) {
-            val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-            val scale = computeTvScale(maxWidth, maxHeight, fontScale)
-            val dlgWidth = (480.dp * scale).coerceIn(320.dp, 560.dp)
-            val corner = (22.dp * scale).coerceAtLeast(16.dp)
-
-            GamepadSurfaceController(
-                enabled = true,
-                defaultFocusRequester = defaultCancelFocusRequester,
-                autoRequestDefaultFocus = true,
-                attachWindowMotionListener = true,
-                onBackPress = onDismiss
-            ) {
-                Column(
-                    modifier = Modifier
-                        .width(dlgWidth)
-                        .clip(RoundedCornerShape(corner))
-                        .background(TvSurface2)
-                        .border(1.dp, TvLine, RoundedCornerShape(corner))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {}
-                        )
-                        .padding((28.dp * scale).coerceAtLeast(18.dp))
-                        .testTag(testTagPrefix),
-                    verticalArrangement = Arrangement.spacedBy((12.dp * scale).coerceAtLeast(8.dp))
-                ) {
-                    Text(
-                        text = title,
-                        color = TvInk,
-                        fontFamily = SpaceGroteskFontFamily,
-                        fontSize = (22f * scale).coerceAtLeast(17f).sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-
-                    Text(
-                        text = description,
-                        color = TvMuted,
-                        fontSize = (16f * scale).coerceAtLeast(13f).sp,
-                        lineHeight = (22f * scale).coerceAtLeast(18f).sp
-                    )
-
-                    Spacer(modifier = Modifier.height((8.dp * scale).coerceAtLeast(4.dp)))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy((12.dp * scale).coerceAtLeast(8.dp), Alignment.End),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TvButton(
-                            text = cancelText,
-                            variant = TvButtonVariant.DEFAULT,
-                            scale = scale,
-                            focusRequester = defaultCancelFocusRequester,
-                            onClick = onDismiss,
-                            modifier = Modifier.testTag("${testTagPrefix}_cancel_btn")
-                        )
-                        TvButton(
-                            text = confirmText,
-                            variant = confirmVariant,
-                            scale = scale,
-                            onClick = onConfirm,
-                            modifier = Modifier.testTag("${testTagPrefix}_confirm_btn")
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height((4.dp * scale).coerceAtLeast(2.dp)))
-
-                    TvBottomKeyHintBar(
-                        hints = listOf(
-                            TvKeyHint(listOf("A" to TvKeyABg), "Chọn"),
-                            TvKeyHint(listOf("B" to TvKeyBBg), cancelText)
-                        ),
-                        scale = scale * 0.9f
-                    )
-                }
-            }
-        }
-    }
-}
 
 /**
  * Menu nổi trong game bản TV (#s-game -> .hud trong tv-mockup.html):
@@ -623,15 +509,11 @@ internal fun TvInGameFloatingHud(
     }
 
     if (showExitConfirmDialog) {
-        TvConfirmDialog(
-            title = config.tr("Thoát phiên chơi?", "Exit Game Session?"),
-            description = config.tr(
-                "Phiên truyền phát hiện tại sẽ đóng và quay về Trang chủ. Tiến trình đã lưu trên đám mây Xbox được giữ nguyên.",
-                "The current cloud gaming stream will close and return to Home. Your Xbox Cloud saved progress is preserved."
-            ),
-            confirmText = config.tr("Thoát game", "Exit Game"),
-            cancelText = config.tr("Ở lại", "Stay"),
-            confirmVariant = TvButtonVariant.DANGER,
+        AdaptiveConfirmPopupDialog(
+            title = stringResource(R.string.confirm_tv_exit_title),
+            message = stringResource(R.string.confirm_tv_exit_msg),
+            confirmText = stringResource(R.string.btn_confirm_exit),
+            dismissText = stringResource(R.string.confirm_tv_exit_stay_btn),
             onConfirm = {
                 showExitConfirmDialog = false
                 isHudExpanded = false
@@ -640,7 +522,11 @@ internal fun TvInGameFloatingHud(
             onDismiss = {
                 showExitConfirmDialog = false
             },
-            testTagPrefix = "tv_exit_game_dialog"
+            dialogTestTag = "tv_exit_game_dialog",
+            confirmButtonTestTag = "tv_exit_game_dialog_confirm_btn",
+            dismissButtonTestTag = "tv_exit_game_dialog_cancel_btn",
+            confirmVariant = PopupButtonVariant.DANGER,
+            defaultFocusOnDismiss = true
         )
     }
 }

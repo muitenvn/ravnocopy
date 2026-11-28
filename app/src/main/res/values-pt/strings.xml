@@ -287,4 +287,26 @@
     <string name="log_export_success">%1$d linhas exportadas (%2$s)</string>
     <string name="log_export_failed">Não foi possível exportar o registro</string>
     <string name="log_export_share_title">Compartilhar log do Ravno</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">Selecionar</string>
+    <string name="popup_hint_back">Voltar</string>
+    <string name="confirm_reset_gamepad_title">Redefinir layout padrão?</string>
+    <string name="confirm_reset_gamepad_msg_phone">Restaurar as coordenadas dos botões para o padrão? Os modos divididos e botões ocultos serão mantidos.</string>
+    <string name="confirm_reset_gamepad_msg_all">Restaurar todas as posições, tamanhos, opacidade, modos de toque, botões personalizados e botões ocultos para o padrão?</string>
+    <string name="confirm_reset_gamepad_msg_tv">Restaurar todas as posições e tamanhos dos botões do controle virtual para o padrão?</string>
+    <string name="confirm_reset_gamepad_btn">Redefinir</string>
+    <string name="confirm_reset_advanced_title">Restaurar padrões avançados?</string>
+    <string name="confirm_reset_advanced_msg_phone">Apenas as opções da seção Avançado serão redefinidas (cores da imagem, zonas mortas, mapeamento de botões, mercado Xbox para en-US e chaves de rede). Seu login Xbox, histórico, biblioteca e ajustes básicos permanecem intactos.</string>
+    <string name="confirm_reset_advanced_msg_tv">Redefine apenas os ajustes Avançados (interface para Automático, cores, zonas mortas, mapeamento de botões e mercado Xbox para en-US). Seu login Xbox e histórico são mantidos.</string>
+    <string name="confirm_reset_advanced_btn">Restaurar</string>
+    <string name="confirm_clear_history_title">Limpar todo o histórico?</string>
+    <string name="confirm_clear_history_msg">Todas as sessões de jogo registradas serão removidas permanentemente.</string>
+    <string name="confirm_clear_history_btn">Apagar tudo</string>
+    <string name="confirm_tv_exit_title">Sair da sessão de jogo?</string>
+    <string name="confirm_tv_exit_msg">A transmissão atual será encerrada e você voltará ao Início. Seu progresso salvo na nuvem Xbox será preservado.</string>
+    <string name="confirm_tv_exit_stay_btn">Ficar</string>
+    <string name="confirm_clear_cookies_title">Limpar sessão de login Xbox?</string>
+    <string name="confirm_clear_cookies_msg">Todos os cookies e dados de login salvos no WebView serão limpos para que você entre novamente.</string>
+    <string name="confirm_clear_cookies_btn">Sair da conta</string>
 </resources>

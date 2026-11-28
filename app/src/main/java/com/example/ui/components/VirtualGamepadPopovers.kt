@@ -17,10 +17,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,10 +28,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.AppConfig
 import com.example.data.GamepadButtonPressMode
 import com.example.data.GamepadHapticLevel
@@ -79,55 +79,20 @@ internal fun GamepadNodePopover(
     var showResetAllConfirm by remember { mutableStateOf(false) }
 
     if (showResetAllConfirm) {
-        AlertDialog(
-            onDismissRequest = { showResetAllConfirm = false },
-            containerColor = HudSurface2,
-            shape = RoundedCornerShape(22.dp),
-            titleContentColor = HudInk,
-            textContentColor = HudDialogBody,
-            title = {
-                Text(
-                    text = config.tr("Đặt lại bố cục mặc định?", "Reset Default Layout?"),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 17.sp
-                )
+        AdaptiveConfirmPopupDialog(
+            title = stringResource(R.string.confirm_reset_gamepad_title),
+            message = stringResource(R.string.confirm_reset_gamepad_msg_all),
+            confirmText = stringResource(R.string.confirm_reset_gamepad_btn),
+            dismissText = stringResource(R.string.btn_cancel),
+            onConfirm = {
+                showResetAllConfirm = false
+                onResetAll()
             },
-            text = {
-                Text(
-                    text = config.tr(
-                        "Khôi phục toàn bộ vị trí, cỡ, độ mờ, kiểu bấm, nút trống và các nút ẩn về mặc định?",
-                        "Restore all button positions, sizes, opacity, press modes, custom buttons, and hidden buttons to default?"
-                    ),
-                    fontSize = 13.5.sp
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showResetAllConfirm = false
-                        onResetAll()
-                    },
-                    modifier = Modifier.testTag("tuner_confirm_reset_positions_btn")
-                ) {
-                    Text(
-                        text = config.tr("Đặt lại", "Reset"),
-                        color = HudDanger,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showResetAllConfirm = false },
-                    modifier = Modifier.testTag("tuner_cancel_reset_positions_btn")
-                ) {
-                    Text(
-                        text = config.tr("Hủy", "Cancel"),
-                        color = HudMuted,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
+            onDismiss = { showResetAllConfirm = false },
+            confirmButtonTestTag = "tuner_confirm_reset_positions_btn",
+            dismissButtonTestTag = "tuner_cancel_reset_positions_btn",
+            confirmVariant = PopupButtonVariant.DANGER,
+            defaultFocusOnDismiss = true
         )
     }
 

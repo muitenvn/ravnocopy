@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -47,10 +48,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import com.example.R
 import com.example.data.AppConfig
 import com.example.data.AppLanguage
 import com.example.data.POPULAR_XBOX_LANGUAGES
 import com.example.data.SettingsRepository
+import com.example.ui.components.PopupButtonVariant
 import com.example.ui.components.gamepadActionButton
 import com.example.ui.components.gamepadClickable
 import com.example.ui.components.gamepadControllerScope
@@ -899,14 +902,10 @@ internal fun SettingsAdvancedSection(
 
     if (showResetAdvancedConfirmDialog) {
         com.example.ui.components.AdaptiveConfirmPopupDialog(
-            title = if (isEn) "Restore Advanced Defaults?" else "Khôi phục mặc định mục Nâng cao?",
-            message = if (isEn) {
-                "This will reset only the settings inside the Advanced section (image colors, stick deadzones, button remaps, Xbox market to en-US, and technical network switches). Your Xbox login, session history, game library, and basic settings will NOT be affected."
-            } else {
-                "Chỉ đặt lại các tùy chỉnh trong mục Nâng cao (màu sắc hình ảnh, 8 thanh vùng chết, đổi nút tay cầm, thị trường Xbox về en-US và công tắc mạng kỹ thuật). Phiên đăng nhập Xbox, lịch sử chơi, danh sách game và các cài đặt cơ bản được giữ nguyên."
-            },
-            confirmText = if (isEn) "Restore" else "Khôi phục",
-            dismissText = if (isEn) "Cancel" else "Hủy",
+            title = stringResource(R.string.confirm_reset_advanced_title),
+            message = stringResource(R.string.confirm_reset_advanced_msg_phone),
+            confirmText = stringResource(R.string.confirm_reset_advanced_btn),
+            dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
                 SettingsRepository.resetAdvancedSettingsOnly()
                 showResetAdvancedConfirmDialog = false
@@ -919,10 +918,7 @@ internal fun SettingsAdvancedSection(
             onDismiss = { showResetAdvancedConfirmDialog = false },
             confirmButtonTestTag = "confirm_reset_advanced_settings_btn",
             dismissButtonTestTag = "cancel_reset_advanced_settings_btn",
-            confirmContentDescription = if (isEn) "Confirm restore advanced defaults" else "Xác nhận khôi phục mặc định nâng cao",
-            dismissContentDescription = if (isEn) "Cancel restore advanced defaults" else "Hủy khôi phục mặc định nâng cao",
-            confirmContainerColor = XboxNeonGreen,
-            confirmContentColor = Color(0xFF04150B),
+            confirmVariant = PopupButtonVariant.DANGER,
             defaultFocusOnDismiss = true
         )
     }

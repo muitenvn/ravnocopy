@@ -287,4 +287,26 @@
     <string name="log_export_success">ส่งออกแล้ว %1$d บรรทัด (%2$s)</string>
     <string name="log_export_failed">ไม่สามารถส่งออกไฟล์บันทึกได้</string>
     <string name="log_export_share_title">แชร์ไฟล์บันทึก Ravno</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">เลือก</string>
+    <string name="popup_hint_back">กลับ</string>
+    <string name="confirm_reset_gamepad_title">รีเซ็ตเลย์เอาต์เริ่มต้นหรือไม่?</string>
+    <string name="confirm_reset_gamepad_msg_phone">คืนค่าพิกัดตำแหน่งปุ่มกลับเป็นค่าเริ่มต้นหรือไม่? โหมดแยกปุ่มและรายการปุ่มที่ซ่อนจะยังคงอยู่</string>
+    <string name="confirm_reset_gamepad_msg_all">คืนค่าตำแหน่ง ขนาด ความโปร่งแสง โหมดการกด ปุ่มกำหนดเอง และปุ่มที่ซ่อนทั้งหมดเป็นค่าเริ่มต้นหรือไม่?</string>
+    <string name="confirm_reset_gamepad_msg_tv">คืนค่าตำแหน่งและขนาดปุ่มจอยจำลองทั้งหมดเป็นค่าเริ่มต้นหรือไม่?</string>
+    <string name="confirm_reset_gamepad_btn">รีเซ็ต</string>
+    <string name="confirm_reset_advanced_title">คืนค่าเริ่มต้นหมวดขั้นสูงหรือไม่?</string>
+    <string name="confirm_reset_advanced_msg_phone">จะรีเซ็ตเฉพาะการตั้งค่าในหมวดขั้นสูงเท่านั้น (สีภาพ โซนบอดของแกน การสลับปุ่ม โซน Xbox เป็น en-US และสวิตช์เครือข่าย) ข้อมูลล็อกอิน Xbox ประวัติการเล่น คลังเกม และการตั้งค่าพื้นฐานจะไม่ถูกกระทบ</string>
+    <string name="confirm_reset_advanced_msg_tv">รีเซ็ตเฉพาะการตั้งค่าขั้นสูง (โหมดอินเทอร์เฟซเป็นอัตโนมัติ สีภาพ โซนบอด การสลับปุ่ม โซน Xbox เป็น en-US) ข้อมูลล็อกอิน Xbox และประวัติการเล่นจะยังคงอยู่</string>
+    <string name="confirm_reset_advanced_btn">คืนค่า</string>
+    <string name="confirm_clear_history_title">ลบประวัติทั้งหมดหรือไม่?</string>
+    <string name="confirm_clear_history_msg">ประวัติการเล่นที่บันทึกไว้ทั้งหมดจะถูกลบออกอย่างถาวร</string>
+    <string name="confirm_clear_history_btn">ลบทั้งหมด</string>
+    <string name="confirm_tv_exit_title">ออกจากเซสชันเกมหรือไม่?</string>
+    <string name="confirm_tv_exit_msg">สตรีมเกมคลาวด์ปัจจุบันจะปิดลงและกลับไปยังหน้าหลัก ความคืบหน้าที่บันทึกไว้บน Xbox Cloud จะยังคงอยู่</string>
+    <string name="confirm_tv_exit_stay_btn">อยู่ต่อ</string>
+    <string name="confirm_clear_cookies_title">ล้างเซสชันล็อกอิน Xbox หรือไม่?</string>
+    <string name="confirm_clear_cookies_msg">คุกกี้และข้อมูลล็อกอิน WebView ที่บันทึกไว้ทั้งหมดจะถูกล้างเพื่อให้คุณลงชื่อเข้าใช้ใหม่</string>
+    <string name="confirm_clear_cookies_btn">ออกจากระบบ</string>
 </resources>

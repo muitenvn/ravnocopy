@@ -287,4 +287,26 @@
     <string name="log_export_success">%1$d Zeilen exportiert (%2$s)</string>
     <string name="log_export_failed">Log-Datei konnte nicht exportiert werden</string>
     <string name="log_export_share_title">Ravno-Logdatei teilen</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">Auswählen</string>
+    <string name="popup_hint_back">Zurück</string>
+    <string name="confirm_reset_gamepad_title">Standardlayout wiederherstellen?</string>
+    <string name="confirm_reset_gamepad_msg_phone">Benutzerdefinierte Tastenpositionen auf Standard zurücksetzen? Geteilte Modi und ausgeblendete Tasten bleiben erhalten.</string>
+    <string name="confirm_reset_gamepad_msg_all">Alle Tastenpositionen, Größen, Transparenz, Druckmodi, eigenen Tasten und ausgeblendeten Tasten auf Standard zurücksetzen?</string>
+    <string name="confirm_reset_gamepad_msg_tv">Alle Positionen und Größen der virtuellen Gamepad-Tasten auf Standard zurücksetzen?</string>
+    <string name="confirm_reset_gamepad_btn">Zurücksetzen</string>
+    <string name="confirm_reset_advanced_title">Erweiterte Standards wiederherstellen?</string>
+    <string name="confirm_reset_advanced_msg_phone">Es werden nur die Einstellungen im Bereich Erweitert zurückgesetzt (Bildfarben, Stick-Totzonen, Tastenbelegung, Xbox-Markt auf en-US und Netzwerkschalter). Xbox-Login, Verlauf, Bibliothek und Grundeinstellungen bleiben erhalten.</string>
+    <string name="confirm_reset_advanced_msg_tv">Setzt nur Erweiterte Einstellungen zurück (Oberfläche auf Auto, Bildfarben, Stick-Totzonen, Tastenbelegung, Xbox-Markt auf en-US). Xbox-Login und Spielverlauf bleiben erhalten.</string>
+    <string name="confirm_reset_advanced_btn">Wiederherstellen</string>
+    <string name="confirm_clear_history_title">Gesamten Verlauf löschen?</string>
+    <string name="confirm_clear_history_msg">Alle gespeicherten Spielsitzungen werden dauerhaft entfernt.</string>
+    <string name="confirm_clear_history_btn">Alle löschen</string>
+    <string name="confirm_tv_exit_title">Spielsitzung beenden?</string>
+    <string name="confirm_tv_exit_msg">Der aktuelle Cloud-Stream wird geschlossen und du kehrst zum Startbildschirm zurück. Dein Xbox-Cloud-Spielstand bleibt erhalten.</string>
+    <string name="confirm_tv_exit_stay_btn">Bleiben</string>
+    <string name="confirm_clear_cookies_title">Xbox-Anmeldung löschen?</string>
+    <string name="confirm_clear_cookies_msg">Alle gespeicherten WebView-Cookies und Anmeldedaten werden gelöscht, damit du dich neu anmelden kannst.</string>
+    <string name="confirm_clear_cookies_btn">Abmelden</string>
 </resources>

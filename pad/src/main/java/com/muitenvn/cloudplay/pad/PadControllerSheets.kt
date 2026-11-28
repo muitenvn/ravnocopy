@@ -25,12 +25,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -246,56 +244,20 @@ internal fun PadNodePopover(
     var showResetAllConfirm by remember { mutableStateOf(false) }
 
     if (showResetAllConfirm) {
-        AlertDialog(
-            onDismissRequest = { showResetAllConfirm = false },
-            containerColor = SheetCard,
-            shape = RoundedCornerShape(20.dp),
-            titleContentColor = SheetText,
-            textContentColor = SheetMuted,
-            title = {
-                Text(
-                    text = PadStrings.tr(lang, "Đặt lại bố cục mặc định?", "Reset Default Layout?"),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp
-                )
+        PadConfirmPopupDialog(
+            lang = lang,
+            title = PadStrings.resetLayoutConfirmTitle(lang),
+            message = PadStrings.resetLayoutConfirmMessage(lang),
+            confirmText = PadStrings.resetBtn(lang),
+            dismissText = PadStrings.cancelBtn(lang),
+            onConfirm = {
+                showResetAllConfirm = false
+                onResetAllNodes()
             },
-            text = {
-                Text(
-                    text = PadStrings.tr(
-                        lang,
-                        "Khôi phục toàn bộ vị trí, cỡ, kiểu bấm, nút trống và các nút ẩn về mặc định?",
-                        "Restore all button positions, sizes, press modes, custom buttons, and hidden buttons to default?"
-                    ),
-                    fontSize = 13.sp
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showResetAllConfirm = false
-                        onResetAllNodes()
-                    },
-                    modifier = Modifier.testTag("tuner_confirm_reset_positions_btn")
-                ) {
-                    Text(
-                        text = PadStrings.tr(lang, "Đặt lại", "Reset"),
-                        color = SheetDanger,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showResetAllConfirm = false },
-                    modifier = Modifier.testTag("tuner_cancel_reset_positions_btn")
-                ) {
-                    Text(
-                        text = PadStrings.tr(lang, "Hủy", "Cancel"),
-                        color = SheetMuted,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
+            onDismiss = { showResetAllConfirm = false },
+            confirmButtonTestTag = "tuner_confirm_reset_positions_btn",
+            dismissButtonTestTag = "tuner_cancel_reset_positions_btn",
+            confirmVariant = PadPopupButtonVariant.DANGER
         )
     }
 

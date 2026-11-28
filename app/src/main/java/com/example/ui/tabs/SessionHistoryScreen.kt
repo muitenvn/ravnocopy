@@ -40,15 +40,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.R
 import com.example.data.GameLibraryRepository
 import com.example.data.PlaySessionRecord
 import com.example.data.SessionHistoryRepository
 import com.example.data.SettingsRepository
+import com.example.ui.components.PopupButtonVariant
 import com.example.ui.components.gamepadActionButton
 import com.example.ui.components.gamepadClickable
 import com.example.ui.theme.DirectCyan
@@ -336,14 +339,10 @@ fun SessionHistoryScreen(
     // Hộp xác nhận xóa tất cả lịch sử theo khung popup dùng chung
     if (showClearConfirmDialog) {
         com.example.ui.components.AdaptiveConfirmPopupDialog(
-            title = if (isEn) "Clear all history?" else "Xóa tất cả lịch sử?",
-            message = if (isEn) {
-                "All recorded play sessions will be permanently removed."
-            } else {
-                "Toàn bộ lịch sử các phiên chơi đã lưu sẽ bị xóa."
-            },
-            confirmText = if (isEn) "Delete All" else "Xóa tất cả",
-            dismissText = if (isEn) "Cancel" else "Hủy",
+            title = stringResource(R.string.confirm_clear_history_title),
+            message = stringResource(R.string.confirm_clear_history_msg),
+            confirmText = stringResource(R.string.confirm_clear_history_btn),
+            dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
                 SessionHistoryRepository.clearAllSessions()
                 showClearConfirmDialog = false
@@ -351,8 +350,7 @@ fun SessionHistoryScreen(
             onDismiss = { showClearConfirmDialog = false },
             dialogTestTag = "clear_history_confirm_dialog",
             confirmButtonTestTag = "confirm_clear_history_button",
-            confirmContainerColor = JapanRed,
-            confirmContentColor = Color(0xFF2A0A09),
+            confirmVariant = PopupButtonVariant.DANGER,
             defaultFocusOnDismiss = true
         )
     }

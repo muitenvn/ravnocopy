@@ -287,4 +287,26 @@
     <string name="log_export_success">Экспортировано %1$d строк (%2$s)</string>
     <string name="log_export_failed">Не удалось экспортировать файл лога</string>
     <string name="log_export_share_title">Поделиться файлом лога Ravno</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">Выбрать</string>
+    <string name="popup_hint_back">Назад</string>
+    <string name="confirm_reset_gamepad_title">Сбросить раскладку?</string>
+    <string name="confirm_reset_gamepad_msg_phone">Вернуть пользовательские координаты кнопок в исходное положение? Раздельные режимы и скрытые кнопки сохранятся.</string>
+    <string name="confirm_reset_gamepad_msg_all">Сбросить все позиции, размеры, прозрачность, режимы нажатия, свои и скрытые кнопки к значениям по умолчанию?</string>
+    <string name="confirm_reset_gamepad_msg_tv">Сбросить все позиции и размеры кнопок виртуального геймпада по умолчанию?</string>
+    <string name="confirm_reset_gamepad_btn">Сбросить</string>
+    <string name="confirm_reset_advanced_title">Сбросить расширенные настройки?</string>
+    <string name="confirm_reset_advanced_msg_phone">Будут сброшены только настройки раздела «Расширенные» (цвета изображения, мёртвые зоны стиков, переназначение кнопок, регион Xbox на en-US и сетевые переключатели). Вход в Xbox, история, библиотека и базовые настройки сохранятся.</string>
+    <string name="confirm_reset_advanced_msg_tv">Сбрасывает только расширенные настройки (интерфейс на Авто, цвета, мёртвые зоны стиков, переназначение кнопок, регион Xbox на en-US). Вход в Xbox и история игр сохранятся.</string>
+    <string name="confirm_reset_advanced_btn">Восстановить</string>
+    <string name="confirm_clear_history_title">Очистить всю историю?</string>
+    <string name="confirm_clear_history_msg">Все сохранённые игровые сессии будут удалены безвозвратно.</string>
+    <string name="confirm_clear_history_btn">Удалить всё</string>
+    <string name="confirm_tv_exit_title">Выйти из игровой сессии?</string>
+    <string name="confirm_tv_exit_msg">Текущая облачная трансляция закроется, и вы вернётесь на Главную. Сохранённый прогресс в Xbox Cloud останется в безопасности.</string>
+    <string name="confirm_tv_exit_stay_btn">Остаться</string>
+    <string name="confirm_clear_cookies_title">Очистить сессию входа Xbox?</string>
+    <string name="confirm_clear_cookies_msg">Все сохранённые cookie и данные входа WebView будут удалены, чтобы вы могли войти заново.</string>
+    <string name="confirm_clear_cookies_btn">Выйти</string>
 </resources>

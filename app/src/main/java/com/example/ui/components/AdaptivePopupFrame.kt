@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -58,6 +60,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
@@ -71,6 +74,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.R
 import com.example.cloudplay.RemotePadTvServer
 import com.example.data.AppLanguage
 import com.example.data.SettingsRepository
@@ -250,6 +254,10 @@ fun AdaptivePopupFrame(
     portraitMaxHeightFraction: Float = 0.90f,
     containerColor: Color = XboxSurfaceVariant,
     borderColor: Color = XboxCardBorder,
+    scrimColor: Color = Color.Transparent,
+    maxCardWidth: (AdaptivePopupScope.() -> Dp)? = null,
+    cardCornerOverride: (AdaptivePopupScope.() -> Dp)? = null,
+    outerPaddingOverride: (AdaptivePopupScope.() -> Dp)? = null,
     onPreviousTab: (() -> Unit)? = null,
     onNextTab: (() -> Unit)? = null,
     onBackPress: (() -> Unit)? = onDismissRequest,
@@ -264,6 +272,7 @@ fun AdaptivePopupFrame(
         config.isEffectiveTvMode(context)
     }
     val isGamepadDetected = isTvUiMode ||
+        hasRemotePadConnected ||
         GamepadUiNavigation.keepFocusVisibleInTvMode ||
         GamepadUiNavigation.isGamepadModeActive
 
@@ -298,60 +307,82 @@ fun AdaptivePopupFrame(
             onBackPress = onBackPress,
             onSecondaryY = onSecondaryY
         ) {
-            BoxWithConstraints(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                if (event.changes.any { it.pressed && it.type == PointerType.Touch }) {
-                                    GamepadUiNavigation.onTouchInteraction()
-                                }
-                            }
-                        }
-                    }
-                    .windowInsetsPadding(WindowInsets.safeDrawing),
-                contentAlignment = Alignment.Center
-            ) {
-                val density = LocalDensity.current
-                val winW = maxWidth
-                val winH = maxHeight
-                val useTwoColumnLayout = isTvUiMode || (winW > winH)
-
-                val scope = remember(winW, winH, isTvUiMode, isGamepadDetected, useTwoColumnLayout, density) {
-                    AdaptivePopupScope(
-                        winW = winW,
-                        winH = winH,
-                        isTvUiMode = isTvUiMode,
-                        isGamepadDetected = isGamepadDetected,
-                        useTwoColumnLayout = useTwoColumnLayout,
-                        density = density
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (scrimColor != Color.Transparent) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(scrimColor)
+                            .then(
+                                if (dismissOnClickOutside) {
+                                    Modifier.pointerInput(onDismissRequest) {
+                                        detectTapGestures { onDismissRequest() }
+                                    }
+                                } else Modifier
+                            )
                     )
                 }
 
-                val cardWidthFraction = if (useTwoColumnLayout) wideWidthFraction else portraitWidthFraction
-                val cardMaxHeight = winH * (if (useTwoColumnLayout) wideMaxHeightFraction else portraitMaxHeightFraction)
-
-                Card(
-                    modifier = modifier
-                        .fillMaxWidth(cardWidthFraction)
-                        .heightIn(max = cardMaxHeight)
-                        .border(scope.borderThin, borderColor, RoundedCornerShape(scope.cardCorner))
-                        .then(
-                            if (!dialogTestTag.isNullOrBlank()) Modifier.testTag(dialogTestTag)
-                            else Modifier
-                        ),
-                    shape = RoundedCornerShape(scope.cardCorner),
-                    colors = CardDefaults.cardColors(containerColor = containerColor),
-                    elevation = CardDefaults.cardElevation(defaultElevation = scope.rDp(0f))
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    if (event.changes.any { it.pressed && it.type == PointerType.Touch }) {
+                                        GamepadUiNavigation.onTouchInteraction()
+                                    }
+                                }
+                            }
+                        }
+                        .windowInsetsPadding(WindowInsets.safeDrawing),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(scope.padOuter)
+                    val density = LocalDensity.current
+                    val winW = maxWidth
+                    val winH = maxHeight
+                    val useTwoColumnLayout = isTvUiMode || (winW > winH)
+
+                    val scope = remember(winW, winH, isTvUiMode, isGamepadDetected, useTwoColumnLayout, density) {
+                        AdaptivePopupScope(
+                            winW = winW,
+                            winH = winH,
+                            isTvUiMode = isTvUiMode,
+                            isGamepadDetected = isGamepadDetected,
+                            useTwoColumnLayout = useTwoColumnLayout,
+                            density = density
+                        )
+                    }
+
+                    val cardWidthFraction = if (useTwoColumnLayout) wideWidthFraction else portraitWidthFraction
+                    val cardMaxHeight = winH * (if (useTwoColumnLayout) wideMaxHeightFraction else portraitMaxHeightFraction)
+                    val resolvedMaxWidth = maxCardWidth?.invoke(scope)
+                    val resolvedCorner = cardCornerOverride?.invoke(scope) ?: scope.cardCorner
+                    val resolvedPadOuter = outerPaddingOverride?.invoke(scope) ?: scope.padOuter
+
+                    Card(
+                        modifier = modifier
+                            .fillMaxWidth(cardWidthFraction)
+                            .then(if (resolvedMaxWidth != null) Modifier.widthIn(max = resolvedMaxWidth) else Modifier)
+                            .heightIn(max = cardMaxHeight)
+                            .border(scope.borderThin, borderColor, RoundedCornerShape(resolvedCorner))
+                            .then(if (scrimColor != Color.Transparent) Modifier.pointerInput(Unit) {} else Modifier)
+                            .then(
+                                if (!dialogTestTag.isNullOrBlank()) Modifier.testTag(dialogTestTag)
+                                else Modifier
+                            ),
+                        shape = RoundedCornerShape(resolvedCorner),
+                        colors = CardDefaults.cardColors(containerColor = containerColor),
+                        elevation = CardDefaults.cardElevation(defaultElevation = scope.rDp(0f))
                     ) {
-                        scope.content()
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(resolvedPadOuter)
+                        ) {
+                            scope.content()
+                        }
                     }
                 }
             }
@@ -511,10 +542,10 @@ fun AdaptivePopupScope.AdaptiveFlatActionButton(
 }
 
 /**
- * Hộp thoại xác nhận dùng chung (Confirm Dialog):
- * - Ở TV hoặc màn ngang: bố cục 2 cột rộng rãi (Cột trái: biểu tượng, tiêu đề, nội dung cuộn được; Cột phải: nút xác nhận và nút hủy luôn thấy ngay).
- * - Ở điện thoại dọc: bố cục 1 cột dọc truyền thống.
- * - Khi phát hiện tay cầm (trên cả giao diện Điện thoại lẫn TV): nút Xác nhận hiện huy hiệu `(A)` và nút Quay lại / Hủy hiện huy hiệu `(B)`.
+ * Mẫu 1 – Hộp thoại xác nhận dùng chung cho cả Điện thoại, Tablet và TV (hợp nhất với TvConfirmDialog):
+ * - Nền phẳng #0d1511, viền 1 điểm #1d2f26, phủ tối phẳng phía sau (không đổ bóng, không làm mờ).
+ * - Tiêu đề, mô tả ngắn (tự cuộn trong hộp khi dài), hàng 2 nút [Hủy] (được chọn sẵn) & [Xác nhận] (đỏ nếu phá hủy, xanh nếu không phá hủy).
+ * - Màn nhỏ tự xếp dọc 2 nút; phím B / Back = Hủy; gợi ý A / B chỉ hiện trên TV hoặc khi có tay cầm.
  */
 @Composable
 fun AdaptiveConfirmPopupDialog(
@@ -529,198 +560,113 @@ fun AdaptiveConfirmPopupDialog(
     dismissButtonTestTag: String? = null,
     confirmContentDescription: String? = null,
     dismissContentDescription: String? = null,
-    confirmContainerColor: Color = XboxNeonGreen,
-    confirmContentColor: Color = Color(0xFF04150B),
-    defaultFocusOnDismiss: Boolean = false,
+    confirmContainerColor: Color = PopupColors.Accent,
+    @Suppress("UNUSED_PARAMETER") confirmContentColor: Color = PopupColors.OnAccent,
+    confirmVariant: PopupButtonVariant? = null,
+    defaultFocusOnDismiss: Boolean = true,
     iconContent: (@Composable AdaptivePopupScope.() -> Unit)? = null
 ) {
     val confirmFocusRequester = remember { FocusRequester() }
     val dismissFocusRequester = remember { FocusRequester() }
     val defaultRequester = if (defaultFocusOnDismiss) dismissFocusRequester else confirmFocusRequester
+    val resolvedConfirmVariant = confirmVariant ?: when (confirmContainerColor) {
+        JapanRed, PopupColors.Danger, HudDanger -> PopupButtonVariant.DANGER
+        else -> PopupButtonVariant.PRIMARY
+    }
 
     AdaptivePopupFrame(
         onDismissRequest = onDismiss,
         dialogTestTag = dialogTestTag,
         defaultFocusRequester = defaultRequester,
-        wideWidthFraction = 0.78f,
-        portraitWidthFraction = 0.90f
+        wideWidthFraction = 0.86f,
+        portraitWidthFraction = 0.90f,
+        containerColor = PopupColors.Surface,
+        borderColor = PopupColors.Line,
+        scrimColor = PopupColors.Scrim,
+        maxCardWidth = { rDp(if (isTvUiMode) 450f else 390f) },
+        cardCornerOverride = { rDp(20f) },
+        outerPaddingOverride = { rDp(20f) },
+        onBackPress = onDismiss
     ) {
-        val msgScroll = rememberScrollState()
+        val stackButtonsVertically = winW < rDp(320f) ||
+            (confirmText.length + dismissText.length > 26 && !isTvUiMode && winW < rDp(380f))
 
-        @Composable
-        fun HeaderAndMessage(modifier: Modifier = Modifier) {
-            Column(
-                modifier = modifier,
-                verticalArrangement = Arrangement.spacedBy(gapMed)
-            ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(rDp(14f))
+        ) {
+            if (iconContent != null) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(gapMed)
+                    horizontalArrangement = Arrangement.spacedBy(rDp(10f))
                 ) {
-                    if (iconContent != null) {
-                        iconContent()
-                    }
-                    Text(
-                        text = title,
-                        color = TextPrimary,
-                        fontFamily = SpaceGroteskFontFamily,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = rSp(15.5f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    iconContent()
+                    PopupTitle(text = title, modifier = Modifier.weight(1f))
                 }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = winH * 0.48f)
-                        .verticalScroll(msgScroll)
-                ) {
-                    Text(
-                        text = message,
-                        color = TextSecondary,
-                        fontSize = rSp(12.5f),
-                        lineHeight = rSp(17.5f)
-                    )
-                }
+            } else {
+                PopupTitle(text = title)
             }
-        }
 
-        val confirmModifierExtra = Modifier
-            .then(
-                if (!confirmContentDescription.isNullOrBlank()) {
-                    Modifier.semantics { contentDescription = confirmContentDescription }
-                } else Modifier
-            )
-            .then(
-                if (!confirmButtonTestTag.isNullOrBlank()) Modifier.testTag(confirmButtonTestTag)
-                else Modifier
+            PopupBody(
+                text = message,
+                maxHeight = winH * (if (useTwoColumnLayout) 0.36f else 0.44f)
             )
 
-        val dismissModifierExtra = Modifier
-            .then(
-                if (!dismissContentDescription.isNullOrBlank()) {
-                    Modifier.semantics { contentDescription = dismissContentDescription }
-                } else Modifier
-            )
-            .then(
-                if (!dismissButtonTestTag.isNullOrBlank()) Modifier.testTag(dismissButtonTestTag)
-                else Modifier
-            )
-
-        if (useTwoColumnLayout) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(gapLarge),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HeaderAndMessage(modifier = Modifier.weight(1.25f))
-                Box(
-                    modifier = Modifier
-                        .size(width = borderThin, height = rDp(96f))
-                        .background(XboxCardBorder)
-                )
+            if (stackButtonsVertically) {
                 Column(
-                    modifier = Modifier.weight(0.85f),
-                    verticalArrangement = Arrangement.spacedBy(gapMed)
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(rDp(8f))
                 ) {
-                    AdaptiveFlatActionButton(
-                        onClick = onConfirm,
-                        isPrimary = true,
-                        gamepadHint = "A",
-                        containerColor = confirmContainerColor,
-                        contentColor = confirmContentColor,
-                        borderColor = confirmContainerColor,
-                        focusedContainerColor = confirmContainerColor,
-                        focusedBorderColor = Color.White,
-                        focusRequester = confirmFocusRequester,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(confirmModifierExtra)
-                    ) {
-                        Text(
-                            text = confirmText,
-                            color = confirmContentColor,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = rSp(12.5f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    AdaptiveFlatActionButton(
+                    PopupButton(
+                        text = dismissText,
                         onClick = onDismiss,
-                        isPrimary = false,
-                        gamepadHint = "B",
+                        variant = PopupButtonVariant.SECONDARY,
                         focusRequester = dismissFocusRequester,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(dismissModifierExtra)
-                    ) {
-                        Text(
-                            text = dismissText,
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = rSp(12.5f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                        contentDescriptionOverride = dismissContentDescription ?: dismissText,
+                        testTag = dismissButtonTestTag,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    PopupButton(
+                        text = confirmText,
+                        onClick = onConfirm,
+                        variant = resolvedConfirmVariant,
+                        focusRequester = confirmFocusRequester,
+                        contentDescriptionOverride = confirmContentDescription ?: confirmText,
+                        testTag = confirmButtonTestTag,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
-            }
-        } else {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(gapLarge)
-            ) {
-                HeaderAndMessage(modifier = Modifier.fillMaxWidth())
+            } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(gapMed)
+                    horizontalArrangement = Arrangement.spacedBy(rDp(8f)),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AdaptiveFlatActionButton(
+                    PopupButton(
+                        text = dismissText,
                         onClick = onDismiss,
-                        isPrimary = false,
-                        gamepadHint = "B",
+                        variant = PopupButtonVariant.SECONDARY,
                         focusRequester = dismissFocusRequester,
-                        modifier = Modifier
-                            .weight(1f)
-                            .then(dismissModifierExtra)
-                    ) {
-                        Text(
-                            text = dismissText,
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = rSp(12.5f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    AdaptiveFlatActionButton(
+                        contentDescriptionOverride = dismissContentDescription ?: dismissText,
+                        testTag = dismissButtonTestTag,
+                        modifier = Modifier.weight(1f)
+                    )
+                    PopupButton(
+                        text = confirmText,
                         onClick = onConfirm,
-                        isPrimary = true,
-                        gamepadHint = "A",
-                        containerColor = confirmContainerColor,
-                        contentColor = confirmContentColor,
-                        borderColor = confirmContainerColor,
-                        focusedContainerColor = confirmContainerColor,
-                        focusedBorderColor = Color.White,
+                        variant = resolvedConfirmVariant,
                         focusRequester = confirmFocusRequester,
-                        modifier = Modifier
-                            .weight(1f)
-                            .then(confirmModifierExtra)
-                    ) {
-                        Text(
-                            text = confirmText,
-                            color = confirmContentColor,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = rSp(12.5f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                        contentDescriptionOverride = confirmContentDescription ?: confirmText,
+                        testTag = confirmButtonTestTag,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
+
+            PopupHintBar(
+                selectLabel = stringResource(R.string.popup_hint_select),
+                backLabel = stringResource(R.string.popup_hint_back)
+            )
         }
     }
 }

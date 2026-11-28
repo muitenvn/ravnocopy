@@ -287,4 +287,26 @@
     <string name="log_export_success">%1$d줄 내보냄 (%2$s)</string>
     <string name="log_export_failed">로그 파일을 내보내지 못했습니다</string>
     <string name="log_export_share_title">Ravno 로그 파일 공유</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">선택</string>
+    <string name="popup_hint_back">뒤로</string>
+    <string name="confirm_reset_gamepad_title">기본 배치로 초기화할까요?</string>
+    <string name="confirm_reset_gamepad_msg_phone">사용자 지정 버튼 좌표를 기본 위치로 되돌릴까요? 분할 모드와 숨긴 버튼은 유지됩니다.</string>
+    <string name="confirm_reset_gamepad_msg_all">모든 버튼 위치, 크기, 투명도, 입력 방식, 사용자 지정 버튼, 숨긴 버튼을 기본값으로 되돌릴까요?</string>
+    <string name="confirm_reset_gamepad_msg_tv">가상 게임패드 버튼 위치와 크기를 모두 기본값으로 되돌릴까요?</string>
+    <string name="confirm_reset_gamepad_btn">초기화</string>
+    <string name="confirm_reset_advanced_title">고급 설정을 초기화할까요?</string>
+    <string name="confirm_reset_advanced_msg_phone">고급 항목 설정(화면 색상, 스틱 데드존, 버튼 재매핑, Xbox 마켓 en-US, 네트워크 기술 스위치)만 초기화됩니다. Xbox 로그인, 플레이 기록, 게임 라이브러리 및 기본 설정은 유지됩니다.</string>
+    <string name="confirm_reset_advanced_msg_tv">고급 설정(UI 모드 자동, 화면 색상, 스틱 데드존, 버튼 재매핑, Xbox 마켓 en-US)만 초기화됩니다. Xbox 로그인과 플레이 기록은 유지됩니다.</string>
+    <string name="confirm_reset_advanced_btn">복원</string>
+    <string name="confirm_clear_history_title">모든 기록을 삭제할까요?</string>
+    <string name="confirm_clear_history_msg">저장된 모든 플레이 세션 기록이 영구적으로 삭제됩니다.</string>
+    <string name="confirm_clear_history_btn">모두 삭제</string>
+    <string name="confirm_tv_exit_title">게임 세션을 종료할까요?</string>
+    <string name="confirm_tv_exit_msg">현재 클라우드 스트리밍을 닫고 홈으로 돌아갑니다. Xbox Cloud에 저장된 진행 상황은 유지됩니다.</string>
+    <string name="confirm_tv_exit_stay_btn">계속하기</string>
+    <string name="confirm_clear_cookies_title">Xbox 로그인 세션을 지울까요?</string>
+    <string name="confirm_clear_cookies_msg">저장된 WebView 쿠키와 로그인 데이터를 모두 삭제하여 다시 로그인할 수 있게 합니다.</string>
+    <string name="confirm_clear_cookies_btn">로그아웃</string>
 </resources>

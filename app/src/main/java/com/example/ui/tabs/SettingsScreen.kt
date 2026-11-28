@@ -40,16 +40,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.AppConfig
 import com.example.data.SettingsRepository
 import com.example.ui.components.AdaptiveFlatActionButton
 import com.example.ui.components.AdaptivePopupFrame
 import com.example.ui.components.AdaptivePopupScope
+import com.example.ui.components.PopupButtonVariant
 import com.example.ui.components.gamepadActionButton
 import com.example.ui.components.gamepadClickable
 import com.example.ui.theme.DirectCyan
@@ -571,14 +574,10 @@ fun SettingsScreen(
 
     if (showResetGamepadConfirmDialog) {
         com.example.ui.components.AdaptiveConfirmPopupDialog(
-            title = if (isEn) "Reset Default Layout?" else "Đặt lại bố cục mặc định?",
-            message = if (isEn) {
-                "Restore custom button coordinates to their default positions? Split modes and hidden buttons will be kept."
-            } else {
-                "Khôi phục tọa độ vị trí các nút về mặc định? Chế độ tách nút và danh sách nút ẩn sẽ được giữ nguyên."
-            },
-            confirmText = if (isEn) "Reset" else "Đặt lại",
-            dismissText = if (isEn) "Cancel" else "Hủy",
+            title = stringResource(R.string.confirm_reset_gamepad_title),
+            message = stringResource(R.string.confirm_reset_gamepad_msg_phone),
+            confirmText = stringResource(R.string.confirm_reset_gamepad_btn),
+            dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
                 SettingsRepository.resetGamepadCustomOffsets()
                 showResetGamepadConfirmDialog = false
@@ -594,10 +593,7 @@ fun SettingsScreen(
             },
             confirmButtonTestTag = "confirm_reset_gamepad_btn",
             dismissButtonTestTag = "cancel_reset_gamepad_btn",
-            confirmContentDescription = if (isEn) "Confirm reset default layout" else "Xác nhận đặt lại bố cục mặc định",
-            dismissContentDescription = if (isEn) "Cancel reset default layout" else "Hủy đặt lại bố cục mặc định",
-            confirmContainerColor = XboxNeonGreen,
-            confirmContentColor = androidx.compose.ui.graphics.Color(0xFF03140B),
+            confirmVariant = PopupButtonVariant.DANGER,
             defaultFocusOnDismiss = true
         )
     }

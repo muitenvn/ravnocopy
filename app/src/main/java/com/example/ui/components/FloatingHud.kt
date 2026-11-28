@@ -926,8 +926,7 @@ fun FloatingHud(
                 showExitConfirmDialog = false
             },
             dialogTestTag = "hud_exit_confirm_dialog",
-            confirmContainerColor = HudDanger,
-            confirmContentColor = HudDangerOn,
+            confirmVariant = PopupButtonVariant.DANGER,
             defaultFocusOnDismiss = true
         )
     }

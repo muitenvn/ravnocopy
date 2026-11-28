@@ -287,4 +287,26 @@
     <string name="log_export_success">Đã xuất %1$d dòng (%2$s)</string>
     <string name="log_export_failed">Không thể xuất file nhật ký</string>
     <string name="log_export_share_title">Chia sẻ file nhật ký Ravno</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">Chọn</string>
+    <string name="popup_hint_back">Quay lại</string>
+    <string name="confirm_reset_gamepad_title">Đặt lại bố cục mặc định?</string>
+    <string name="confirm_reset_gamepad_msg_phone">Khôi phục tọa độ vị trí các nút về mặc định? Chế độ tách nút và danh sách nút ẩn sẽ được giữ nguyên.</string>
+    <string name="confirm_reset_gamepad_msg_all">Khôi phục toàn bộ vị trí, cỡ, độ mờ, kiểu bấm, nút trống và các nút ẩn về mặc định?</string>
+    <string name="confirm_reset_gamepad_msg_tv">Khôi phục toàn bộ vị trí và kích thước nút tay cầm ảo về mặc định?</string>
+    <string name="confirm_reset_gamepad_btn">Đặt lại</string>
+    <string name="confirm_reset_advanced_title">Khôi phục mặc định mục Nâng cao?</string>
+    <string name="confirm_reset_advanced_msg_phone">Chỉ đặt lại các tùy chỉnh trong mục Nâng cao (màu sắc hình ảnh, 8 thanh vùng chết, đổi nút tay cầm, thị trường Xbox về en-US và công tắc mạng kỹ thuật). Phiên đăng nhập Xbox, lịch sử chơi, danh sách game và các cài đặt cơ bản được giữ nguyên.</string>
+    <string name="confirm_reset_advanced_msg_tv">Chỉ đặt lại các tùy chỉnh trong mục Nâng cao (giao diện về Tự động, màu sắc hình ảnh, vùng chết cần, đổi nút tay cầm, thị trường Xbox về en-US). Phiên đăng nhập Xbox và lịch sử chơi được giữ nguyên.</string>
+    <string name="confirm_reset_advanced_btn">Khôi phục</string>
+    <string name="confirm_clear_history_title">Xóa tất cả lịch sử?</string>
+    <string name="confirm_clear_history_msg">Toàn bộ lịch sử các phiên chơi đã lưu sẽ bị xóa.</string>
+    <string name="confirm_clear_history_btn">Xóa tất cả</string>
+    <string name="confirm_tv_exit_title">Thoát phiên chơi?</string>
+    <string name="confirm_tv_exit_msg">Phiên truyền phát hiện tại sẽ đóng và quay về Trang chủ. Tiến trình đã lưu trên đám mây Xbox được giữ nguyên.</string>
+    <string name="confirm_tv_exit_stay_btn">Ở lại</string>
+    <string name="confirm_clear_cookies_title">Xóa phiên đăng nhập Xbox?</string>
+    <string name="confirm_clear_cookies_msg">Toàn bộ dữ liệu đăng nhập WebView hiện tại sẽ được làm mới để bạn đăng nhập lại tài khoản Microsoft/Xbox.</string>
+    <string name="confirm_clear_cookies_btn">Xóa phiên</string>
 </resources>

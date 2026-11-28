@@ -1316,4 +1316,100 @@ object PadStrings {
         th = "ปิด",
         ru = "Закрыть"
     )
+
+    fun popupHintSelect(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Chọn",
+        en = "Select",
+        es = "Elegir",
+        pt = "Selecionar",
+        fr = "Choisir",
+        de = "Auswählen",
+        ja = "選択",
+        ko = "선택",
+        zh = "选择",
+        id = "Pilih",
+        th = "เลือก",
+        ru = "Выбрать"
+    )
+
+    fun popupHintBack(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Quay lại",
+        en = "Back",
+        es = "Volver",
+        pt = "Voltar",
+        fr = "Retour",
+        de = "Zurück",
+        ja = "戻る",
+        ko = "뒤로",
+        zh = "返回",
+        id = "Kembali",
+        th = "กลับ",
+        ru = "Назад"
+    )
+
+    fun resetLayoutConfirmTitle(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Đặt lại bố cục mặc định?",
+        en = "Reset Default Layout?",
+        es = "¿Restablecer diseño predeterminado?",
+        pt = "Redefinir layout padrão?",
+        fr = "Réinitialiser la disposition ?",
+        de = "Standardlayout wiederherstellen?",
+        ja = "デフォルト配置に戻しますか？",
+        ko = "기본 배치로 초기화할까요?",
+        zh = "恢复默认布局？",
+        id = "Atur Ulang Tata Letak?",
+        th = "รีเซ็ตเลย์เอาต์เริ่มต้นหรือไม่?",
+        ru = "Сбросить раскладку?"
+    )
+
+    fun resetLayoutConfirmMessage(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Khôi phục toàn bộ vị trí, cỡ, kiểu bấm, nút trống và các nút ẩn về mặc định?",
+        en = "Restore all button positions, sizes, press modes, custom buttons, and hidden buttons to default?",
+        es = "¿Restaurar todas las posiciones, tamaños, modos de pulsación, botones personalizados y botones ocultos a los valores predeterminados?",
+        pt = "Restaurar todas as posições, tamanhos, modos de toque, botões personalizados e botões ocultos para o padrão?",
+        fr = "Rétablir par défaut toutes les positions, tailles, modes d'appui, boutons personnalisés et boutons masqués ?",
+        de = "Alle Tastenpositionen, Größen, Druckmodi, eigenen Tasten und ausgeblendeten Tasten auf Standard zurücksetzen?",
+        ja = "すべてのボタンの位置・サイズ・押し方・カスタムボタン・非表示ボタンを初期値に戻しますか？",
+        ko = "모든 버튼 위치, 크기, 입력 방식, 사용자 지정 버튼, 숨긴 버튼을 기본값으로 되돌릴까요?",
+        zh = "将所有按键位置、大小、按压方式、自定义按键和隐藏按键恢复为默认？",
+        id = "Pulihkan semua posisi, ukuran, mode tekan, tombol kustom, dan tombol tersembunyi ke bawaan?",
+        th = "คืนค่าตำแหน่ง ขนาด โหมดการกด ปุ่มกำหนดเอง และปุ่มที่ซ่อนทั้งหมดเป็นค่าเริ่มต้นหรือไม่?",
+        ru = "Сбросить все позиции, размеры, режимы нажатия, свои и скрытые кнопки к значениям по умолчанию?"
+    )
+
+    fun resetBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Đặt lại",
+        en = "Reset",
+        es = "Restablecer",
+        pt = "Redefinir",
+        fr = "Réinitialiser",
+        de = "Zurücksetzen",
+        ja = "リセット",
+        ko = "초기화",
+        zh = "重置",
+        id = "Atur Ulang",
+        th = "รีเซ็ต",
+        ru = "Сбросить"
+    )
+
+    fun cancelBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Hủy",
+        en = "Cancel",
+        es = "Cancelar",
+        pt = "Cancelar",
+        fr = "Annuler",
+        de = "Abbrechen",
+        ja = "キャンセル",
+        ko = "취소",
+        zh = "取消",
+        id = "Batal",
+        th = "ยกเลิก",
+        ru = "Отмена"
+    )
 }

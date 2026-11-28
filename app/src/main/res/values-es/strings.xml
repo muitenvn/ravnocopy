@@ -287,4 +287,26 @@
     <string name="log_export_success">Exportadas %1$d líneas (%2$s)</string>
     <string name="log_export_failed">No se pudo exportar el registro</string>
     <string name="log_export_share_title">Compartir registro de Ravno</string>
+
+    <!-- Popup Primitives & Confirm Dialogs (Pattern 1) -->
+    <string name="popup_hint_select">Elegir</string>
+    <string name="popup_hint_back">Volver</string>
+    <string name="confirm_reset_gamepad_title">¿Restablecer diseño predeterminado?</string>
+    <string name="confirm_reset_gamepad_msg_phone">¿Restaurar las coordenadas de los botones a su posición predeterminada? Se conservarán los modos divididos y los botones ocultos.</string>
+    <string name="confirm_reset_gamepad_msg_all">¿Restaurar todas las posiciones, tamaños, opacidad, modos de pulsación, botones personalizados y botones ocultos a sus valores predeterminados?</string>
+    <string name="confirm_reset_gamepad_msg_tv">¿Restaurar todas las posiciones y tamaños de los botones del mando virtual a los valores predeterminados?</string>
+    <string name="confirm_reset_gamepad_btn">Restablecer</string>
+    <string name="confirm_reset_advanced_title">¿Restaurar ajustes avanzados?</string>
+    <string name="confirm_reset_advanced_msg_phone">Solo se restablecerán los ajustes de la sección Avanzado (colores, zonas muertas, reasignación de botones, región de Xbox a en-US e interruptores de red). Tu sesión de Xbox, historial, biblioteca y ajustes básicos no cambiarán.</string>
+    <string name="confirm_reset_advanced_msg_tv">Solo restablece los ajustes Avanzados (interfaz en Automático, colores, zonas muertas, reasignación de botones y región de Xbox en en-US). Tu sesión de Xbox e historial se conservan.</string>
+    <string name="confirm_reset_advanced_btn">Restaurar</string>
+    <string name="confirm_clear_history_title">¿Borrar todo el historial?</string>
+    <string name="confirm_clear_history_msg">Se eliminarán permanentemente todas las sesiones de juego registradas.</string>
+    <string name="confirm_clear_history_btn">Borrar todo</string>
+    <string name="confirm_tv_exit_title">¿Salir de la sesión de juego?</string>
+    <string name="confirm_tv_exit_msg">La transmisión actual se cerrará y volverás al Inicio. Tu progreso guardado en Xbox Cloud se conserva.</string>
+    <string name="confirm_tv_exit_stay_btn">Quedarse</string>
+    <string name="confirm_clear_cookies_title">¿Cerrar sesión de Xbox?</string>
+    <string name="confirm_clear_cookies_msg">Se borrarán las cookies y los datos de inicio de sesión guardados en WebView para que puedas volver a iniciar sesión.</string>
+    <string name="confirm_clear_cookies_btn">Cerrar sesión</string>
 </resources>

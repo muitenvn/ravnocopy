@@ -62,7 +62,9 @@ import com.example.cloudplay.TvPadTransportMode
 import com.example.cloudplay.TvRemotePadServerState
 import com.example.cloudplay.TvRemoteRelayStatus
 import com.example.data.AppConfig
+import com.example.ui.components.AdaptiveConfirmPopupDialog
 import com.example.ui.components.GamepadSurfaceController
+import com.example.ui.components.PopupButtonVariant
 import com.example.ui.theme.JetBrainsMonoFontFamily
 import com.example.ui.theme.SpaceGroteskFontFamily
 import com.muitenvn.cloudplay.protocol.TvServiceStatus
@@ -281,19 +283,22 @@ internal fun TvRemotePadDialog(
     }
 
     if (showEnableRemoteConfirmDialog) {
-        TvConfirmDialog(
+        AdaptiveConfirmPopupDialog(
             title = stringResource(R.string.remote_pad_confirm_title),
-            description = stringResource(R.string.remote_pad_confirm_desc),
+            message = stringResource(R.string.remote_pad_confirm_desc),
             confirmText = stringResource(R.string.remote_pad_confirm_enable),
-            cancelText = stringResource(R.string.remote_pad_confirm_cancel),
-            confirmVariant = TvButtonVariant.PRIMARY,
+            dismissText = stringResource(R.string.remote_pad_confirm_cancel),
             onConfirm = {
                 showEnableRemoteConfirmDialog = false
                 RemotePadTvServer.enableRemoteRelay(context)
                 showRemoteMode = true
             },
             onDismiss = { showEnableRemoteConfirmDialog = false },
-            testTagPrefix = "tv_dialog_enable_remote_pad"
+            dialogTestTag = "tv_dialog_enable_remote_pad",
+            confirmButtonTestTag = "tv_dialog_enable_remote_pad_confirm_btn",
+            dismissButtonTestTag = "tv_dialog_enable_remote_pad_cancel_btn",
+            confirmVariant = PopupButtonVariant.PRIMARY,
+            defaultFocusOnDismiss = true
         )
     }
 }
