@@ -170,6 +170,9 @@ class MainActivity : ComponentActivity() {
         com.example.data.PerformanceMonitor.onAppStart()
         com.example.cloudplay.NetworkOptimizer.setAppForeground(true)
         VpnManager.onAppForeground()
+        if (SettingsRepository.config.value.userAcceptedTerms && !isBrowserScreenActive) {
+            com.example.data.UpdateChecker.checkOnAppLaunchIfNeeded(this)
+        }
     }
 
     override fun onPause() {
@@ -422,7 +425,7 @@ fun MainContent(
 
     LaunchedEffect(config.userAcceptedTerms, config.autoCheckUpdatesOnLaunch) {
         if (config.userAcceptedTerms && config.autoCheckUpdatesOnLaunch) {
-            kotlinx.coroutines.delay(4_000L)
+            kotlinx.coroutines.delay(1_000L)
             com.example.data.UpdateChecker.checkOnAppLaunchIfNeeded(context)
         }
     }

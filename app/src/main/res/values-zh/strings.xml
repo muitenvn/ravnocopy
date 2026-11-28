@@ -251,14 +251,14 @@
     <string name="loading_artwork_cd">%1$s 游戏封面</string>
     <!-- Remote Off-LAN Pad Relay -->
     <string name="remote_pad_adv_title">跨网络远程连接 Pad</string>
-    <string name="remote_pad_adv_desc">生成端到端加密的 8 位配对码，支持 4G/5G 或不同 Wi-Fi 连接 Ravno Pad。默认关闭，不影响局域网模式。</string>
+    <string name="remote_pad_adv_desc">生成端到端加密的 10 位数字配对码，支持 4G/5G 或不同 Wi-Fi 连接 Ravno Pad。默认关闭，不影响局域网模式。</string>
     <string name="remote_pad_confirm_title">启用跨网络 Pad 连接？</string>
-    <string name="remote_pad_confirm_desc">电视将通过免费加密中继生成 8 位配对码（无需登录账号）。空闲 15 分钟后自动失效。</string>
+    <string name="remote_pad_confirm_desc">电视将通过免费加密中继生成 10 位数字配对码（无需登录账号）。空闲 15 分钟后自动失效。</string>
     <string name="remote_pad_confirm_enable">开启远程连接</string>
     <string name="remote_pad_confirm_cancel">取消</string>
     <string name="remote_pad_tab_lan">同一 Wi-Fi (局域网)</string>
     <string name="remote_pad_tab_remote">跨网络 (高级)</string>
-    <string name="remote_pad_enter_code_prompt">在 Ravno Pad → 输入 IP → 高级 中输入此 8 位配对码</string>
+    <string name="remote_pad_enter_code_prompt">在 Ravno Pad → 输入 IP → 高级 中输入此 10 位数字配对码</string>
     <string name="remote_pad_status_connecting">正在连接加密中继…</string>
     <string name="remote_pad_status_ready">就绪 · 端到端加密（15 分钟内有效）</string>
     <string name="remote_pad_status_connected">已远程连接：%1$s</string>
@@ -270,6 +270,6 @@
     <string name="remote_pad_badge_lan">局域网 (LAN)</string>
     <string name="remote_pad_badge_remote">远程 · 已加密</string>
     <string name="remote_pad_step_2_remote">点击输入 IP → 高级</string>
-    <string name="remote_pad_step_3_remote">输入 8 位配对码</string>
-    <string name="remote_pad_bottom_notice_remote">端到端加密 8 位码 · 15 分钟自动过期 · 错 3 次锁定 3 分钟</string>
+    <string name="remote_pad_step_3_remote">输入 10 位数字码</string>
+    <string name="remote_pad_bottom_notice_remote">端到端加密 10 位数字码 · 15 分钟自动过期 · 错 3 次锁定 3 分钟</string>
 </resources>

@@ -251,14 +251,14 @@
     <string name="loading_artwork_cd">Capa do jogo %1$s</string>
     <!-- Remote Off-LAN Pad Relay -->
     <string name="remote_pad_adv_title">Conectar Pad sem mesmo Wi-Fi</string>
-    <string name="remote_pad_adv_desc">Cria um código criptografado de 8 caracteres para parear o Ravno Pad via 4G/5G ou outro Wi-Fi. Desligado por padrão; LAN não muda.</string>
+    <string name="remote_pad_adv_desc">Cria um código criptografado de 10 dígitos para parear o Ravno Pad via 4G/5G ou outro Wi-Fi. Desligado por padrão; LAN não muda.</string>
     <string name="remote_pad_confirm_title">Ativar conexão Pad fora da LAN?</string>
-    <string name="remote_pad_confirm_desc">A TV gerará um código de 8 caracteres via relay criptografado gratuito (sem login). O código expira após 15 minutos inativo.</string>
+    <string name="remote_pad_confirm_desc">A TV gerará um código numérico de 10 dígitos via relay criptografado gratuito (sem login). O código expira após 15 minutos inativo.</string>
     <string name="remote_pad_confirm_enable">Ativar modo remoto</string>
     <string name="remote_pad_confirm_cancel">Cancelar</string>
     <string name="remote_pad_tab_lan">Mesmo Wi-Fi (LAN)</string>
     <string name="remote_pad_tab_remote">Outro Wi-Fi (Avançado)</string>
-    <string name="remote_pad_enter_code_prompt">Digite este código no Ravno Pad → Inserir IP → Avançado</string>
+    <string name="remote_pad_enter_code_prompt">Digite este código de 10 dígitos no Ravno Pad → Inserir IP → Avançado</string>
     <string name="remote_pad_status_connecting">Conectando ao relay criptografado…</string>
     <string name="remote_pad_status_ready">Pronto · Criptografia ponta a ponta (expira em 15 min)</string>
     <string name="remote_pad_status_connected">Conectado remotamente: %1$s</string>
@@ -270,6 +270,6 @@
     <string name="remote_pad_badge_lan">Rede local (LAN)</string>
     <string name="remote_pad_badge_remote">Remoto · Criptografado</string>
     <string name="remote_pad_step_2_remote">Toque em Inserir IP → Avançado</string>
-    <string name="remote_pad_step_3_remote">Digite o código de 8 caracteres</string>
-    <string name="remote_pad_bottom_notice_remote">Código de 8 caracteres criptografado · Expira em 15 min · 3 erros bloqueiam 3 min</string>
+    <string name="remote_pad_step_3_remote">Digite o código de 10 dígitos</string>
+    <string name="remote_pad_bottom_notice_remote">Código de 10 dígitos criptografado · Expira em 15 min · 3 erros bloqueiam 3 min</string>
 </resources>

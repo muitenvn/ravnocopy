@@ -1,5 +1,7 @@
 package com.muitenvn.cloudplay.pad
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -32,6 +34,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Warning
@@ -54,9 +58,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -71,8 +81,21 @@ class PadMainActivity : ComponentActivity() {
         enableEdgeToEdge()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         PadNetworkClient.ensureInitialized(this)
+        PadUpdateChecker.initTermsState(this)
         setContent {
-            CloudPlayPadRootScreen()
+            CloudPlayPadRootScreen(
+                onExitApp = {
+                    finishAndRemoveTask()
+                    finishAffinity()
+                }
+            )
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (PadNetworkClient.state.value.route != PadScreenRoute.GAMEPAD) {
+            PadUpdateChecker.checkOnAppEntry(this, autoDownload = true)
         }
     }
 }
@@ -145,12 +168,35 @@ internal fun rememberPadMetrics(maxWidth: Dp, maxHeight: Dp): PadResponsiveMetri
 }
 
 @Composable
-fun CloudPlayPadRootScreen() {
+fun CloudPlayPadRootScreen(
+    onExitApp: () -> Unit = {}
+) {
     val context = LocalContext.current
     val clientState by PadNetworkClient.state.collectAsState()
+    val termsAccepted by PadUpdateChecker.termsAccepted.collectAsState()
+    val updateState by PadUpdateChecker.state.collectAsState()
+    val downloadState by PadUpdateChecker.downloadState.collectAsState()
+    val showUpdateDialog by PadUpdateChecker.showUpdateDialog.collectAsState()
+    var showTermsViewerDialog by remember { mutableStateOf(false) }
 
-    DisposableEffect(Unit) {
-        PadNetworkClient.startDiscovery(context)
+    val openExternalUrl: (String) -> Unit = remember(context) {
+        { url ->
+            runCatching {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            }
+        }
+    }
+
+    DisposableEffect(termsAccepted) {
+        if (termsAccepted) {
+            PadNetworkClient.startDiscovery(context)
+            if (PadNetworkClient.state.value.route != PadScreenRoute.GAMEPAD) {
+                PadUpdateChecker.checkOnAppEntry(context, autoDownload = true)
+            }
+        }
         onDispose {
             PadNetworkClient.stopDiscovery()
         }
@@ -169,13 +215,22 @@ fun CloudPlayPadRootScreen() {
             PadScreenRoute.FIND_TV -> {
                 PadFindTvScreen(
                     state = clientState,
+                    updateState = updateState,
                     m = m,
                     onRescan = { PadNetworkClient.rescan(context) },
                     onCycleLanguage = { PadNetworkClient.cycleLanguage(context) },
                     onSelectTv = { PadNetworkClient.onSelectTv(it) },
                     onProbeManualIp = { PadNetworkClient.probeManualIp(it) },
                     onConnectRemoteCode = { PadNetworkClient.connectWithRemoteCode(it) },
-                    onClearRemoteStatus = { PadNetworkClient.clearRemoteStatus() }
+                    onClearRemoteStatus = { PadNetworkClient.clearRemoteStatus() },
+                    onCheckUpdates = {
+                        if (updateState is PadUpdateCheckState.UpdateAvailable) {
+                            PadUpdateChecker.openUpdateDialog()
+                        } else {
+                            PadUpdateChecker.checkNowManual(context, autoDownload = true)
+                        }
+                    },
+                    onOpenTerms = { showTermsViewerDialog = true }
                 )
             }
 
@@ -218,6 +273,43 @@ fun CloudPlayPadRootScreen() {
                 )
             }
         }
+
+        if (!termsAccepted) {
+            PadTermsDialog(
+                lang = clientState.language,
+                m = m,
+                requireAgreement = true,
+                onOpenFullWeb = { openExternalUrl(PadUpdateChecker.TERMS_WEB_URL) },
+                onAcceptOrClose = {
+                    PadUpdateChecker.setTermsAccepted(context, true)
+                },
+                onDeclineExit = onExitApp
+            )
+        } else if (showTermsViewerDialog) {
+            PadTermsDialog(
+                lang = clientState.language,
+                m = m,
+                requireAgreement = false,
+                onOpenFullWeb = { openExternalUrl(PadUpdateChecker.TERMS_WEB_URL) },
+                onAcceptOrClose = { showTermsViewerDialog = false },
+                onDeclineExit = { showTermsViewerDialog = false }
+            )
+        }
+
+        val availableUpdate = updateState as? PadUpdateCheckState.UpdateAvailable
+        if (termsAccepted && showUpdateDialog && availableUpdate != null && clientState.route != PadScreenRoute.GAMEPAD) {
+            PadUpdateDialog(
+                lang = clientState.language,
+                m = m,
+                updateInfo = availableUpdate,
+                downloadState = downloadState,
+                onStartDownload = { PadUpdateChecker.startVerifiedApkDownload(context, availableUpdate) },
+                onSkipMirror = { PadUpdateChecker.skipToNextMirror() },
+                onInstallApk = { apkFile -> PadUpdateChecker.launchApkInstaller(context, apkFile) },
+                onOpenGitHub = { url -> openExternalUrl(url) },
+                onDismiss = { PadUpdateChecker.dismissUpdateDialog() }
+            )
+        }
     }
 }
 
@@ -231,13 +323,16 @@ fun CloudPlayPadRootScreen() {
 @Composable
 private fun PadFindTvScreen(
     state: PadClientUiState,
+    updateState: PadUpdateCheckState,
     m: PadResponsiveMetrics,
     onRescan: () -> Unit,
     onCycleLanguage: () -> Unit,
     onSelectTv: (DiscoveredTvDevice) -> Unit,
     onProbeManualIp: (String) -> Unit,
     onConnectRemoteCode: (String) -> Unit,
-    onClearRemoteStatus: () -> Unit
+    onClearRemoteStatus: () -> Unit,
+    onCheckUpdates: () -> Unit,
+    onOpenTerms: () -> Unit
 ) {
     val lang = state.language
     var manualIp by remember { mutableStateOf("") }
@@ -675,15 +770,26 @@ private fun PadFindTvScreen(
                                 BasicTextField(
                                     value = remoteCode,
                                     onValueChange = { raw ->
-                                        val cleaned = raw.uppercase()
-                                            .filter { ch -> ch.isLetterOrDigit() || ch == '-' }
-                                            .take(9)
-                                        remoteCode = cleaned
+                                        val digitsOnly = raw.filter { ch -> ch in '0'..'9' }
+                                            .take(RemotePadRelayCrypto.CODE_LENGTH)
+                                        remoteCode = digitsOnly
                                         if (state.remoteStatusCode.isNotEmpty() && !state.isRemoteConnecting) {
                                             onClearRemoteStatus()
                                         }
                                     },
                                     singleLine = true,
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Number,
+                                        imeAction = ImeAction.Done
+                                    ),
+                                    keyboardActions = KeyboardActions(
+                                        onDone = {
+                                            if (isRemoteReady) {
+                                                onConnectRemoteCode(remoteCode)
+                                            }
+                                        }
+                                    ),
+                                    visualTransformation = TenDigitCodeVisualTransformation,
                                     textStyle = TextStyle(
                                         color = PadInk,
                                         fontSize = m.bodyFont,
@@ -803,6 +909,62 @@ private fun PadFindTvScreen(
                         color = if (showManualIpRow) PadAccent else PadInk,
                         fontSize = m.bodyFont,
                         fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(m.itemGap * 0.7f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val hasNewVer = updateState is PadUpdateCheckState.UpdateAvailable
+                val updatePillText = when (updateState) {
+                    is PadUpdateCheckState.UpdateAvailable -> "v${updateState.latestVersion}"
+                    is PadUpdateCheckState.UpToDate -> PadStrings.updateUpToDateBanner(lang, updateState.currentVersion)
+                    PadUpdateCheckState.Checking -> "…"
+                    else -> PadStrings.checkUpdatePillLabel(lang)
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(m.buttonRadius))
+                        .background(if (hasNewVer) PadSelected else PadSurface)
+                        .border(
+                            m.strokeThin,
+                            if (hasNewVer) PadAccent else PadBorder,
+                            RoundedCornerShape(m.buttonRadius)
+                        )
+                        .clickable(onClick = onCheckUpdates)
+                        .padding(horizontal = m.cardPad * 0.65f, vertical = m.cardPad * 0.55f)
+                        .testTag("pad_check_update_btn"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (hasNewVer) "⬇ $updatePillText" else "↻ $updatePillText",
+                        color = if (hasNewVer) PadAccent else PadMuted,
+                        fontSize = m.captionFont,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(m.buttonRadius))
+                        .background(PadSurface)
+                        .border(m.strokeThin, PadBorder, RoundedCornerShape(m.buttonRadius))
+                        .clickable(onClick = onOpenTerms)
+                        .padding(horizontal = m.cardPad * 0.8f, vertical = m.cardPad * 0.55f)
+                        .testTag("pad_open_terms_btn"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = PadStrings.termsButtonLabel(lang),
+                        color = PadMuted,
+                        fontSize = m.captionFont,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
                     )
                 }
             }
@@ -1137,6 +1299,29 @@ private fun PadKeypadButton(
             fontSize = if (useCaptionFont) m.bodyFont else m.keyFont,
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+private object TenDigitCodeVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val raw = text.text
+        val formatted = if (raw.length <= 5) {
+            raw
+        } else {
+            raw.substring(0, 5) + "-" + raw.substring(5)
+        }
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                val clamped = offset.coerceIn(0, raw.length)
+                return if (clamped <= 5) clamped else (clamped + 1).coerceAtMost(formatted.length)
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                val clamped = offset.coerceIn(0, formatted.length)
+                return if (clamped <= 5) clamped else (clamped - 1).coerceIn(0, raw.length)
+            }
+        }
+        return TransformedText(AnnotatedString(formatted), offsetMapping)
     }
 }
 

@@ -102,7 +102,7 @@ object UpdateChecker {
     private const val KEY_CACHED_ETAG = "cached_github_api_etag"
     private const val KEY_LAST_WORKING_MIRROR_ID = "last_working_mirror_id"
 
-    private const val CHECK_INTERVAL_MS = 24L * 60L * 60L * 1000L
+    private const val AUTO_CHECK_DEBOUNCE_MS = 15_000L
     private const val MANUAL_RAPID_TAP_REUSE_MS = 15_000L
     private const val TIMEOUT_MS = 8000
     private const val MIRROR_CONNECT_TIMEOUT_MS = 6000 // Chuyển sang máy chủ phụ kế tiếp nhanh nếu máy chủ hiện tại lỗi/treo
@@ -189,7 +189,7 @@ object UpdateChecker {
     private var activeDownloadConnection: HttpURLConnection? = null
 
     @Volatile
-    private var hasAutoCheckedInSession = false
+    private var dismissedVersionInSession: String = ""
 
     fun getCurrentVersionName(context: Context): String = try {
         val pkgInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -223,6 +223,10 @@ object UpdateChecker {
     }
 
     fun dismissUpdateDialog() {
+        val currentAvailable = _state.value as? UpdateCheckState.UpdateAvailable
+        if (currentAvailable != null) {
+            dismissedVersionInSession = currentAvailable.latestVersion
+        }
         cancelApkDownload()
         _showUpdateDialog.value = false
     }
@@ -473,46 +477,27 @@ object UpdateChecker {
                 officialSha256 = officialSha,
                 sha256AssetUrl = shaAssetUrl
             )
-            if (openDialogIfNewer) _showUpdateDialog.value = true
+            if (openDialogIfNewer && !dismissedVersionInSession.equals(cleanLatest, ignoreCase = true)) {
+                _showUpdateDialog.value = true
+            }
         } else {
             _state.value = UpdateCheckState.UpToDate(currentVersion = currentVersion)
         }
         return true
     }
 
+    /**
+     * Kiểm tra cập nhật tự động mỗi lần người dùng mở / quay lại ứng dụng (không chờ 24 giờ).
+     * Vẫn dùng ETag (If-None-Match) và chống gọi lặp trong 15 giây để nhanh và không tốn hạn mức GitHub API.
+     */
     fun checkOnAppLaunchIfNeeded(context: Context) {
-        if (hasAutoCheckedInSession) return
         if (!SettingsRepository.config.value.autoCheckUpdatesOnLaunch) return
+        if (_downloadState.value is ApkDownloadState.Downloading || _downloadState.value is ApkDownloadState.Verifying) return
 
-        hasAutoCheckedInSession = true
-        val appContext = context.applicationContext
-        val currentVersion = getCurrentVersionName(appContext)
-        val sp = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val lastCheckMs = sp.getLong(KEY_LAST_CHECK_MS, 0L)
         val now = System.currentTimeMillis()
+        if (now - lastSuccessfulCheckRealtimeMs in 1..AUTO_CHECK_DEBOUNCE_MS) return
 
-        val cachedNotes = sp.getString(KEY_CACHED_RELEASE_NOTES, "") ?: ""
-        val cachedApkDirect = sp.getString(KEY_CACHED_APK_DIRECT_URL, "") ?: ""
-        val cachedOfficialSha = sp.getString(KEY_CACHED_OFFICIAL_SHA256, "") ?: ""
-        val cachedShaAssetUrl = sp.getString(KEY_CACHED_SHA256_ASSET_URL, "") ?: ""
-        if (now - lastCheckMs in 1 until CHECK_INTERVAL_MS && cachedNotes.isNotBlank() && cachedApkDirect.isNotBlank()) {
-            val cachedLatest = sp.getString(KEY_CACHED_LATEST_VER, "") ?: ""
-            val cachedUrl = sp.getString(KEY_CACHED_RELEASE_URL, FALLBACK_RELEASES_URL) ?: FALLBACK_RELEASES_URL
-            if (cachedLatest.isNotBlank() && isNewerVersion(currentVersion, cachedLatest)) {
-                _state.value = UpdateCheckState.UpdateAvailable(
-                    currentVersion = currentVersion,
-                    latestVersion = cachedLatest,
-                    releaseUrl = cachedUrl,
-                    releaseNotes = cachedNotes,
-                    apkDirectUrl = cachedApkDirect,
-                    fastCdnApkUrl = buildFastCdnUrl(cachedApkDirect, cachedLatest),
-                    officialSha256 = cachedOfficialSha,
-                    sha256AssetUrl = cachedShaAssetUrl
-                )
-                _showUpdateDialog.value = true
-            }
-            return
-        }
+        val appContext = context.applicationContext
         if (!isChecking.compareAndSet(false, true)) return
         scope.launch {
             try {
@@ -525,6 +510,7 @@ object UpdateChecker {
 
     fun checkNowManual(context: Context) {
         if (!isChecking.compareAndSet(false, true)) return
+        dismissedVersionInSession = ""
         AppLogger.info("UI", "Bấm kiểm tra cập nhật ứng dụng thủ công")
         _state.value = UpdateCheckState.Checking
         val appContext = context.applicationContext
@@ -675,7 +661,9 @@ object UpdateChecker {
                     officialSha256 = officialSha256,
                     sha256AssetUrl = sha256AssetUrl
                 )
-                _showUpdateDialog.value = true
+                if (isManual || !dismissedVersionInSession.equals(latestVersion, ignoreCase = true)) {
+                    _showUpdateDialog.value = true
+                }
             } else {
                 AppLogger.success("UPDATE", "Ứng dụng đang ở phiên bản mới nhất (v$currentVersion)")
                 _state.value = UpdateCheckState.UpToDate(currentVersion = currentVersion)

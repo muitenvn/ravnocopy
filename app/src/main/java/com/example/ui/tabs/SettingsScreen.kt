@@ -328,9 +328,9 @@ fun SettingsScreen(
                                 is com.example.data.UpdateCheckState.UpdateAvailable ->
                                     config.tr("Có bản mới ${st.latestVersion} · Chạm để tải", "New version ${st.latestVersion} available")
                                 is com.example.data.UpdateCheckState.CheckFailed ->
-                                    config.tr("Đang dùng v$currentVersionName · Tự kiểm tra mỗi 24 giờ", "Current v$currentVersionName · Auto-checks every 24h")
+                                    config.tr("Đang dùng v$currentVersionName · Tự kiểm tra khi mở app", "Current v$currentVersionName · Auto-checks on launch")
                                 else ->
-                                    config.tr("Đang dùng v$currentVersionName · Tự kiểm tra mỗi 24 giờ", "Current v$currentVersionName · Auto-checks every 24h")
+                                    config.tr("Đang dùng v$currentVersionName · Tự kiểm tra khi mở app", "Current v$currentVersionName · Auto-checks on launch")
                             }
                             Text(
                                 text = updateSubtitle,
@@ -496,9 +496,9 @@ fun SettingsScreen(
                 SettingToggleRow(
                     title = if (isEn) "Check for updates on launch" else "Kiểm tra bản mới khi mở app",
                     subtitle = if (isEn) {
-                        "Checks GitHub at most once every 24 hours"
+                        "Automatically checks GitHub every time you open the app"
                     } else {
-                        "Tự kiểm tra ngầm tối đa 1 lần mỗi 24 giờ"
+                        "Tự kiểm tra ngầm mỗi lần mở ứng dụng"
                     },
                     checked = config.autoCheckUpdatesOnLaunch,
                     onCheckedChange = { SettingsRepository.updateAutoCheckUpdatesOnLaunch(it) },

@@ -775,18 +775,18 @@ object PadStrings {
 
     fun remoteCodePlaceholder(lang: PadLanguage) = tr(
         lang = lang,
-        vi = "Mã TV (XXXX-XXXX)",
-        en = "TV Code (XXXX-XXXX)",
-        es = "Código TV (XXXX-XXXX)",
-        pt = "Código TV (XXXX-XXXX)",
-        fr = "Code TV (XXXX-XXXX)",
-        de = "TV-Code (XXXX-XXXX)",
-        ja = "TVコード (XXXX-XXXX)",
-        ko = "TV 코드 (XXXX-XXXX)",
-        zh = "电视代码 (XXXX-XXXX)",
-        id = "Kode TV (XXXX-XXXX)",
-        th = "รหัสทีวี (XXXX-XXXX)",
-        ru = "Код ТВ (XXXX-XXXX)"
+        vi = "Mã 10 số (00000-00000)",
+        en = "10-digit code (00000-00000)",
+        es = "Código de 10 dígitos",
+        pt = "Código de 10 dígitos",
+        fr = "Code à 10 chiffres",
+        de = "10-stelliger Zahlencode",
+        ja = "10桁の数字コード",
+        ko = "10자리 숫자 코드",
+        zh = "10位数字代码 (00000-00000)",
+        id = "Kode 10 angka (00000-00000)",
+        th = "รหัสตัวเลข 10 หลัก",
+        ru = "10-значный код (00000-00000)"
     )
 
     fun remoteConnectBtn(lang: PadLanguage) = tr(
@@ -855,18 +855,18 @@ object PadStrings {
 
     fun remoteStatusInvalidCode(lang: PadLanguage) = tr(
         lang = lang,
-        vi = "Mã gồm 8 ký tự hợp lệ trên TV (không dùng 0, 1, O, I).",
-        en = "Enter the 8-character code from your TV (no 0, 1, O, I).",
-        es = "Ingresa el código de 8 caracteres de la TV (sin 0, 1, O, I).",
-        pt = "Digite o código de 8 caracteres da TV (sem 0, 1, O, I).",
-        fr = "Saisissez le code à 8 caractères de la TV (sans 0, 1, O, I).",
-        de = "8-stelligen Code vom TV eingeben (ohne 0, 1, O, I).",
-        ja = "TVに表示された8文字のコードを入力してください（0, 1, O, Iは不使用）。",
-        ko = "TV에 표시된 8자리 코드를 입력하세요(0, 1, O, I 제외).",
-        zh = "请输入电视上的8位有效代码（不含0、1、O、I）。",
-        id = "Masukkan kode 8 karakter dari TV (tanpa 0, 1, O, I).",
-        th = "กรอกรหัส 8 ตัวอักษรจากทีวี (ไม่มี 0, 1, O, I)",
-        ru = "Введите 8-значный код с ТВ (без 0, 1, O, I)."
+        vi = "Nhập đủ 10 chữ số (0–9) đang hiển thị trên TV.",
+        en = "Enter all 10 digits (0–9) shown on your TV.",
+        es = "Ingresa los 10 dígitos (0–9) mostrados en la TV.",
+        pt = "Digite os 10 números (0–9) exibidos na TV.",
+        fr = "Saisissez les 10 chiffres (0–9) affichés sur la TV.",
+        de = "Gib alle 10 Ziffern (0–9) vom TV ein.",
+        ja = "TVに表示された10桁の数字（0〜9）を入力してください。",
+        ko = "TV에 표시된 10자리 숫자(0–9)를 모두 입력하세요.",
+        zh = "请输入电视上显示的全部10位数字（0–9）。",
+        id = "Masukkan seluruh 10 angka (0–9) yang tampil di TV.",
+        th = "กรอกตัวเลขให้ครบ 10 หลัก (0–9) ตามที่แสดงบนทีวี",
+        ru = "Введите все 10 цифр (0–9), показанные на ТВ."
     )
 
     fun remoteStatusBrokerError(lang: PadLanguage) = tr(
@@ -947,5 +947,373 @@ object PadStrings {
         id = "Koneksi jarak jauh ke $tvName terputus. Semua tombol dilepas otomatis.",
         th = "การเชื่อมต่อระยะไกลกับ $tvName ขาดหาย ปล่อยปุ่มทั้งหมดโดยอัตโนมัติแล้ว",
         ru = "Удалённое соединение с $tvName прервано. Все кнопки безопасно отпущены."
+    )
+
+    fun updateAvailableTitle(lang: PadLanguage, latestVer: String) = tr(
+        lang = lang,
+        vi = "Có bản cập nhật Ravno Pad v$latestVer",
+        en = "Ravno Pad v$latestVer Available",
+        es = "Ravno Pad v$latestVer disponible",
+        pt = "Ravno Pad v$latestVer disponível",
+        fr = "Ravno Pad v$latestVer disponible",
+        de = "Ravno Pad v$latestVer verfügbar",
+        ja = "Ravno Pad v$latestVer が利用可能",
+        ko = "Ravno Pad v$latestVer 업데이트 가능",
+        zh = "Ravno Pad v$latestVer 新版本可用",
+        id = "Ravno Pad v$latestVer Tersedia",
+        th = "มีอัปเดต Ravno Pad v$latestVer",
+        ru = "Доступно обновление Ravno Pad v$latestVer"
+    )
+
+    fun updateVersionDiff(lang: PadLanguage, currentVer: String, latestVer: String) = tr(
+        lang = lang,
+        vi = "Đang dùng v$currentVer → Bản mới v$latestVer",
+        en = "Current v$currentVer → New v$latestVer",
+        es = "Actual v$currentVer → Nueva v$latestVer",
+        pt = "Atual v$currentVer → Nova v$latestVer",
+        fr = "Actuelle v$currentVer → Nouvelle v$latestVer",
+        de = "Aktuell v$currentVer → Neu v$latestVer",
+        ja = "現在 v$currentVer → 最新 v$latestVer",
+        ko = "현재 v$currentVer → 최신 v$latestVer",
+        zh = "当前 v$currentVer → 最新 v$latestVer",
+        id = "Saat ini v$currentVer → Baru v$latestVer",
+        th = "ปัจจุบัน v$currentVer → ใหม่ v$latestVer",
+        ru = "Текущая v$currentVer → Новая v$latestVer"
+    )
+
+    fun updateDownloadingStatus(lang: PadLanguage, mirrorName: String, percentText: String) = tr(
+        lang = lang,
+        vi = "Đang tự động tải ($mirrorName)… $percentText",
+        en = "Auto-downloading ($mirrorName)… $percentText",
+        es = "Descargando automáticamente ($mirrorName)… $percentText",
+        pt = "Baixando automaticamente ($mirrorName)… $percentText",
+        fr = "Téléchargement auto ($mirrorName)… $percentText",
+        de = "Automatischer Download ($mirrorName)… $percentText",
+        ja = "自動ダウンロード中 ($mirrorName)… $percentText",
+        ko = "자동 다운로드 중 ($mirrorName)… $percentText",
+        zh = "正在自动下载 ($mirrorName)… $percentText",
+        id = "Mengunduh otomatis ($mirrorName)… $percentText",
+        th = "กำลังดาวน์โหลดอัตโนมัติ ($mirrorName)… $percentText",
+        ru = "Автозагрузка ($mirrorName)… $percentText"
+    )
+
+    fun updateVerifyingShaStatus(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Đang xác thực mã SHA-256…",
+        en = "Verifying SHA-256 checksum…",
+        es = "Verificando suma SHA-256…",
+        pt = "Verificando SHA-256…",
+        fr = "Vérification SHA-256…",
+        de = "SHA-256 wird geprüft…",
+        ja = "SHA-256 を検証中…",
+        ko = "SHA-256 무결성 확인 중…",
+        zh = "正在校验 SHA-256…",
+        id = "Memverifikasi SHA-256…",
+        th = "กำลังตรวจสอบ SHA-256…",
+        ru = "Проверка SHA-256…"
+    )
+
+    fun updateVerifiedReadyStatus(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Đã tải xong & xác thực SHA-256 hợp lệ. Sẵn sàng cài đặt!",
+        en = "Downloaded & SHA-256 verified. Ready to install!",
+        es = "Descargado y SHA-256 verificado. ¡Listo para instalar!",
+        pt = "Baixado e SHA-256 verificado. Pronto para instalar!",
+        fr = "Téléchargé et vérifié (SHA-256). Prêt à installer !",
+        de = "Geladen & SHA-256 geprüft. Bereit zur Installation!",
+        ja = "ダウンロード・SHA-256 検証完了。インストール準備完了！",
+        ko = "다운로드 및 SHA-256 검증 완료. 설치 준비됨!",
+        zh = "下载完成且 SHA-256 校验通过，可立即安装！",
+        id = "Unduhan & SHA-256 terverifikasi. Siap dipasang!",
+        th = "ดาวน์โหลดและตรวจ SHA-256 ผ่านแล้ว พร้อมติดตั้ง!",
+        ru = "Загружено и проверено по SHA-256. Готово к установке!"
+    )
+
+    fun updateDownloadErrorStatus(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Không tải được qua các máy chủ. Hãy thử lại hoặc mở GitHub.",
+        en = "Could not download via mirrors. Try again or open GitHub.",
+        es = "No se pudo descargar. Reintenta o abre GitHub.",
+        pt = "Falha ao baixar. Tente novamente ou abra o GitHub.",
+        fr = "Échec du téléchargement. Réessayez ou ouvrez GitHub.",
+        de = "Download fehlgeschlagen. Erneut versuchen oder GitHub öffnen.",
+        ja = "ダウンロードに失敗しました。再試行またはGitHubを開いてください。",
+        ko = "다운로드에 실패했습니다. 다시 시도하거나 GitHub를 여세요.",
+        zh = "下载失败，请重试或打开 GitHub 页面。",
+        id = "Gagal mengunduh. Coba lagi atau buka GitHub.",
+        th = "ดาวน์โหลดไม่สำเร็จ ลองอีกครั้งหรือเปิด GitHub",
+        ru = "Не удалось скачать. Повторите попытку или откройте GitHub."
+    )
+
+    fun updateInstallNowBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Cài đặt ngay",
+        en = "Install Now",
+        es = "Instalar ahora",
+        pt = "Instalar agora",
+        fr = "Installer",
+        de = "Jetzt installieren",
+        ja = "今すぐインストール",
+        ko = "지금 설치",
+        zh = "立即安装",
+        id = "Pasang Sekarang",
+        th = "ติดตั้งเลย",
+        ru = "Установить"
+    )
+
+    fun updateDownloadBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Tải & Cài đặt",
+        en = "Download & Install",
+        es = "Descargar e instalar",
+        pt = "Baixar e instalar",
+        fr = "Télécharger",
+        de = "Laden & installieren",
+        ja = "ダウンロード",
+        ko = "다운로드 및 설치",
+        zh = "下载并安装",
+        id = "Unduh & Pasang",
+        th = "ดาวน์โหลดและติดตั้ง",
+        ru = "Скачать и установить"
+    )
+
+    fun updateSkipMirrorBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Đổi máy chủ",
+        en = "Next Mirror",
+        es = "Otro servidor",
+        pt = "Outro servidor",
+        fr = "Autre miroir",
+        de = "Nächster Server",
+        ja = "別サーバーへ",
+        ko = "다른 서버",
+        zh = "切换节点",
+        id = "Ganti Server",
+        th = "เปลี่ยนเซิร์ฟเวอร์",
+        ru = "Другой сервер"
+    )
+
+    fun updateOpenGithubBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Mở GitHub",
+        en = "Open GitHub",
+        es = "Abrir GitHub",
+        pt = "Abrir GitHub",
+        fr = "Ouvrir GitHub",
+        de = "GitHub öffnen",
+        ja = "GitHub を開く",
+        ko = "GitHub 열기",
+        zh = "打开 GitHub",
+        id = "Buka GitHub",
+        th = "เปิด GitHub",
+        ru = "Открыть GitHub"
+    )
+
+    fun updateLaterBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Để sau",
+        en = "Later",
+        es = "Más tarde",
+        pt = "Depois",
+        fr = "Plus tard",
+        de = "Später",
+        ja = "あとで",
+        ko = "나중에",
+        zh = "稍后",
+        id = "Nanti",
+        th = "ภายหลัง",
+        ru = "Позже"
+    )
+
+    fun checkUpdatePillLabel(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Cập nhật",
+        en = "Updates",
+        es = "Actualizar",
+        pt = "Atualizar",
+        fr = "Mises à jour",
+        de = "Updates",
+        ja = "更新確認",
+        ko = "업데이트",
+        zh = "检查更新",
+        id = "Pembaruan",
+        th = "อัปเดต",
+        ru = "Обновления"
+    )
+
+    fun updateUpToDateBanner(lang: PadLanguage, ver: String) = tr(
+        lang = lang,
+        vi = "Đã là bản mới nhất (v$ver)",
+        en = "Up to date (v$ver)",
+        es = "Actualizado (v$ver)",
+        pt = "Atualizado (v$ver)",
+        fr = "À jour (v$ver)",
+        de = "Aktuell (v$ver)",
+        ja = "最新バージョンです (v$ver)",
+        ko = "최신 버전입니다 (v$ver)",
+        zh = "已是最新版本 (v$ver)",
+        id = "Sudah terbaru (v$ver)",
+        th = "เป็นเวอร์ชันล่าสุดแล้ว (v$ver)",
+        ru = "Установлена последняя версия (v$ver)"
+    )
+
+    fun termsButtonLabel(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Điều khoản",
+        en = "Terms",
+        es = "Términos",
+        pt = "Termos",
+        fr = "Conditions",
+        de = "Bedingungen",
+        ja = "利用規約",
+        ko = "이용약관",
+        zh = "使用条款",
+        id = "Ketentuan",
+        th = "ข้อกำหนด",
+        ru = "Условия"
+    )
+
+    fun termsDialogTitle(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Điều Khoản Sử Dụng & Quyền Riêng Tư",
+        en = "Terms of Use & Privacy Policy",
+        es = "Términos de Uso y Privacidad",
+        pt = "Termos de Uso e Privacidade",
+        fr = "Conditions d'utilisation et Confidentialité",
+        de = "Nutzungsbedingungen & Datenschutz",
+        ja = "利用規約とプライバシーポリシー",
+        ko = "이용약관 및 개인정보 처리방침",
+        zh = "使用条款与隐私政策",
+        id = "Ketentuan Penggunaan & Privasi",
+        th = "ข้อกำหนดการใช้งานและความเป็นส่วนตัว",
+        ru = "Условия использования и конфиденциальность"
+    )
+
+    fun termsDialogBody(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "• Ravno Pad là ứng dụng độc lập, không liên kết Microsoft/Xbox.\n" +
+            "• Mặc định chỉ kết nối trực tiếp trong mạng Wi-Fi nội bộ (LAN) qua PIN 4 số + HMAC.\n" +
+            "• Chế độ nâng cao khác Wi-Fi (tùy chọn) dùng mã 10 chữ số với mã hóa đầu-cuối TLS + PBKDF2 + ECDH P-256 + AES-256-GCM; không yêu cầu đăng nhập Google.\n" +
+            "• Tự động kiểm tra bản mới từ GitHub (muitenvn/Ravno-App) và xác thực SHA-256 trước khi cài.\n" +
+            "• Không quảng cáo, không theo dõi, không thu thập dữ liệu cá nhân.",
+        en = "• Ravno Pad is an independent app, not affiliated with Microsoft or Xbox.\n" +
+            "• By default it connects strictly over local Wi-Fi (LAN) with 4-digit PIN + HMAC.\n" +
+            "• Optional off-LAN mode uses a 10-digit numeric code with end-to-end encryption (TLS + PBKDF2 + ECDH P-256 + AES-256-GCM); no Google Sign-In required.\n" +
+            "• Checks official GitHub Releases (muitenvn/Ravno-App) and verifies SHA-256 before installing updates.\n" +
+            "• Zero ads, zero tracking, zero personal data collection.",
+        es = "• Ravno Pad es una app independiente, no afiliada a Microsoft ni Xbox.\n" +
+            "• Por defecto solo conecta por Wi-Fi local (LAN) con PIN de 4 dígitos + HMAC.\n" +
+            "• El modo remoto opcional usa código numérico de 10 dígitos con cifrado de extremo a extremo (TLS + PBKDF2 + ECDH + AES-256-GCM), sin cuenta Google.\n" +
+            "• Comprueba actualizaciones en GitHub y verifica SHA-256 antes de instalar.\n" +
+            "• Sin anuncios, sin rastreo y sin recopilación de datos personales.",
+        pt = "• Ravno Pad é um app independente, sem vínculo com Microsoft ou Xbox.\n" +
+            "• Por padrão conecta apenas no Wi-Fi local (LAN) com PIN de 4 dígitos + HMAC.\n" +
+            "• O modo remoto opcional usa código numérico de 10 dígitos com criptografia ponta a ponta (TLS + PBKDF2 + ECDH + AES-256-GCM), sem login Google.\n" +
+            "• Verifica atualizações no GitHub e valida SHA-256 antes de instalar.\n" +
+            "• Sem anúncios, sem rastreamento e sem coleta de dados pessoais.",
+        fr = "• Ravno Pad est une app indépendante, non affiliée à Microsoft ou Xbox.\n" +
+            "• Par défaut, connexion uniquement en Wi-Fi local (LAN) avec PIN 4 chiffres + HMAC.\n" +
+            "• Le mode distant optionnel utilise un code à 10 chiffres chiffré de bout en bout (TLS + PBKDF2 + ECDH + AES-256-GCM), sans compte Google.\n" +
+            "• Vérifie les mises à jour GitHub et contrôle le SHA-256 avant installation.\n" +
+            "• Sans publicité, sans suivi, sans collecte de données personnelles.",
+        de = "• Ravno Pad ist eine unabhängige App, nicht mit Microsoft/Xbox verbunden.\n" +
+            "• Standardmäßig nur lokales WLAN (LAN) mit 4-stelligem PIN + HMAC.\n" +
+            "• Optionaler Fernmodus nutzt 10-stelligen Zahlencode mit Ende-zu-Ende-Verschlüsselung (TLS + PBKDF2 + ECDH + AES-256-GCM), ohne Google-Konto.\n" +
+            "• Prüft GitHub-Updates und verifiziert SHA-256 vor der Installation.\n" +
+            "• Keine Werbung, kein Tracking, keine Datensammlung.",
+        ja = "• Ravno Padは独立したアプリであり、MicrosoftやXboxとは無関係です。\n" +
+            "• 既定では同一Wi-Fi（LAN）のみで4桁PIN＋HMAC接続します。\n" +
+            "• オプションの別ネットワーク接続は10桁の数字コード＋エンドツーエンド暗号化（TLS＋PBKDF2＋ECDH＋AES-256-GCM）を使用し、Googleログイン不要です。\n" +
+            "• GitHub公式リリースから更新を確認し、SHA-256検証後にインストールします。\n" +
+            "• 広告・追跡・個人情報収集は一切ありません。",
+        ko = "• Ravno Pad는 Microsoft/Xbox와 무관한 독립 앱입니다.\n" +
+            "• 기본값은 동일 Wi-Fi(LAN)에서 4자리 PIN + HMAC으로만 연결됩니다.\n" +
+            "• 선택형 원격 모드는 10자리 숫자 코드와 종단간 암호화(TLS + PBKDF2 + ECDH + AES-256-GCM)를 사용하며 Google 로그인이 필요 없습니다.\n" +
+            "• GitHub 공식 릴리스에서 업데이트를 확인하고 SHA-256 검증 후 설치합니다.\n" +
+            "• 광고, 추적, 개인정보 수집이 전혀 없습니다.",
+        zh = "• Ravno Pad 为独立应用，与 Microsoft/Xbox 无关联。\n" +
+            "• 默认仅在局域网 Wi-Fi (LAN) 下通过 4 位 PIN + HMAC 连接。\n" +
+            "• 可选跨网模式使用 10 位数字代码与端到端加密（TLS + PBKDF2 + ECDH + AES-256-GCM），无需登录 Google。\n" +
+            "• 从官方 GitHub Releases 检查更新并在安装前校验 SHA-256。\n" +
+            "• 无广告、无追踪、不收集个人数据。",
+        id = "• Ravno Pad adalah aplikasi independen, tidak berafiliasi dengan Microsoft/Xbox.\n" +
+            "• Secara default hanya terhubung di Wi-Fi lokal (LAN) dengan PIN 4 digit + HMAC.\n" +
+            "• Mode jarak jauh opsional memakai kode 10 angka terenkripsi ujung-ke-ujung (TLS + PBKDF2 + ECDH + AES-256-GCM) tanpa login Google.\n" +
+            "• Memeriksa pembaruan GitHub resmi dan memverifikasi SHA-256 sebelum memasang.\n" +
+            "• Tanpa iklan, tanpa pelacakan, tanpa pengumpulan data pribadi.",
+        th = "• Ravno Pad เป็นแอปอิสระ ไม่เกี่ยวข้องกับ Microsoft หรือ Xbox\n" +
+            "• ค่าเริ่มต้นเชื่อมต่อเฉพาะ Wi-Fi วงเดียวกัน (LAN) ด้วย PIN 4 หลัก + HMAC\n" +
+            "• โหมดข้ามเครือข่าย (เลือกเปิดได้) ใช้รหัสตัวเลข 10 หลักพร้อมเข้ารหัสต้นทางถึงปลายทาง (TLS + PBKDF2 + ECDH + AES-256-GCM) ไม่ต้องล็อกอิน Google\n" +
+            "• ตรวจสอบอัปเดตจาก GitHub ทางการและตรวจ SHA-256 ก่อนติดตั้ง\n" +
+            "• ไม่มีโฆษณา ไม่มีการติดตาม และไม่เก็บข้อมูลส่วนตัว",
+        ru = "• Ravno Pad — независимое приложение, не связанное с Microsoft и Xbox.\n" +
+            "• По умолчанию работает только в локальной сети Wi-Fi (LAN) по 4-значному PIN + HMAC.\n" +
+            "• Опциональный удалённый режим использует 10-значный цифровой код со сквозным шифрованием (TLS + PBKDF2 + ECDH + AES-256-GCM), без аккаунта Google.\n" +
+            "• Проверяет обновления на GitHub и сверяет SHA-256 перед установкой.\n" +
+            "• Без рекламы, без слежки и без сбора личных данных."
+    )
+
+    fun termsViewFullWebBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Xem đầy đủ trên web",
+        en = "Read Full Terms",
+        es = "Ver términos completos",
+        pt = "Ver termos completos",
+        fr = "Voir le texte complet",
+        de = "Vollständige Bedingungen",
+        ja = "全文をウェブで見る",
+        ko = "전체 약관 보기",
+        zh = "查看完整条款",
+        id = "Baca Selengkapnya",
+        th = "อ่านฉบับเต็ม",
+        ru = "Полный текст"
+    )
+
+    fun termsAgreeBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Tôi đồng ý",
+        en = "I Agree",
+        es = "Acepto",
+        pt = "Concordo",
+        fr = "J'accepte",
+        de = "Zustimmen",
+        ja = "同意する",
+        ko = "동의함",
+        zh = "我同意",
+        id = "Saya Setuju",
+        th = "ฉันยอมรับ",
+        ru = "Принять"
+    )
+
+    fun termsDeclineBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Từ chối (Thoát)",
+        en = "Decline (Exit)",
+        es = "Rechazar (Salir)",
+        pt = "Recusar (Sair)",
+        fr = "Refuser (Quitter)",
+        de = "Ablehnen (Beenden)",
+        ja = "同意しない（終了）",
+        ko = "거부 (종료)",
+        zh = "拒绝并退出",
+        id = "Tolak (Keluar)",
+        th = "ปฏิเสธ (ออก)",
+        ru = "Отклонить (Выход)"
+    )
+
+    fun closeBtn(lang: PadLanguage) = tr(
+        lang = lang,
+        vi = "Đóng",
+        en = "Close",
+        es = "Cerrar",
+        pt = "Fechar",
+        fr = "Fermer",
+        de = "Schließen",
+        ja = "閉じる",
+        ko = "닫기",
+        zh = "关闭",
+        id = "Tutup",
+        th = "ปิด",
+        ru = "Закрыть"
     )
 }

@@ -20,17 +20,22 @@ class RemotePadRelayTest {
             val code0 = RemotePadRelayCrypto.generatePairingCode(0)
             assertTrue(RemotePadRelayCrypto.isValidCode(code0))
             assertEquals(0, RemotePadRelayCrypto.extractBrokerSlot(code0))
-            assertEquals(9, code0.length) // XXXX-XXXX
-            assertEquals('-', code0[4])
+            assertEquals(11, code0.length) // XXXXX-XXXXX
+            assertEquals('-', code0[5])
+            assertTrue(RemotePadRelayCrypto.normalizeCode(code0).all { it in '0'..'9' })
 
             val code1 = RemotePadRelayCrypto.generatePairingCode(1)
             assertTrue(RemotePadRelayCrypto.isValidCode(code1))
             assertEquals(1, RemotePadRelayCrypto.extractBrokerSlot(code1))
-            assertEquals(code1, RemotePadRelayCrypto.formatCode(code1.lowercase().replace("-", " ")))
+            assertEquals(code1, RemotePadRelayCrypto.formatCode(code1.replace("-", " ")))
         }
-        assertFalse(RemotePadRelayCrypto.isValidCode("0000-0000")) // 0 excluded
-        assertFalse(RemotePadRelayCrypto.isValidCode("IIII-OOOO")) // I/O excluded
-        assertFalse(RemotePadRelayCrypto.isValidCode("ABCD-EFG"))  // too short
+        assertTrue(RemotePadRelayCrypto.isValidCode("4829103756"))
+        assertTrue(RemotePadRelayCrypto.isValidCode("48291-03756"))
+        assertTrue(RemotePadRelayCrypto.isValidCode("48291 03756"))
+        assertFalse(RemotePadRelayCrypto.isValidCode("ABCD-EFGH"))   // letters rejected
+        assertFalse(RemotePadRelayCrypto.isValidCode("12345-6789A")) // letter rejected
+        assertFalse(RemotePadRelayCrypto.isValidCode("12345-6789"))  // too short (9 digits)
+        assertFalse(RemotePadRelayCrypto.isValidCode("123456-78901")) // too long (11 digits)
     }
 
     @Test
@@ -38,6 +43,10 @@ class RemotePadRelayTest {
         val code = RemotePadRelayCrypto.generatePairingCode(0)
         val pairKey = RemotePadRelayCrypto.derivePairKey(code)
         assertEquals(32, pairKey.size)
+        assertEquals(
+            RemotePadRelayCrypto.derivePairTopicId(code),
+            RemotePadRelayCrypto.derivePairTopicIdFromPairKey(pairKey)
+        )
 
         val phoneKp = RemotePadRelayCrypto.generateEcdhKeyPair()
         val tvKp = RemotePadRelayCrypto.generateEcdhKeyPair()

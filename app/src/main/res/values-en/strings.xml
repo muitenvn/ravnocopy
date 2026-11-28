@@ -251,14 +251,14 @@
     <string name="loading_artwork_cd">Game cover art for %1$s</string>
     <!-- Remote Off-LAN Pad Relay -->
     <string name="remote_pad_adv_title">Connect Pad Without Same Wi-Fi</string>
-    <string name="remote_pad_adv_desc">Creates an end-to-end encrypted 8-character code to pair Ravno Pad over 4G/5G or another Wi-Fi. Off by default; LAN mode stays unchanged.</string>
+    <string name="remote_pad_adv_desc">Creates an end-to-end encrypted 10-digit code to pair Ravno Pad over 4G/5G or another Wi-Fi. Off by default; LAN mode stays unchanged.</string>
     <string name="remote_pad_confirm_title">Enable Off-LAN Pad Connection?</string>
-    <string name="remote_pad_confirm_desc">TV will generate an 8-character code over a free encrypted relay (no sign-in required). The code expires automatically after 15 idle minutes.</string>
+    <string name="remote_pad_confirm_desc">TV will generate a 10-digit numeric code over a free encrypted relay (no sign-in required). The code expires automatically after 15 idle minutes.</string>
     <string name="remote_pad_confirm_enable">Enable Remote Mode</string>
     <string name="remote_pad_confirm_cancel">Cancel</string>
     <string name="remote_pad_tab_lan">Same Wi-Fi (LAN)</string>
     <string name="remote_pad_tab_remote">Other Wi-Fi (Advanced)</string>
-    <string name="remote_pad_enter_code_prompt">Enter this 8-character code in Ravno Pad → Enter IP → Advanced</string>
+    <string name="remote_pad_enter_code_prompt">Enter this 10-digit code in Ravno Pad → Enter IP → Advanced</string>
     <string name="remote_pad_status_connecting">Connecting to encrypted relay…</string>
     <string name="remote_pad_status_ready">Ready · End-to-end encrypted (expires in 15 min)</string>
     <string name="remote_pad_status_connected">Connected remotely: %1$s</string>
@@ -270,6 +270,6 @@
     <string name="remote_pad_badge_lan">Local Network (LAN)</string>
     <string name="remote_pad_badge_remote">Remote · Encrypted</string>
     <string name="remote_pad_step_2_remote">Tap Enter IP → Advanced</string>
-    <string name="remote_pad_step_3_remote">Enter 8-char code</string>
-    <string name="remote_pad_bottom_notice_remote">End-to-end encrypted 8-char code · Auto-expires in 15 min · 3 wrong tries locks 3 min</string>
+    <string name="remote_pad_step_3_remote">Enter 10-digit code</string>
+    <string name="remote_pad_bottom_notice_remote">End-to-end encrypted 10-digit code · Auto-expires in 15 min · 3 wrong tries locks 3 min</string>
 </resources>

@@ -36,7 +36,7 @@ enum class PadTransportMode {
 /**
  * Bộ kết nối kênh chuyển tiếp từ xa ngoài mạng LAN cho Ravno Pad (:pad).
  * - Không cần Firebase, không cần đăng nhập Google.
- * - Nhập mã 8 ký tự -> bắt tay ECDH P-256 + AES-256-GCM trực tiếp với TV qua MQTT-TLS (cổng 8883).
+ * - Nhập mã 10 chữ số -> bắt tay ECDH P-256 + AES-256-GCM trực tiếp với TV qua MQTT-TLS (cổng 8883).
  * - Tự động thử nâng cấp nối thẳng LAN (~600ms) nếu hai máy ở cùng mạng nội bộ; nếu không thì giữ
  *   ngay kênh TLS mã hóa đầu-cuối (nút nhấn/nhả gửi tức thì, cần analog gộp ~30 Hz, nhịp tim 150ms).
  * - Tuyệt đối không ghi log mã ghép đôi hay khóa phiên.
@@ -98,7 +98,7 @@ internal object PadRemoteRelayConnector {
             val brokerSlot = RemotePadRelayCrypto.extractBrokerSlot(normCode)
             val broker = RemoteRelayBrokers.bySlot(brokerSlot)
             val pairKey = RemotePadRelayCrypto.derivePairKey(normCode)
-            val pairTopicId = RemotePadRelayCrypto.derivePairTopicId(normCode)
+            val pairTopicId = RemotePadRelayCrypto.derivePairTopicIdFromPairKey(pairKey)
             val pairC2t = RemotePadRelayCrypto.pairClientToTvTopic(pairTopicId)
             val pairT2c = RemotePadRelayCrypto.pairTvToClientTopic(pairTopicId)
 

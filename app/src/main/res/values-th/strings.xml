@@ -251,14 +251,14 @@
     <string name="loading_artwork_cd">ภาพปกเกม %1$s</string>
     <!-- Remote Off-LAN Pad Relay -->
     <string name="remote_pad_adv_title">เชื่อมต่อ Pad ต่างเครือข่าย Wi-Fi</string>
-    <string name="remote_pad_adv_desc">สร้างรหัส 8 หลักแบบเข้ารหัสปลายทางเพื่อเชื่อม Ravno Pad ผ่าน 4G/5G หรือ Wi-Fi อื่น ปิดเป็นค่าเริ่มต้น โหมด LAN ทำงานตามปกติ</string>
+    <string name="remote_pad_adv_desc">สร้างรหัสตัวเลข 10 หลักแบบเข้ารหัสปลายทางเพื่อเชื่อม Ravno Pad ผ่าน 4G/5G หรือ Wi-Fi อื่น ปิดเป็นค่าเริ่มต้น โหมด LAN ทำงานตามปกติ</string>
     <string name="remote_pad_confirm_title">เปิดการเชื่อมต่อ Pad ต่างเครือข่ายหรือไม่?</string>
-    <string name="remote_pad_confirm_desc">ทีวีจะสร้างรหัส 8 หลักผ่านรีเลย์เข้ารหัสฟรี (ไม่ต้องล็อกอิน) รหัสจะหมดอายุอัตโนมัติหากไม่มีการเชื่อมต่อใน 15 นาที</string>
+    <string name="remote_pad_confirm_desc">ทีวีจะสร้างรหัสตัวเลข 10 หลักผ่านรีเลย์เข้ารหัสฟรี (ไม่ต้องล็อกอิน) รหัสจะหมดอายุอัตโนมัติหากไม่มีการเชื่อมต่อใน 15 นาที</string>
     <string name="remote_pad_confirm_enable">เปิดโหมดระยะไกล</string>
     <string name="remote_pad_confirm_cancel">ยกเลิก</string>
     <string name="remote_pad_tab_lan">Wi-Fi เดียวกัน (LAN)</string>
     <string name="remote_pad_tab_remote">ต่างเครือข่าย (ขั้นสูง)</string>
-    <string name="remote_pad_enter_code_prompt">กรอกรหัส 8 หลักนี้ใน Ravno Pad → กรอก IP → ขั้นสูง</string>
+    <string name="remote_pad_enter_code_prompt">กรอกรหัสตัวเลข 10 หลักนี้ใน Ravno Pad → กรอก IP → ขั้นสูง</string>
     <string name="remote_pad_status_connecting">กำลังเชื่อมต่อรีเลย์เข้ารหัส…</string>
     <string name="remote_pad_status_ready">พร้อมใช้งาน · เข้ารหัสปลายทาง (หมดอายุใน 15 นาที)</string>
     <string name="remote_pad_status_connected">เชื่อมต่อระยะไกลแล้ว: %1$s</string>
@@ -270,6 +270,6 @@
     <string name="remote_pad_badge_lan">เครือข่ายภายใน (LAN)</string>
     <string name="remote_pad_badge_remote">ระยะไกล · เข้ารหัส</string>
     <string name="remote_pad_step_2_remote">แตะ กรอก IP → ขั้นสูง</string>
-    <string name="remote_pad_step_3_remote">กรอกรหัส 8 หลัก</string>
-    <string name="remote_pad_bottom_notice_remote">รหัส 8 หลักเข้ารหัสปลายทาง · หมดอายุใน 15 นาที · ผิด 3 ครั้งล็อก 3 นาที</string>
+    <string name="remote_pad_step_3_remote">กรอกตัวเลข 10 หลัก</string>
+    <string name="remote_pad_bottom_notice_remote">รหัสตัวเลข 10 หลักเข้ารหัสปลายทาง · หมดอายุใน 15 นาที · ผิด 3 ครั้งล็อก 3 นาที</string>
 </resources>

@@ -1045,7 +1045,7 @@ internal fun TvSettingsScreen(
                             )
                         }
 
-                        // 1b. Kết nối Ravno Pad không cần chung Wi-Fi (mặc định tắt, mã 8 ký tự mã hóa hai đầu)
+                        // 1b. Kết nối Ravno Pad không cần chung Wi-Fi (mặc định tắt, mã 10 chữ số mã hóa hai đầu)
                         item(key = "tv_adv_remote_pad_toggle") {
                             TvSettingToggleRow(
                                 title = stringResource(R.string.remote_pad_adv_title),
@@ -1444,7 +1444,7 @@ internal fun TvSettingsScreen(
                                 is UpdateCheckState.Checking -> config.tr("Đang kiểm tra bản cập nhật...", "Checking for updates...")
                                 is UpdateCheckState.UpToDate -> config.tr("Đã là bản mới nhất (v${st.currentVersion})", "Up to date (v${st.currentVersion})")
                                 is UpdateCheckState.UpdateAvailable -> config.tr("Có bản mới ${st.latestVersion} · Bấm A để xem", "Update ${st.latestVersion} available")
-                                else -> config.tr("Đang dùng v$currentVersionName · Tự kiểm tra mỗi 24 giờ", "Current v$currentVersionName · Auto-checks every 24h")
+                                else -> config.tr("Đang dùng v$currentVersionName · Tự kiểm tra khi mở app", "Current v$currentVersionName · Auto-checks on launch")
                             }
                             TvSettingActionRow(
                                 title = config.tr("Kiểm tra bản cập nhật", "Check for Updates"),
@@ -1460,7 +1460,7 @@ internal fun TvSettingsScreen(
                         item(key = "tv_info_auto_update_toggle") {
                             TvSettingToggleRow(
                                 title = config.tr("Tự kiểm tra bản mới khi mở app", "Auto-check for Updates on Launch"),
-                                subtitle = config.tr("Kiểm tra ngầm tối đa 1 lần mỗi 24 giờ.", "Checks in the background at most once every 24 hours."),
+                                subtitle = config.tr("Tự kiểm tra ngầm mỗi lần mở ứng dụng.", "Automatically checks in the background every time you open the app."),
                                 checked = config.autoCheckUpdatesOnLaunch,
                                 onCheckedChange = { SettingsRepository.updateAutoCheckUpdatesOnLaunch(it) },
                                 scale = scale,

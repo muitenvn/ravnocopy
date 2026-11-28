@@ -46,7 +46,7 @@ enum class TvPadTransportMode {
  * Bộ quản lý kênh chuyển tiếp từ xa ngoài mạng LAN cho TV (:app).
  * - Mặc định TẮT hoàn toàn; chỉ chạy khi người dùng chủ động bật & xác nhận.
  * - Dùng MQTT 3.1.1 trên TLS cổng 8883 (0 Firebase, 0 đăng nhập Google), tự dự phòng EMQX -> HiveMQ.
- * - Mã ghép đôi 8 ký tự (XXXX-XXXX) kèm ECDH P-256 + AES-256-GCM đầu-cuối, tự hết hạn sau 15 phút chờ.
+ * - Mã ghép đôi 10 chữ số (XXXXX-XXXXX) kèm ECDH P-256 + AES-256-GCM đầu-cuối, tự hết hạn sau 15 phút chờ.
  * - Sai 3 lần khóa tạm 3 phút. Tuyệt đối không ghi log mã, khóa phiên hay dữ liệu nhạy cảm.
  */
 internal object RemotePadTvRelayManager {
@@ -326,7 +326,7 @@ internal object RemotePadTvRelayManager {
         val brokerSlot = client.broker.slot
         val newCode = RemotePadRelayCrypto.generatePairingCode(brokerSlot)
         val pairKey = RemotePadRelayCrypto.derivePairKey(newCode)
-        val pairTopicId = RemotePadRelayCrypto.derivePairTopicId(newCode)
+        val pairTopicId = RemotePadRelayCrypto.derivePairTopicIdFromPairKey(pairKey)
         val c2t = RemotePadRelayCrypto.pairClientToTvTopic(pairTopicId)
         val t2c = RemotePadRelayCrypto.pairTvToClientTopic(pairTopicId)
 

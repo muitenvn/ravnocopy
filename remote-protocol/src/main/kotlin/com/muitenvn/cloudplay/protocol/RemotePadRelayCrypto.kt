@@ -19,7 +19,7 @@ import javax.crypto.spec.SecretKeySpec
 
 /**
  * Danh sách máy chủ chuyển tiếp TLS công cộng miễn phí (MQTT 3.1.1 trên cổng 8883).
- * Vị trí máy chủ (slot 0 hoặc 1) được mã hóa ngầm vào ký tự đầu của mã ghép đôi 8 ký tự
+ * Vị trí máy chủ (slot 0 hoặc 1) được mã hóa ngầm vào chữ số đầu (chẵn/lẻ) của mã ghép đôi 10 số
  * để điện thoại kết nối thẳng đúng máy chủ TV đang lắng nghe ngay lần đầu.
  */
 data class RemoteRelayBroker(
@@ -40,17 +40,17 @@ object RemoteRelayBrokers {
 
 /**
  * Mật mã học đầu-cuối (End-to-End) cho chế độ kết nối Ravno Pad ngoài mạng LAN:
- * - Mã ghép đôi 8 ký tự dễ đọc (XXXX-XXXX), bảng 32 ký tự không gây nhầm 0/O/1/I.
- * - Chủ đề (topic) trên máy chủ trung gian là chuỗi băm SHA-256 ẩn danh, không lộ mã.
- * - Giai đoạn bắt tay: PBKDF2-HMAC-SHA256 từ mã ghép đôi + ECDH P-256 tạm thời -> HKDF-SHA256
- *   tạo khóa phiên AES-256-GCM riêng cho từng buổi chơi (Forward Secrecy).
+ * - Mã ghép đôi 10 chữ số (XXXXX-XXXXX), nhập nhanh hoàn toàn bằng bàn phím số (0–9).
+ * - Khóa bắt tay và chủ đề (topic) trên máy chủ trung gian đều suy từ PBKDF2-HMAC-SHA256
+ *   (60.000 vòng) nên không lộ mã và chống dò ngoại tuyến trong thời hạn 15 phút.
+ * - ECDH P-256 tạm thời -> HKDF-SHA256 tạo khóa phiên AES-256-GCM riêng cho từng buổi chơi (Forward Secrecy).
  * - Không ghi log mã ghép đôi, khóa phiên hoặc dữ liệu nhạy cảm.
  */
 object RemotePadRelayCrypto {
-    // 32 ký tự Crockford không có 0, O, 1, I để dễ đọc từ xa trên TV
-    private const val CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-    private const val CODE_LENGTH = 8
-    private const val PBKDF2_ITERATIONS = 20_000
+    // 10 chữ số thuần túy (0–9), nhập nhanh bằng bàn phím số trên điện thoại
+    private const val CODE_ALPHABET = "0123456789"
+    const val CODE_LENGTH = 10
+    private const val PBKDF2_ITERATIONS = 60_000
     private const val AES_KEY_BITS = 256
     private const val GCM_IV_BYTES = 12
     private const val GCM_TAG_BITS = 128
@@ -61,23 +61,44 @@ object RemotePadRelayCrypto {
     private val secureRandom = SecureRandom()
 
     /**
-     * Sinh mã ghép đôi 8 ký tự dạng "XXXX-XXXX" nhúng ngầm slot máy chủ (0 = chẵn, 1 = lẻ ở ký tự đầu).
+     * Sinh mã ghép đôi 10 chữ số dạng "XXXXX-XXXXX" nhúng ngầm slot máy chủ
+     * (chữ số đầu chẵn = slot 0 EMQX, chữ số đầu lẻ = slot 1 HiveMQ).
      */
     fun generatePairingCode(brokerSlot: Int): String {
         val targetParity = if (brokerSlot == 1) 1 else 0
         val chars = CharArray(CODE_LENGTH)
-        val firstIdx = (secureRandom.nextInt(CODE_ALPHABET.length / 2) * 2) + targetParity
-        chars[0] = CODE_ALPHABET[firstIdx]
-        for (i in 1 until CODE_LENGTH) {
-            chars[i] = CODE_ALPHABET[secureRandom.nextInt(CODE_ALPHABET.length)]
+        repeat(16) {
+            val firstIdx = (secureRandom.nextInt(CODE_ALPHABET.length / 2) * 2) + targetParity
+            chars[0] = CODE_ALPHABET[firstIdx]
+            for (i in 1 until CODE_LENGTH) {
+                chars[i] = CODE_ALPHABET[secureRandom.nextInt(CODE_ALPHABET.length)]
+            }
+            val candidate = String(chars)
+            if (!isTrivialDigitPattern(candidate)) {
+                return formatCode(candidate)
+            }
         }
         return formatCode(String(chars))
     }
 
+    private fun isTrivialDigitPattern(digits: String): Boolean {
+        if (digits.length != CODE_LENGTH) return true
+        if (digits.all { it == digits[0] }) return true
+        var allInc = true
+        var allDec = true
+        for (i in 1 until digits.length) {
+            val prev = digits[i - 1] - '0'
+            val cur = digits[i] - '0'
+            if ((prev + 1) % 10 != cur) allInc = false
+            if ((prev + 9) % 10 != cur) allDec = false
+        }
+        return allInc || allDec
+    }
+
     fun normalizeCode(raw: String): String {
         val sb = StringBuilder(CODE_LENGTH)
-        for (c in raw.trim().uppercase()) {
-            if (c == '-' || c == ' ' || c == '\t' || c == '\n' || c == '\r') continue
+        for (c in raw.trim()) {
+            if (c == '-' || c == '–' || c == '—' || c == ' ' || c == '\t' || c == '\n' || c == '\r') continue
             sb.append(c)
         }
         return sb.toString()
@@ -85,15 +106,15 @@ object RemotePadRelayCrypto {
 
     fun formatCode(raw: String): String {
         val norm = normalizeCode(raw)
-        if (norm.length <= 4) return norm
-        return "${norm.substring(0, 4)}-${norm.substring(4)}"
+        if (norm.length <= 5) return norm
+        return "${norm.substring(0, 5)}-${norm.substring(5)}"
     }
 
     fun isValidCode(raw: String): Boolean {
         val norm = normalizeCode(raw)
         if (norm.length != CODE_LENGTH) return false
         for (c in norm) {
-            if (CODE_ALPHABET.indexOf(c) < 0) return false
+            if (c !in '0'..'9') return false
         }
         return true
     }
@@ -105,23 +126,28 @@ object RemotePadRelayCrypto {
         return if (idx >= 0 && (idx and 1) == 1) 1 else 0
     }
 
-    fun derivePairTopicId(rawCode: String): String {
-        val norm = normalizeCode(rawCode)
-        val digest = MessageDigest.getInstance("SHA-256")
-            .digest("ravno-pad-v2-pair|$norm".toByteArray(StandardCharsets.UTF_8))
+    fun derivePairTopicIdFromPairKey(pairKey: ByteArray): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        md.update("ravno-pad-v3-topic|".toByteArray(StandardCharsets.UTF_8))
+        md.update(pairKey)
+        val digest = md.digest()
         return RemotePadCrypto.bytesToHex(digest.copyOfRange(0, 16))
     }
 
-    fun pairClientToTvTopic(pairTopicId: String): String = "ravno/p2/p/$pairTopicId/c2t"
-    fun pairTvToClientTopic(pairTopicId: String): String = "ravno/p2/p/$pairTopicId/t2c"
-    fun sessionClientToTvTopic(sessionTopicHex: String): String = "ravno/p2/s/$sessionTopicHex/c2t"
-    fun sessionTvToClientTopic(sessionTopicHex: String): String = "ravno/p2/s/$sessionTopicHex/t2c"
+    fun derivePairTopicId(rawCode: String): String {
+        return derivePairTopicIdFromPairKey(derivePairKey(rawCode))
+    }
+
+    fun pairClientToTvTopic(pairTopicId: String): String = "ravno/p3/p/$pairTopicId/c2t"
+    fun pairTvToClientTopic(pairTopicId: String): String = "ravno/p3/p/$pairTopicId/t2c"
+    fun sessionClientToTvTopic(sessionTopicHex: String): String = "ravno/p3/s/$sessionTopicHex/c2t"
+    fun sessionTvToClientTopic(sessionTopicHex: String): String = "ravno/p3/s/$sessionTopicHex/t2c"
 
     fun generateSessionTopicHex(): String = RemotePadCrypto.generateNonceHex(16)
 
     fun derivePairKey(rawCode: String): ByteArray {
         val norm = normalizeCode(rawCode)
-        val salt = "ravno-pad-v2-kdf-salt".toByteArray(StandardCharsets.UTF_8)
+        val salt = "ravno-pad-v3-kdf-salt".toByteArray(StandardCharsets.UTF_8)
         val spec = PBEKeySpec(norm.toCharArray(), salt, PBKDF2_ITERATIONS, AES_KEY_BITS)
         return try {
             SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded
@@ -236,7 +262,7 @@ object RemotePadRelayCrypto {
 }
 
 /**
- * Khung bắt tay trên kênh ghép đôi từ xa (luôn được mã hóa AES-256-GCM bằng khóa suy từ mã 8 ký tự).
+ * Khung bắt tay trên kênh ghép đôi từ xa (luôn được mã hóa AES-256-GCM bằng khóa suy từ mã 10 số).
  */
 sealed class RelayHandshakeFrame {
     data class ClientHello(

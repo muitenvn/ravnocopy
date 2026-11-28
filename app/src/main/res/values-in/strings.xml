@@ -251,14 +251,14 @@
     <string name="loading_artwork_cd">Sampul game %1$s</string>
     <!-- Remote Off-LAN Pad Relay -->
     <string name="remote_pad_adv_title">Hubungkan Pad Tanpa Wi-Fi Sama</string>
-    <string name="remote_pad_adv_desc">Membuat kode 8 karakter terenkripsi ujung-ke-ujung untuk menghubungkan Ravno Pad lewat 4G/5G atau Wi-Fi lain. Nonaktif secara default; mode LAN tetap sama.</string>
+    <string name="remote_pad_adv_desc">Membuat kode 10 angka terenkripsi ujung-ke-ujung untuk menghubungkan Ravno Pad lewat 4G/5G atau Wi-Fi lain. Nonaktif secara default; mode LAN tetap sama.</string>
     <string name="remote_pad_confirm_title">Aktifkan Koneksi Pad Beda Jaringan?</string>
-    <string name="remote_pad_confirm_desc">TV akan membuat kode 8 karakter lewat relay terenkripsi gratis (tanpa login). Kode otomatis kedaluwarsa setelah 15 menit tidak dipakai.</string>
+    <string name="remote_pad_confirm_desc">TV akan membuat kode 10 angka lewat relay terenkripsi gratis (tanpa login). Kode otomatis kedaluwarsa setelah 15 menit tidak dipakai.</string>
     <string name="remote_pad_confirm_enable">Aktifkan Mode Jarak Jauh</string>
     <string name="remote_pad_confirm_cancel">Batal</string>
     <string name="remote_pad_tab_lan">Wi-Fi Sama (LAN)</string>
     <string name="remote_pad_tab_remote">Wi-Fi Lain (Lanjutan)</string>
-    <string name="remote_pad_enter_code_prompt">Masukkan kode 8 karakter ini di Ravno Pad → Masukkan IP → Lanjutan</string>
+    <string name="remote_pad_enter_code_prompt">Masukkan kode 10 angka ini di Ravno Pad → Masukkan IP → Lanjutan</string>
     <string name="remote_pad_status_connecting">Menghubungkan ke relay terenkripsi…</string>
     <string name="remote_pad_status_ready">Siap · Terenkripsi ujung-ke-ujung (berlaku 15 mnt)</string>
     <string name="remote_pad_status_connected">Terhubung jarak jauh: %1$s</string>
@@ -270,6 +270,6 @@
     <string name="remote_pad_badge_lan">Jaringan Lokal (LAN)</string>
     <string name="remote_pad_badge_remote">Jarak Jauh · Terenkripsi</string>
     <string name="remote_pad_step_2_remote">Ketuk Masukkan IP → Lanjutan</string>
-    <string name="remote_pad_step_3_remote">Ketik kode 8 karakter</string>
-    <string name="remote_pad_bottom_notice_remote">Kode 8 karakter terenkripsi · Kedaluwarsa 15 mnt · 3 kali salah kunci 3 mnt</string>
+    <string name="remote_pad_step_3_remote">Ketik kode 10 angka</string>
+    <string name="remote_pad_bottom_notice_remote">Kode 10 angka terenkripsi · Kedaluwarsa 15 mnt · 3 kali salah kunci 3 mnt</string>
 </resources>

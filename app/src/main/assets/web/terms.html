@@ -587,12 +587,12 @@
       <header class="doc-header">
         <div class="doc-meta">
           <span class="meta-pill">
-            <span class="lang-vi">Phiên bản: 2.1</span>
-            <span class="lang-en">Version: 2.1</span>
+            <span class="lang-vi">Phiên bản: 2.2</span>
+            <span class="lang-en">Version: 2.2</span>
           </span>
           <span class="meta-pill">
-            <span class="lang-vi">Ngày có hiệu lực: 22/11/2026</span>
-            <span class="lang-en">Effective Date: November 22, 2026</span>
+            <span class="lang-vi">Ngày có hiệu lực: 27/11/2026</span>
+            <span class="lang-en">Effective Date: November 27, 2026</span>
           </span>
           <span>
             <span class="lang-vi">Áp dụng cho: Ravno (Điện thoại, Máy tính bảng, Android TV), Ravno Pad &amp; Trang web dự án</span>
@@ -689,7 +689,7 @@
           <p class="clause"><span class="clause-num">3.2. Tay cầm cảm ứng, Tay cầm vật lý &amp; 12 ngôn ngữ (<code>VirtualGamepad</code>):</span> Cung cấp các nút điều khiển tiêu chuẩn Xbox (ABXY, D-Pad, LB/RB, LT/RT, L3/R3, View, Menu, nút Guide riêng của app và hai cần analog L/R) chuyển đổi thao tác chạm thành tín hiệu W3C Gamepad API trong trang web; hỗ trợ tay cầm rời Bluetooth/USB-C và giao diện 12 ngôn ngữ trên cả Ravno lẫn Ravno Pad.</p>
           <p class="clause"><span class="clause-num">3.3. Thông số kỹ thuật thực tế (<code>FloatingHud</code>):</span> Đọc trực tiếp báo cáo <code>RTCStatsReport</code> từ kết nối WebRTC của trình duyệt để hiển thị tốc độ khung hình (FPS), độ phân giải thực tế, băng thông (bitrate), độ trễ vòng lặp (RTT ping), độ biến thiên trễ (jitter) và số gói tin bị mất. Ứng dụng không bao giờ hiển thị số đo giả tạo.</p>
           <p class="clause"><span class="clause-num">3.4. Quay màn hình nội bộ (<code>ZeroLagScreenRecorder</code>):</span> Chỉ hoạt động khi Người dùng chủ động bấm nút Quay trong menu nổi trong lúc chơi. Tệp video <code>.mp4</code> được lưu tạm thời tại thư mục riêng <code>cacheDir/recordings/</code> trên thiết bị để Người dùng tự xem, lưu hoặc chia sẻ.</p>
-          <p class="clause"><span class="clause-num">3.5. Giao diện Android TV &amp; Tay cầm không dây Ravno Pad (<code>RemotePadTvServer</code>, <code>PadNetworkClient</code>):</span> Ravno hỗ trợ giao diện tối ưu cho Android TV điều khiển hoàn toàn bằng D-Pad/tay cầm rời. Khi kết hợp với ứng dụng <strong>Ravno Pad</strong> trên điện thoại, hai thiết bị tự tìm nhau trong cùng mạng Wi-Fi nội bộ (LAN) qua NSD (<code>_cloudplaypad._tcp</code>) để truyền tín hiệu tay cầm độ trễ thấp và rung phản hồi mà không đi qua máy chủ Internet.</p>
+          <p class="clause"><span class="clause-num">3.5. Giao diện Android TV &amp; Tay cầm không dây Ravno Pad (<code>RemotePadTvServer</code>, <code>PadNetworkClient</code>, <code>PadRemoteRelayConnector</code>):</span> Ravno hỗ trợ giao diện tối ưu cho Android TV điều khiển hoàn toàn bằng D-Pad/tay cầm rời. Mặc định, <strong>Ravno Pad</strong> kết nối trực tiếp trong cùng mạng Wi-Fi nội bộ (LAN) qua NSD (<code>_cloudplaypad._tcp</code>) với độ trễ thấp và rung phản hồi. Ngoài ra, ứng dụng cung cấp tùy chọn nâng cao (<strong>mặc định tắt</strong>, yêu cầu xác nhận trước khi bật) cho phép kết nối khi khác Wi-Fi / dùng 4G/5G bằng mã 10 chữ số với mã hóa đầu-cuối (TLS cổng 8883 + PBKDF2 + ECDH P-256 + AES-256-GCM), tự thử nâng cấp về LAN trực tiếp nếu cùng mạng và không yêu cầu đăng nhập Google hay dùng Firebase.</p>
           <p class="clause"><span class="clause-num">3.6. Điều khiển ngắm bằng Con quay hồi chuyển — Gyroscope (<code>GyroscopeController</code>):</span> Tính năng tùy chọn (<strong>mặc định tắt</strong>) cho phép nghiêng thiết bị để hỗ trợ điều khiển cần nhìn bên phải. Dữ liệu cảm biến chuyển động chỉ xử lý tức thời trong bộ nhớ RAM trên thiết bị, tự động tạm dừng khi ứng dụng vào nền và không bao giờ lưu trữ hay gửi ra máy chủ bên ngoài.</p>
         </div>
 
@@ -704,7 +704,7 @@
           <p class="clause"><span class="clause-num">3.2. Touch &amp; Physical Controllers and 12 Languages (<code>VirtualGamepad</code>):</span> Provides standard Xbox controller inputs (ABXY, D-Pad, LB/RB, LT/RT, L3/R3, View, Menu, custom Guide button, and dual analog sticks) translated into standard W3C Gamepad API events, alongside pass-through support for Bluetooth/USB-C controllers and full 12-language localization across both Ravno and Ravno Pad.</p>
           <p class="clause"><span class="clause-num">3.3. Real-Time Telemetry (<code>FloatingHud</code>):</span> Reads live <code>RTCStatsReport</code> metrics directly from the active WebRTC peer connection to display actual FPS, resolution, bitrate, RTT ping, jitter, and packet loss. The Application never fabricates telemetry numbers.</p>
           <p class="clause"><span class="clause-num">3.4. Built-In Screen Recording (<code>ZeroLagScreenRecorder</code>):</span> Activated only when the User manually taps the Record button in the floating menu. Video files (<code>.mp4</code>) are saved locally in <code>cacheDir/recordings/</code> for the User to save or share.</p>
-          <p class="clause"><span class="clause-num">3.5. Android TV Mode &amp; Ravno Pad Wireless Controller (<code>RemotePadTvServer</code>, <code>PadNetworkClient</code>):</span> Ravno includes an Android TV layout navigable via D-Pad or physical gamepad. When paired with the <strong>Ravno Pad</strong> phone app on the same local Wi-Fi network (LAN) via NSD (<code>_cloudplaypad._tcp</code>), controller input and rumble feedback travel directly over LAN without any external internet relay.</p>
+          <p class="clause"><span class="clause-num">3.5. Android TV Mode &amp; Ravno Pad Wireless Controller (<code>RemotePadTvServer</code>, <code>PadNetworkClient</code>, <code>PadRemoteRelayConnector</code>):</span> Ravno includes an Android TV layout navigable via D-Pad or physical gamepad. By default, <strong>Ravno Pad</strong> pairs directly over local Wi-Fi (LAN) via NSD (<code>_cloudplaypad._tcp</code>) for low-latency input and rumble feedback. An optional advanced mode (<strong>OFF by default</strong>, confirmation required) allows connecting across different networks (4G/5G or separate Wi-Fi) using a 10-digit numeric code with end-to-end encryption (TLS port 8883 + PBKDF2 + ECDH P-256 + AES-256-GCM), automatic direct LAN upgrade when reachable, and zero Firebase or Google Sign-In requirement.</p>
           <p class="clause"><span class="clause-num">3.6. Optional Gyroscope Aiming (<code>GyroscopeController</code>):</span> An optional feature (<strong>OFF by default</strong>) that maps device tilt to right-stick aiming. Motion sensor readings are processed strictly in RAM on-device, automatically paused when backgrounded, and never stored or sent to external servers.</p>
         </div>
       </section>
@@ -805,13 +805,13 @@
                   <td>Giúp bạn xem lại lịch sử chơi và đánh giá độ ổn định mạng trong tab Lịch sử.</td>
                 </tr>
                 <tr>
-                  <td><code>cloudplay_update_checker_store</code> &amp; <code>cacheDir/updates/</code></td>
-                  <td>Thời điểm kiểm tra bản mới gần nhất, thông tin bản phát hành mới nhất và tệp <code>.apk</code> tải về tạm thời.</td>
-                  <td>Kiểm tra và xác thực mã băm SHA-256 trước khi cài đặt bản cập nhật ứng dụng.</td>
+                  <td><code>cloudplay_update_checker_store</code>, <code>cloudplay_pad_update_checker_store</code> &amp; <code>cacheDir/updates/</code></td>
+                  <td>ETag/thông tin bản phát hành mới nhất, trạng thái đồng ý điều khoản trên Ravno Pad và tệp <code>.apk</code> tải về tạm thời.</td>
+                  <td>Tự kiểm tra cập nhật khi mở app, tự động tải bản mới trên Ravno Pad và xác thực mã băm SHA-256 trước khi cài đặt.</td>
                 </tr>
                 <tr>
                   <td><code>filesDir/cloudplay_persistent_system.log</code> (tối đa 256 KB) &amp; <code>cloudplay_last_crash.txt</code></td>
-                  <td>Nhật ký sự kiện kỹ thuật nội bộ và thông tin lỗi dừng đột ngột (crash stacktrace). Không chứa cookie, token hay mật khẩu.</td>
+                  <td>Nhật ký sự kiện kỹ thuật nội bộ và thông tin lỗi dừng đột ngột (crash stacktrace). Không chứa cookie, token, PIN hay mã 10 chữ số.</td>
                   <td>Giúp bạn xem hoặc tự sao chép gửi khi cần chẩn đoán lỗi kỹ thuật.</td>
                 </tr>
                 <tr>
@@ -821,7 +821,7 @@
                 </tr>
                 <tr>
                   <td><code>cloudplay_remote_pad_tv_prefs</code>, <code>cloudplay_pad_client_prefs</code> &amp; <code>cloudplay_pad_layout_prefs</code> (SharedPreferences)</td>
-                  <td>Mã định danh nội bộ của TV/điện thoại, danh sách thiết bị đã ghép đôi trên mạng LAN (token ghi nhớ cục bộ) và bố cục/cài đặt tay cầm trên Ravno Pad.</td>
+                  <td>Mã định danh nội bộ của TV/điện thoại, danh sách thiết bị đã ghép đôi trên mạng LAN (token ghi nhớ cục bộ) và bố cục/cài đặt tay cầm trên Ravno Pad. Mã kết nối khác Wi-Fi (10 chữ số) và khóa phiên mã hóa chỉ nằm tạm trong RAM, không lưu xuống bộ nhớ máy.</td>
                   <td>Cho phép kết nối lại nhanh giữa Ravno (TV) và Ravno Pad (điện thoại) trong cùng mạng Wi-Fi mà không cần nhập lại PIN mỗi lần.</td>
                 </tr>
               </tbody>
@@ -864,13 +864,13 @@
                   <td>Lets you review past play sessions and network quality in the History tab.</td>
                 </tr>
                 <tr>
-                  <td><code>cloudplay_update_checker_store</code> &amp; <code>cacheDir/updates/</code></td>
-                  <td>Last update check timestamp, latest release metadata, and temporary downloaded <code>.apk</code> update files.</td>
-                  <td>Checks for app updates and verifies SHA-256 checksums before installation.</td>
+                  <td><code>cloudplay_update_checker_store</code>, <code>cloudplay_pad_update_checker_store</code> &amp; <code>cacheDir/updates/</code></td>
+                  <td>ETag/latest release metadata, Ravno Pad terms acceptance state, and temporary downloaded <code>.apk</code> update files.</td>
+                  <td>Checks for updates on every app launch, auto-downloads Ravno Pad updates, and verifies SHA-256 checksums before installation.</td>
                 </tr>
                 <tr>
                   <td><code>filesDir/cloudplay_persistent_system.log</code> (max 256 KB) &amp; <code>cloudplay_last_crash.txt</code></td>
-                  <td>Internal technical diagnostic events and crash stacktraces. Never logs cookies, tokens, or passwords.</td>
+                  <td>Internal technical diagnostic events and crash stacktraces. Never logs cookies, tokens, PINs, 10-digit codes, or passwords.</td>
                   <td>Allows you to inspect or copy technical logs when troubleshooting issues.</td>
                 </tr>
                 <tr>
@@ -880,7 +880,7 @@
                 </tr>
                 <tr>
                   <td><code>cloudplay_remote_pad_tv_prefs</code>, <code>cloudplay_pad_client_prefs</code> &amp; <code>cloudplay_pad_layout_prefs</code> (SharedPreferences)</td>
-                  <td>Local TV/phone pairing IDs, remembered LAN paired device tokens, and Ravno Pad touch controller layout/language settings.</td>
+                  <td>Local TV/phone pairing IDs, remembered LAN paired device tokens, and Ravno Pad touch controller layout/language settings. Ephemeral off-LAN 10-digit numeric codes and session encryption keys stay in RAM only and are never written to disk.</td>
                   <td>Enables quick reconnection between Ravno (TV) and Ravno Pad (phone) over local Wi-Fi without re-entering a PIN each time.</td>
                 </tr>
               </tbody>
@@ -908,7 +908,7 @@
             <li><strong>Tra cứu vị trí địa lý của địa chỉ IP (GeoIP)</strong> (<code>api.country.is</code>, <code>ipwho.is</code>, <code>ipapi.co/json/</code> và tải cơ sở dữ liệu ngoại tuyến định kỳ từ <code>download.db-ip.com/free/dbip-country-lite-*.csv.gz</code>): Để xác định mã quốc gia của kết nối hiện tại hoặc của các máy chủ proxy.</li>
             <li><strong>Tổng hợp danh sách proxy công cộng &amp; Đo độ trễ mạng</strong> (<code>www.vpngate.net/api/iphone/</code>, <code>api.proxyscrape.com/v2/</code>, <code>api.globalping.io/v1/measurements</code>, cùng các kết nối đo độ trễ TCP/HTTP tới địa chỉ máy chủ bạn chọn): Để tải danh sách máy chủ công cộng và đo độ trễ thực tế.</li>
             <li><strong>Từ điển bản địa hóa &amp; Dịch nhanh</strong> (<code>raw.githubusercontent.com/redphx/better-xcloud/main/src/locales/...</code> và <code>translate.googleapis.com/translate_a/single</code>): Để tải từ điển dịch giao diện Xbox và dịch các đoạn văn bản khi bạn sử dụng tính năng dịch.</li>
-            <li><strong>Kết nối nội bộ LAN cho Ravno Pad (không ra Internet)</strong>: Giao tiếp tìm thiết bị NSD/mDNS (<code>_cloudplaypad._tcp</code>), kênh điều khiển TCP và kênh nút bấm UDP chỉ diễn ra trực tiếp giữa TV và điện thoại trong cùng mạng Wi-Fi nội bộ.</li>
+            <li><strong>Kết nối Ravno Pad (LAN mặc định &amp; Tùy chọn khác Wi-Fi)</strong>: Mặc định giao tiếp tìm thiết bị NSD/mDNS (<code>_cloudplaypad._tcp</code>), kênh điều khiển TCP và kênh nút bấm UDP chỉ diễn ra trong cùng mạng Wi-Fi nội bộ. <em>Chỉ khi</em> bạn chủ động bật chế độ nâng cao kết nối khác Wi-Fi trên TV và nhập mã 10 chữ số trên Ravno Pad, ứng dụng mới mở kết nối mã hóa TLS cổng 8883 tới broker MQTT công cộng (<code>broker.emqx.io:8883</code> hoặc dự phòng <code>broker.hivemq.com:8883</code>) để chuyển tiếp các gói tín hiệu tay cầm đã mã hóa đầu-cuối (ECDH P-256 + AES-256-GCM).</li>
           </ol>
 
           <p class="clause"><span class="clause-num">7.2. Quyền hệ thống Android (<code>AndroidManifest.xml</code>):</span></p>
@@ -919,8 +919,8 @@
             <li><code>VIBRATE</code>: Tạo phản hồi rung khi bấm nút trên tay cầm ảo hoặc khi trò chơi gửi tín hiệu rung về Ravno Pad.</li>
             <li><code>MODIFY_AUDIO_SETTINGS</code>, <code>RECORD_AUDIO</code> (tùy chọn, chỉ có trên Ravno chính): Điều chỉnh âm lượng luồng phát và chỉ xin quyền micro khi bạn chủ động bật đàm thoại giọng nói (Voice Chat) trong game.</li>
             <li><code>POST_NOTIFICATIONS</code> (chỉ trên Ravno chính): Hiển thị trạng thái dịch vụ kết nối mạng trên thanh thông báo Android.</li>
-            <li><code>REQUEST_INSTALL_PACKAGES</code> (chỉ trên Ravno chính): Mở trình cài đặt hệ thống Android khi bạn chủ động tải và bấm cài đặt bản cập nhật APK mới.</li>
-            <li><em>Lưu ý cho Ravno Pad:</em> Ứng dụng phụ Ravno Pad chỉ yêu cầu đúng 6 quyền tối thiểu cho tay cầm mạng LAN (<code>INTERNET</code>, <code>ACCESS_NETWORK_STATE</code>, <code>ACCESS_WIFI_STATE</code>, <code>CHANGE_WIFI_MULTICAST_STATE</code>, <code>VIBRATE</code>, <code>WAKE_LOCK</code>) và không xin quyền micro, vị trí hay cài đặt ứng dụng.</li>
+            <li><code>REQUEST_INSTALL_PACKAGES</code> (trên Ravno và Ravno Pad): Mở trình cài đặt hệ thống Android khi tải xong và xác thực mã băm SHA-256 cho bản cập nhật APK mới.</li>
+            <li><em>Lưu ý cho Ravno Pad:</em> Ứng dụng phụ Ravno Pad chỉ yêu cầu đúng 7 quyền tối thiểu (<code>INTERNET</code>, <code>ACCESS_NETWORK_STATE</code>, <code>ACCESS_WIFI_STATE</code>, <code>CHANGE_WIFI_MULTICAST_STATE</code>, <code>VIBRATE</code>, <code>WAKE_LOCK</code>, <code>REQUEST_INSTALL_PACKAGES</code>) và không xin quyền micro, camera hay vị trí.</li>
           </ul>
 
           <p class="clause"><span class="clause-num">7.3. Cách bạn tự kiểm soát và xóa sạch dữ liệu:</span></p>
@@ -936,11 +936,11 @@
           <p class="clause"><span class="clause-num">7.1. Complete List of Outbound Network Connections:</span> When performing corresponding actions, your device sends standard HTTP/HTTPS requests (exposing your connection IP address and standard HTTP headers to the destination host) to the following third-party endpoints:</p>
           <ol>
             <li><strong>Microsoft &amp; Xbox Cloud Gaming</strong> (<code>www.xbox.com</code>, <code>play.xbox.com</code>, <code>login.live.com</code>, <code>login.microsoftonline.com</code>, <code>catalog.gamepass.com</code>, <code>displaycatalog.mp.microsoft.com</code>): For authentication, game catalog/artwork syncing, search autosuggest, and WebRTC game streaming.</li>
-            <li><strong>Update Checks &amp; APK Downloads</strong> (<code>api.github.com/repos/muitenvn/Ravno-App/releases/latest</code>, <code>github.com/muitenvn/Ravno-App/releases</code>, and when using fast mirror downloads: <code>gh-proxy.com</code>, <code>ghproxy.net</code>, <code>gh.llkk.cc</code>, <code>ghproxy.cc</code>, <code>gh.ddlc.top</code>, <code>ghfast.top</code>, <code>mirror.ghproxy.com</code>, <code>kkgithub.com</code>, <code>gh.con.sh</code>, <code>github.moeyy.xyz</code>): To check for new versions, download the <code>.apk</code> package, and verify official <code>.sha256</code> digests.</li>
+            <li><strong>Update Checks &amp; APK Downloads</strong> (<code>api.github.com/repos/muitenvn/Ravno-App/releases/latest</code>, <code>github.com/muitenvn/Ravno-App/releases</code>, and when using fast mirror downloads: <code>gh-proxy.com</code>, <code>ghproxy.net</code>, <code>gh.llkk.cc</code>, <code>ghproxy.cc</code>, <code>gh.ddlc.top</code>, <code>ghfast.top</code>, <code>mirror.ghproxy.com</code>, <code>kkgithub.com</code>, <code>gh.con.sh</code>, <code>github.moeyy.xyz</code>): To check for new versions on every launch, download the <code>.apk</code> package for Ravno or Ravno Pad, and verify official <code>.sha256</code> digests.</li>
             <li><strong>IP Geolocation Lookups</strong> (<code>api.country.is</code>, <code>ipwho.is</code>, <code>ipapi.co/json/</code>, and periodic offline database downloads from <code>download.db-ip.com/free/dbip-country-lite-*.csv.gz</code>): To identify the country code of your current IP or proxy servers.</li>
             <li><strong>Public Proxy Lists &amp; Latency Probes</strong> (<code>www.vpngate.net/api/iphone/</code>, <code>api.proxyscrape.com/v2/</code>, <code>api.globalping.io/v1/measurements</code>, plus direct TCP/HTTP ping probes to selected servers): To fetch public server lists and measure real network latency.</li>
             <li><strong>Localization Dictionary &amp; Translation</strong> (<code>raw.githubusercontent.com/redphx/better-xcloud/main/src/locales/...</code> and <code>translate.googleapis.com/translate_a/single</code>): To sync community Xbox menu localization strings and translate text when translation features are enabled.</li>
-            <li><strong>Ravno Pad Local LAN Traffic (Never Crosses the Internet)</strong>: NSD/mDNS discovery (<code>_cloudplaypad._tcp</code>), TCP control frames, and UDP gamepad packets stay strictly inside your local Wi-Fi network between your TV and phone.</li>
+            <li><strong>Ravno Pad Connectivity (LAN Default &amp; Opt-In Off-LAN Relay)</strong>: By default, NSD/mDNS discovery (<code>_cloudplaypad._tcp</code>), TCP control frames, and UDP gamepad packets stay strictly inside your local Wi-Fi network. <em>Only when</em> you explicitly enable off-LAN mode on TV and enter the 10-digit numeric code on Ravno Pad does the app open a TLS port 8883 relay connection to public MQTT brokers (<code>broker.emqx.io:8883</code> or backup <code>broker.hivemq.com:8883</code>) carrying end-to-end encrypted (ECDH P-256 + AES-256-GCM) controller payloads.</li>
           </ol>
 
           <p class="clause"><span class="clause-num">7.2. Android System Permissions (<code>AndroidManifest.xml</code>):</span></p>
@@ -951,8 +951,8 @@
             <li><code>VIBRATE</code>: Provides haptic feedback for virtual controller buttons and in-game rumble on Ravno Pad.</li>
             <li><code>MODIFY_AUDIO_SETTINGS</code>, <code>RECORD_AUDIO</code> (optional runtime permission, Ravno main app only): Manages stream audio routing and accesses the microphone only if you explicitly enable in-game voice chat.</li>
             <li><code>POST_NOTIFICATIONS</code> (Ravno main app only): Displays the active VPN/routing service notification.</li>
-            <li><code>REQUEST_INSTALL_PACKAGES</code> (Ravno main app only): Invokes the Android package installer when you manually download and install an app update.</li>
-            <li><em>Note for Ravno Pad:</em> The companion Ravno Pad app requests only 6 minimal LAN controller permissions (<code>INTERNET</code>, <code>ACCESS_NETWORK_STATE</code>, <code>ACCESS_WIFI_STATE</code>, <code>CHANGE_WIFI_MULTICAST_STATE</code>, <code>VIBRATE</code>, <code>WAKE_LOCK</code>) and never requests microphone, location, or package install permissions.</li>
+            <li><code>REQUEST_INSTALL_PACKAGES</code> (Ravno and Ravno Pad): Invokes the Android package installer after an in-app update APK is downloaded and passes SHA-256 verification.</li>
+            <li><em>Note for Ravno Pad:</em> The companion Ravno Pad app requests only 7 minimal permissions (<code>INTERNET</code>, <code>ACCESS_NETWORK_STATE</code>, <code>ACCESS_WIFI_STATE</code>, <code>CHANGE_WIFI_MULTICAST_STATE</code>, <code>VIBRATE</code>, <code>WAKE_LOCK</code>, <code>REQUEST_INSTALL_PACKAGES</code>) and never requests microphone, camera, or location permissions.</li>
           </ul>
 
           <p class="clause"><span class="clause-num">7.3. How to Delete Your Data:</span></p>
@@ -1145,15 +1145,15 @@
         </div>
 
         <div class="lang-vi">
-          <p class="clause"><span class="clause-num">13.1. Nguồn tải chính thức và xác thực mã băm SHA-256 (<code>UpdateChecker</code>):</span> Để tránh tệp APK bị kẻ xấu chỉnh sửa hoặc chèn mã độc, bạn chỉ nên tải Ravno và Ravno Pad từ trang GitHub Releases chính thức (<code>https://github.com/muitenvn/Ravno-App/releases</code>) hoặc bằng tính năng kiểm tra cập nhật bên trong ứng dụng. Ngay cả khi tải qua các máy chủ phụ (mirror CDN), mã nguồn <code>UpdateChecker</code> của ứng dụng luôn đối chiếu kích thước tệp, chữ ký cấu trúc tệp gói và mã băm <code>SHA-256</code> chính thức từ GitHub trước khi cho phép mở trình cài đặt Android.</p>
-          <p class="clause"><span class="clause-num">13.2. Bảo mật kết nối mạng nội bộ (LAN) của Ravno Pad:</span> Việc ghép đôi giữa Ravno trên TV và Ravno Pad trên điện thoại sử dụng mã PIN 4 số kèm xác thực HMAC, tự động khóa tạm thời 3 phút sau 3 lần nhập sai liên tiếp, cấp mã phiên ngẫu nhiên 16 byte và có bộ giám sát (watchdog ~450 ms) tự động nhả toàn bộ nút khi mất kết nối. Ứng dụng tuyệt đối không ghi mã PIN hay mã phiên vào nhật ký hệ thống.</p>
+          <p class="clause"><span class="clause-num">13.1. Nguồn tải chính thức, tự kiểm tra mỗi lần mở app &amp; xác thực SHA-256 (<code>UpdateChecker</code>, <code>PadUpdateChecker</code>):</span> Để tránh tệp APK bị chỉnh sửa hoặc chèn mã độc, bạn chỉ nên tải Ravno và Ravno Pad từ trang GitHub Releases chính thức (<code>https://github.com/muitenvn/Ravno-App/releases</code>) hoặc bằng bộ cập nhật tích hợp sẵn trong ứng dụng (tự kiểm tra mỗi lần mở app, không chờ 24 giờ; hỗ trợ tự tải về trên Ravno Pad). Ngay cả khi tải qua các máy chủ phụ (mirror CDN), ứng dụng luôn đối chiếu kích thước tệp, cấu trúc gói APK, đúng tên gói và mã băm <code>SHA-256</code> chính thức từ GitHub trước khi mở trình cài đặt Android.</p>
+          <p class="clause"><span class="clause-num">13.2. Bảo mật kết nối Ravno Pad (LAN mặc định &amp; Khác Wi-Fi mã hóa đầu-cuối):</span> Ở chế độ LAN mặc định, ghép đôi dùng mã PIN 4 số kèm xác thực HMAC, khóa 3 phút sau 3 lần sai, mã phiên 16 byte và watchdog ~450 ms. Ở chế độ nâng cao khác Wi-Fi (mặc định tắt, có xác nhận), kết nối dùng mã 10 chữ số tự hết hạn sau 15 phút rảnh, mã hóa 2 lớp (TLS 8883 + PBKDF2 60.000 vòng + ECDH P-256 + HKDF-SHA256 + AES-256-GCM), ưu tiên nâng cấp LAN trực tiếp, khóa 3 phút sau 3 lần sai và watchdog ~800 ms. PIN, mã 10 chữ số, khóa mã hóa và mã phiên không bao giờ bị ghi vào nhật ký hệ thống.</p>
           <p class="clause"><span class="clause-num">13.3. Báo cáo lỗ hổng bảo mật:</span> Nếu phát hiện lỗ hổng bảo mật có thể ảnh hưởng tới an toàn của người dùng, vui lòng gửi báo cáo riêng tư qua mục <em>Security → Report a vulnerability</em> trên kho lưu trữ GitHub của dự án hoặc email <code>cloudplayxbox@gmail.com</code> theo hướng dẫn tại tệp <code>SECURITY.md</code>.</p>
           <p class="clause"><span class="clause-num">13.4. Chấm dứt sử dụng:</span> Bạn có quyền chấm dứt sự đồng ý với Điều khoản này bất cứ lúc nào bằng cách xóa dữ liệu và gỡ cài đặt ứng dụng Ravno và Ravno Pad khỏi thiết bị của mình.</p>
         </div>
 
         <div class="lang-en">
-          <p class="clause"><span class="clause-num">13.1. Official Download Source &amp; SHA-256 Verification (<code>UpdateChecker</code>):</span> To protect against tampered or repackaged APKs, download Ravno and Ravno Pad only from official GitHub Releases (<code>https://github.com/muitenvn/Ravno-App/releases</code>) or through the in-app updater. Even when downloading via CDN mirrors, <code>UpdateChecker</code> validates file size, package structure, and the official GitHub <code>SHA-256</code> checksum before launching the Android package installer.</p>
-          <p class="clause"><span class="clause-num">13.2. Ravno Pad Local Network (LAN) Pairing Security:</span> Pairing between Ravno (TV) and Ravno Pad (phone) uses a 4-digit PIN verified with HMAC, enforces a 3-minute lockout after 3 consecutive failed attempts, issues a 16-byte random session token, and runs a ~450 ms watchdog that releases all inputs on disconnect. PINs and session tokens are never logged.</p>
+          <p class="clause"><span class="clause-num">13.1. Official Download Source, On-Launch Checks &amp; SHA-256 Verification (<code>UpdateChecker</code>, <code>PadUpdateChecker</code>):</span> To protect against tampered or repackaged APKs, download Ravno and Ravno Pad only from official GitHub Releases (<code>https://github.com/muitenvn/Ravno-App/releases</code>) or through the built-in updaters (which check on every launch with no 24h wait and support auto-download on Ravno Pad). Even when downloading via CDN mirrors, both apps validate file size, APK structure, package name, and the official GitHub <code>SHA-256</code> checksum before launching the Android package installer.</p>
+          <p class="clause"><span class="clause-num">13.2. Ravno Pad Security (LAN Default &amp; Opt-In Encrypted Off-LAN):</span> Default LAN pairing uses a 4-digit PIN with HMAC, 3-minute lockout after 3 failures, 16-byte random session tokens, and a ~450 ms auto-release watchdog. Opt-in off-LAN mode (OFF by default, confirmation required) uses a 10-digit numeric code expiring after 15 minutes idle, dual-layer encryption (TLS 8883 + 60,000-iter PBKDF2 + ECDH P-256 + HKDF-SHA256 + AES-256-GCM), automatic direct LAN upgrade, 3-minute lockout after 3 failures, and an ~800 ms WAN watchdog. PINs, 10-digit codes, keys, and tokens are never logged.</p>
           <p class="clause"><span class="clause-num">13.3. Reporting Security Vulnerabilities:</span> If you discover a security vulnerability, please report it privately via the <em>Security → Report a vulnerability</em> tab on the project's GitHub repository or email <code>cloudplayxbox@gmail.com</code> as detailed in <code>SECURITY.md</code>.</p>
           <p class="clause"><span class="clause-num">13.4. Termination of Use:</span> You may terminate your agreement to these Terms at any time by clearing the Application's data and uninstalling Ravno and Ravno Pad from your device.</p>
         </div>
@@ -1183,6 +1183,11 @@
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <td><strong>v2.2</strong></td>
+                  <td>27/11/2026</td>
+                  <td>Bổ sung minh bạch kỹ thuật cho chế độ tùy chọn <strong>kết nối Ravno Pad khác Wi-Fi / 4G/5G</strong> (mã 10 chữ số, TLS 8883 qua <code>broker.emqx.io</code> / <code>broker.hivemq.com</code>, mã hóa đầu-cuối PBKDF2 + ECDH P-256 + AES-256-GCM, không dùng Firebase/Google Sign-In, tự nâng cấp LAN, watchdog 800 ms); cập nhật cơ chế <strong>tự kiểm tra cập nhật mỗi lần mở app</strong> (không chờ 24 giờ) cùng tính năng tự tải &amp; xác thực SHA-256 và hộp thoại Điều khoản trên Ravno Pad (cập nhật 7 quyền tối thiểu của Pad).</td>
+                </tr>
                 <tr>
                   <td><strong>v2.1</strong></td>
                   <td>22/11/2026</td>
@@ -1221,6 +1226,11 @@
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <td><strong>v2.2</strong></td>
+                  <td>2026-11-27</td>
+                  <td>Added technical transparency for the opt-in <strong>Ravno Pad off-LAN mode</strong> (10-digit numeric code, TLS 8883 via <code>broker.emqx.io</code> / <code>broker.hivemq.com</code>, PBKDF2 + ECDH P-256 + AES-256-GCM end-to-end encryption, no Firebase or Google Sign-In, automatic direct LAN upgrade, 800 ms watchdog); updated both apps to <strong>check for updates on every app launch</strong> (no 24h wait), added SHA-256 verified auto-download &amp; in-app Terms dialog to Ravno Pad (7 minimal permissions).</td>
+                </tr>
                 <tr>
                   <td><strong>v2.1</strong></td>
                   <td>2026-11-22</td>

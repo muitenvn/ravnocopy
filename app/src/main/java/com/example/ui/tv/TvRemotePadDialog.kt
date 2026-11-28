@@ -360,10 +360,10 @@ private fun TvRemotePadPairingBody(
 
             val isRemoteLocked = serverState.remoteLockoutRemainingSec > 0 ||
                 serverState.remoteRelayStatus == TvRemoteRelayStatus.LOCKED_OUT
-            val rawCode = serverState.remotePairingCode.ifBlank { "---- ----" }
+            val rawCode = serverState.remotePairingCode.ifBlank { "----- -----" }
             val parts = rawCode.split("-", " ").filter { it.isNotBlank() }
-            val leftPart = if (isRemoteLocked) "––––" else parts.getOrElse(0) { "----" }
-            val rightPart = if (isRemoteLocked) "––––" else parts.getOrElse(1) { "----" }
+            val leftPart = if (isRemoteLocked) "–––––" else parts.getOrElse(0) { "-----" }
+            val rightPart = if (isRemoteLocked) "–––––" else parts.getOrElse(1) { "-----" }
             val codeBorder = when {
                 isRemoteLocked || serverState.remoteRelayStatus == TvRemoteRelayStatus.ERROR -> TvDanger
                 serverState.remoteRelayStatus == TvRemoteRelayStatus.READY -> TvCyan
@@ -373,7 +373,7 @@ private fun TvRemotePadPairingBody(
             Row(
                 horizontalArrangement = Arrangement.spacedBy((10.dp * scale).coerceAtLeast(8.dp)),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.testTag("tv_remote_pad_8char_code_box")
+                modifier = Modifier.testTag("tv_remote_pad_10digit_code_box")
             ) {
                 Box(
                     modifier = Modifier
@@ -381,7 +381,7 @@ private fun TvRemotePadPairingBody(
                         .background(TvSurface2)
                         .border(1.5.dp, codeBorder, RoundedCornerShape(cardCorner))
                         .padding(
-                            horizontal = (24.dp * scale).coerceAtLeast(16.dp),
+                            horizontal = (22.dp * scale).coerceAtLeast(14.dp),
                             vertical = (16.dp * scale).coerceAtLeast(12.dp)
                         ),
                     contentAlignment = Alignment.Center
@@ -390,9 +390,11 @@ private fun TvRemotePadPairingBody(
                         text = "$leftPart – $rightPart",
                         color = if (isRemoteLocked) TvMuted else TvInk,
                         fontFamily = JetBrainsMonoFontFamily,
-                        fontSize = (42f * scale).coerceAtLeast(26f).sp,
+                        fontSize = (36f * scale).coerceAtLeast(21f).sp,
                         fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (2.5f * scale).sp
+                        letterSpacing = (2.0f * scale).sp,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -1019,7 +1021,7 @@ private fun TvStepCompactChip(
 }
 
 /**
- * Thẻ hiển thị mã kết nối 8 ký tự ngay trong tab Chế độ nâng cao của Cài đặt TV.
+ * Thẻ hiển thị mã kết nối 10 chữ số ngay trong tab Chế độ nâng cao của Cài đặt TV.
  * Đầy đủ trạng thái, nút Đổi mã mới, Mở màn ghép đôi và Tắt khác mạng (điều khiển D-Pad/A/B).
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -1035,9 +1037,9 @@ internal fun TvRemotePadAdvancedCodeCard(
     val isLocked = serverState.remoteLockoutRemainingSec > 0 ||
         serverState.remoteRelayStatus == TvRemoteRelayStatus.LOCKED_OUT
     val displayCode = when {
-        isLocked -> "–––– – ––––"
+        isLocked -> "––––– – –––––"
         serverState.remotePairingCode.isNotBlank() -> serverState.remotePairingCode.replace("-", " – ")
-        else -> "---- – ----"
+        else -> "----- – -----"
     }
     val statusDotColor = when (serverState.remoteRelayStatus) {
         TvRemoteRelayStatus.READY -> TvCyan
@@ -1102,9 +1104,11 @@ internal fun TvRemotePadAdvancedCodeCard(
                 text = displayCode,
                 color = if (isLocked) TvMuted else TvInk,
                 fontFamily = JetBrainsMonoFontFamily,
-                fontSize = (30f * scale).coerceAtLeast(21f).sp,
+                fontSize = (26f * scale).coerceAtLeast(19f).sp,
                 fontWeight = FontWeight.ExtraBold,
-                letterSpacing = (2f * scale).sp,
+                letterSpacing = (1.6f * scale).sp,
+                maxLines = 1,
+                softWrap = false,
                 modifier = Modifier.testTag("tv_adv_remote_pad_code_text")
             )
         }
