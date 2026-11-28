@@ -153,7 +153,7 @@ fun DashboardScreen(
             }
             com.example.data.PerformanceMonitor.setScenario(nextScenario)
             val suffix = if (reason.isNotBlank()) " ($reason)" else ""
-            com.example.data.AppLogger.info("UI", "Chuyển tab chính: ${currentTab.name} -> ${newTab.name}$suffix")
+            com.example.data.AppLogger.info("UI", "Tab: ${currentTab.name} -> ${newTab.name}$suffix")
             if (newTab !in visitedTabs) {
                 visitedTabs.add(newTab)
             }
@@ -199,7 +199,7 @@ fun DashboardScreen(
                 }
                 DashboardTab.SERVERS -> {
                     if (!vpnState.isTestingPings) {
-                        com.example.data.AppLogger.info("UI", "Bấm phím X tay cầm: Đo lại ping trên tab Máy chủ")
+                        com.example.data.AppLogger.info("UI", "Key X: Ping servers")
                         VpnManager.testAllServers(
                             autoPickBest = false,
                             context = context,
@@ -214,7 +214,7 @@ fun DashboardScreen(
         onSecondaryY = {
             when (currentTab) {
                 DashboardTab.HOME -> {
-                    com.example.data.AppLogger.info("UI", "Bấm phím Y tay cầm: Mở trình duyệt Xbox Cloud từ Trang chủ")
+                    com.example.data.AppLogger.info("UI", "Key Y: Open Xbox Cloud")
                     onLaunchUrl(config.targetRegionUrl)
                 }
                 DashboardTab.LIBRARY,
@@ -331,7 +331,7 @@ fun DashboardScreen(
                                         .background(Color(0xFF16352A), TOP_PILL_SHAPE)
                                         .border(1.dp, XboxNeonGreen.copy(alpha = 0.55f), TOP_PILL_SHAPE)
                                         .gamepadClickable(cornerRadius = 8.dp) {
-                                            com.example.data.AppLogger.info("UI", "Bấm nút chuyển nhanh sang Giao diện TV từ thanh công cụ")
+                                            com.example.data.AppLogger.info("UI", "Topbar: Switch to TV UI")
                                             SettingsRepository.updateAppUiMode(com.example.data.AppUiMode.TV)
                                         }
                                         .padding(horizontal = 10.dp, vertical = 6.dp)
@@ -433,7 +433,7 @@ fun DashboardScreen(
                                         TOP_PILL_SHAPE
                                     )
                                     .gamepadClickable(cornerRadius = 8.dp) {
-                                        com.example.data.AppLogger.info("UI", "Mở hộp thoại Dịch tự động từ thanh đầu")
+                                        com.example.data.AppLogger.info("UI", "Open Translator (topbar)")
                                         showTranslatorDialog = true
                                     }
                                     .testTag("topbar_translator_button"),
@@ -493,7 +493,7 @@ fun DashboardScreen(
                                         },
                                         onClick = {
                                             showOverflowMenu = false
-                                            com.example.data.AppLogger.info("UI", "Chuyển sang Giao diện TV từ menu 3 chấm")
+                                            com.example.data.AppLogger.info("UI", "Menu: Switch to TV UI")
                                             SettingsRepository.updateAppUiMode(com.example.data.AppUiMode.TV)
                                         },
                                         modifier = Modifier.testTag("topbar_overflow_switch_tv_button")
@@ -518,7 +518,7 @@ fun DashboardScreen(
                                         },
                                         onClick = {
                                             showOverflowMenu = false
-                                            com.example.data.AppLogger.info("UI", "Mở hộp thoại Mã QR & Chia sẻ")
+                                            com.example.data.AppLogger.info("UI", "Open QR/Share dialog")
                                             showWebPortalDialog = true
                                         },
                                         modifier = Modifier.testTag("topbar_web_portal_button")
@@ -544,7 +544,7 @@ fun DashboardScreen(
                                         onClick = {
                                             showOverflowMenu = false
                                             guideInitialSection = GuideSection.QUICK_START
-                                            com.example.data.AppLogger.info("UI", "Mở hộp thoại Hướng dẫn sử dụng (${guideInitialSection.name})")
+                                            com.example.data.AppLogger.info("UI", "Open Guide (${guideInitialSection.name})")
                                             showGuideDialog = true
                                         },
                                         modifier = Modifier.testTag("topbar_guide_button")
@@ -620,16 +620,16 @@ fun DashboardScreen(
                                                 )
                                             },
                                             onOpenXboxCloud = { onLaunchUrl(config.targetRegionUrl) },
-                                            onNavigateToLibrary = { switchTab(DashboardTab.LIBRARY, "từ Trang chủ") },
-                                            onNavigateToServers = { switchTab(DashboardTab.SERVERS, "từ Trang chủ") },
-                                            onNavigateToSettings = { switchTab(DashboardTab.SETTINGS, "từ Trang chủ") },
+                                            onNavigateToLibrary = { switchTab(DashboardTab.LIBRARY, "from Home") },
+                                            onNavigateToServers = { switchTab(DashboardTab.SERVERS, "from Home") },
+                                            onNavigateToSettings = { switchTab(DashboardTab.SETTINGS, "from Home") },
                                             onOpenGuide = { section ->
                                                 guideInitialSection = section
-                                                com.example.data.AppLogger.info("UI", "Mở hộp thoại Hướng dẫn sử dụng (${section.name})")
+                                                com.example.data.AppLogger.info("UI", "Open Guide (${section.name})")
                                                 showGuideDialog = true
                                             },
                                             onOpenTranslator = {
-                                                com.example.data.AppLogger.info("UI", "Mở hộp thoại Dịch tự động từ Trang chủ")
+                                                com.example.data.AppLogger.info("UI", "Open Translator (Home)")
                                                 showTranslatorDialog = true
                                             }
                                         )
@@ -662,13 +662,13 @@ fun DashboardScreen(
                                             vpnState = vpnState,
                                             onOpenGuide = { section ->
                                                 guideInitialSection = section
-                                                com.example.data.AppLogger.info("UI", "Mở hộp thoại Hướng dẫn sử dụng (${section.name})")
+                                                com.example.data.AppLogger.info("UI", "Open Guide (${section.name})")
                                                 showGuideDialog = true
                                             },
                                             onClearCookies = {
                                                 com.example.data.AppLogger.info(
                                                     "RESET",
-                                                    "Xóa toàn bộ Cookie & WebStorage của WebView (lý do: người dùng bấm 'Làm mới dữ liệu đăng nhập' trong Cài đặt | chế độ=${config.xboxWebUiMode.name} | lưu ý: xóa cookie sẽ làm mất trạng thái opt-out preview lưu trên trình duyệt)"
+                                                    "Clear WebView cookies & storage (src=Settings mode=${config.xboxWebUiMode.name})"
                                                 )
                                                 android.webkit.CookieManager.getInstance().removeAllCookies(null)
                                                 android.webkit.WebStorage.getInstance().deleteAllData()
@@ -692,7 +692,7 @@ fun DashboardScreen(
         HowToUseGuideDialog(
             initialSection = guideInitialSection,
             onDismiss = {
-                com.example.data.AppLogger.info("UI", "Đóng hộp thoại Hướng dẫn sử dụng")
+                com.example.data.AppLogger.info("UI", "Close Guide")
                 showGuideDialog = false
             }
         )
@@ -701,7 +701,7 @@ fun DashboardScreen(
     if (showTranslatorDialog) {
         com.example.ui.components.SmartTranslatorDialog(
             onDismissRequest = {
-                com.example.data.AppLogger.info("UI", "Đóng hộp thoại Dịch tự động")
+                com.example.data.AppLogger.info("UI", "Close Translator")
                 showTranslatorDialog = false
             }
         )
@@ -710,7 +710,7 @@ fun DashboardScreen(
     if (showWebPortalDialog) {
         com.example.ui.components.WebDownloadPortalDialog(
             onDismiss = {
-                com.example.data.AppLogger.info("UI", "Đóng hộp thoại Mã QR & Chia sẻ")
+                com.example.data.AppLogger.info("UI", "Close QR/Share dialog")
                 showWebPortalDialog = false
             }
         )

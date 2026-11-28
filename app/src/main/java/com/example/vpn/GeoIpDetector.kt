@@ -852,10 +852,10 @@ object GeoIpDetector {
             if (finalResult != null) {
                 com.example.data.AppLogger.info(
                     "VPN",
-                    "Phát hiện vị trí mạng: ${finalResult.ip} • ${finalResult.countryCode} ${finalResult.city.ifBlank { "(Chưa rõ tỉnh/thành)" }}"
+                    "GeoIP: ${finalResult.ip} ${finalResult.countryCode} ${finalResult.city.ifBlank { "?" }}"
                 )
             } else {
-                com.example.data.AppLogger.warn("VPN", "Không lấy được thông tin GeoIP từ mạng hiện tại")
+                com.example.data.AppLogger.warn("VPN", "GeoIP lookup failed")
             }
 
             _currentGeoIp.value = finalResult

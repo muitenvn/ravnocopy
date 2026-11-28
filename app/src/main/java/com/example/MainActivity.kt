@@ -57,7 +57,7 @@ sealed class AppScreen {
                     val uaMode = if (cfg.forceDesktopUserAgent) "desktop" else "mobile"
                     com.example.data.AppLogger.info(
                         "WEB-UI",
-                        "Khôi phục màn hình Browser từ trạng thái đã lưu: url=${com.example.data.AppLogger.safeUrlHostPath(url)} | chế độ=${mode.name} | ua=$uaMode | nguồn=AppScreen.Saver"
+                        "Restore Browser: ${com.example.data.AppLogger.safeUrlHostPath(url)} (mode=${mode.name} ua=$uaMode src=Saver)"
                     )
                     Browser(url)
                 } else {
@@ -166,7 +166,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        com.example.data.AppLogger.info("SYSTEM", "Ứng dụng vào tiền cảnh (Foreground)")
+        com.example.data.AppLogger.info("SYSTEM", "App foreground")
         com.example.data.PerformanceMonitor.onAppStart()
         com.example.cloudplay.NetworkOptimizer.setAppForeground(true)
         VpnManager.onAppForeground()
@@ -186,7 +186,7 @@ class MainActivity : ComponentActivity() {
         com.example.cloudplay.RemotePadTvServer.forceReleaseAllInputsToNeutral()
         com.example.cloudplay.NetworkOptimizer.setAppForeground(false)
         VpnManager.onAppBackground()
-        com.example.data.AppLogger.info("SYSTEM", "Ứng dụng vào nền (Background)")
+        com.example.data.AppLogger.info("SYSTEM", "App background")
         com.example.data.PerformanceMonitor.onAppStop()
         super.onStop()
     }
@@ -330,7 +330,7 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             com.example.data.AppLogger.error(
                 "SYSTEM",
-                "Lỗi khóa tần số quét màn hình (lock60Hz=$lock60Hz) (${com.example.data.AppLogger.shortThrowable(e)})"
+                "Refresh rate lock err (lock60Hz=$lock60Hz): ${com.example.data.AppLogger.shortThrowable(e)}"
             )
         }
     }
@@ -488,23 +488,28 @@ fun MainContent(
         }
     }
 
+    val lastLaunchTriggerAtMs = remember { longArrayOf(0L) }
     val launchXboxUrl: (String) -> Unit = { url ->
-        val latestConfig = SettingsRepository.config.value
-        if (latestConfig.smartVpnEnabled) {
-            VpnManager.autoTurnOnForLaunch(context)
-        } else {
-            if (VpnManager.state.value.mode == com.example.vpn.NetworkMode.DISCONNECTED) {
-                VpnManager.connect(context)
+        val nowMs = android.os.SystemClock.elapsedRealtime()
+        if (currentScreen !is AppScreen.Browser && (nowMs - lastLaunchTriggerAtMs[0]) >= 600L) {
+            lastLaunchTriggerAtMs[0] = nowMs
+            val latestConfig = SettingsRepository.config.value
+            if (latestConfig.smartVpnEnabled) {
+                VpnManager.autoTurnOnForLaunch(context)
+            } else {
+                if (VpnManager.state.value.mode == com.example.vpn.NetworkMode.DISCONNECTED) {
+                    VpnManager.connect(context)
+                }
             }
+            val currentLocale = latestConfig.getEffectiveLocale()
+            val finalUrl = SettingsRepository.formatXboxUrlWithLocale(url, currentLocale)
+            val uaMode = if (latestConfig.forceDesktopUserAgent) "desktop" else "mobile"
+            com.example.data.AppLogger.info(
+                "WEB-UI",
+                "Open Xbox: ${com.example.data.AppLogger.safeUrlHostPath(finalUrl)} (mode=${latestConfig.xboxWebUiMode.name} ua=$uaMode mkt=$currentLocale)"
+            )
+            currentScreen = AppScreen.Browser(finalUrl)
         }
-        val currentLocale = latestConfig.getEffectiveLocale()
-        val finalUrl = SettingsRepository.formatXboxUrlWithLocale(url, currentLocale)
-        val uaMode = if (latestConfig.forceDesktopUserAgent) "desktop" else "mobile"
-        com.example.data.AppLogger.info(
-            "WEB-UI",
-            "Mở trình duyệt Xbox từ Trang chủ: đầu vào=${com.example.data.AppLogger.safeUrlHostPath(url)} -> đích=${com.example.data.AppLogger.safeUrlHostPath(finalUrl)} | chế độ=${latestConfig.xboxWebUiMode.name} | ua=$uaMode | thị trường=$currentLocale | nguồn=setting+formatXboxUrlWithLocale"
-        )
-        currentScreen = AppScreen.Browser(finalUrl)
     }
 
     when (val screen = currentScreen) {
@@ -526,7 +531,7 @@ fun MainContent(
                 initialUrl = screen.url,
                 streamController = streamController,
                 onNavigateBackToDashboard = {
-                    com.example.data.AppLogger.info("UI", "Thoát trình duyệt game -> quay về Trang chủ")
+                    com.example.data.AppLogger.info("UI", "Exit browser -> Home")
                     currentScreen = AppScreen.Dashboard
                 },
                 modifier = Modifier.fillMaxSize()

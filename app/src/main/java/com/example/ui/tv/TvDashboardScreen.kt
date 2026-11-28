@@ -166,7 +166,7 @@ fun TvDashboardScreen(
             }
             PerformanceMonitor.setScenario(nextScenario)
             val suffix = if (reason.isNotBlank()) " ($reason)" else ""
-            AppLogger.info("UI", "Chuyển tab TV: ${currentTab.name} -> ${newTab.name}$suffix")
+            AppLogger.info("UI", "TV tab: ${currentTab.name} -> ${newTab.name}$suffix")
             currentTab = newTab
         } else {
             runCatching { primaryRequesterForTab(newTab).requestFocus() }
@@ -204,7 +204,7 @@ fun TvDashboardScreen(
                 }
                 DashboardTab.SERVERS -> {
                     if (!vpnState.isTestingPings) {
-                        AppLogger.info("UI", "Bấm phím X tay cầm trên TV: Đo lại ping trên tab Máy chủ")
+                        AppLogger.info("UI", "TV key X: Ping servers")
                         VpnManager.testAllServers(
                             autoPickBest = false,
                             context = context,
@@ -219,7 +219,7 @@ fun TvDashboardScreen(
         onSecondaryY = {
             when (currentTab) {
                 DashboardTab.HOME -> {
-                    AppLogger.info("UI", "Bấm phím Y tay cầm trên TV: Mở trình duyệt Xbox Cloud từ Trang chủ")
+                    AppLogger.info("UI", "TV key Y: Open Xbox Cloud")
                     onLaunchUrl(config.targetRegionUrl)
                 }
                 DashboardTab.LIBRARY -> {

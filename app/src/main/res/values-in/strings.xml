@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">Ketuk Masukkan IP → Lanjutan</string>
     <string name="remote_pad_step_3_remote">Ketik kode 10 angka</string>
     <string name="remote_pad_bottom_notice_remote">Kode 10 angka terenkripsi · Kedaluwarsa 15 mnt · 3 kali salah kunci 3 mnt</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">Ekspor File</string>
+    <string name="log_export_title">Ekspor Log Aktivitas</string>
+    <string name="log_export_subtitle">Log lengkap tersimpan · Tanpa batas</string>
+    <string name="log_export_all_btn">Unduh Semua Log</string>
+    <string name="log_export_all_meta">%1$d versi · %2$d sesi · %3$s</string>
+    <string name="log_export_tab_version">Per Versi</string>
+    <string name="log_export_tab_session">Per Sesi</string>
+    <string name="log_export_version_sessions">%1$d sesi · %2$s</string>
+    <string name="log_export_current_badge">Saat ini</string>
+    <string name="log_export_empty">Belum ada file log tersimpan.</string>
+    <string name="log_export_back">Kembali ke Log</string>
+    <string name="log_export_success">Diekspor %1$d baris (%2$s)</string>
+    <string name="log_export_failed">Gagal mengekspor file log</string>
+    <string name="log_export_share_title">Bagikan File Log Ravno</string>
 </resources>

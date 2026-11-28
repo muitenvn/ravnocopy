@@ -287,7 +287,7 @@ fun UpdateAvailableDialog(
                         it.startsWith("https://github.com/muitenvn/Ravno-App/releases") ||
                             it.startsWith("https://github.com/muitenvn/CloudPlay-App/releases")
                     } ?: githubReleasesUrl
-                    com.example.data.AppLogger.info("UI", "Mở trang bản phát hành GitHub trên trình duyệt ngoài")
+                    com.example.data.AppLogger.info("UI", "Open GitHub Releases in browser")
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl)).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
@@ -295,7 +295,7 @@ fun UpdateAvailableDialog(
                 } catch (e: Exception) {
                     com.example.data.AppLogger.error(
                         "UI",
-                        "Lỗi mở trình duyệt tới trang GitHub Releases (${com.example.data.AppLogger.shortThrowable(e)})"
+                        "Open Releases err: ${com.example.data.AppLogger.shortThrowable(e)}"
                     )
                 }
             }

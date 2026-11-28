@@ -260,7 +260,7 @@ internal fun TvHomeScreen(
                         scale = scale,
                         tone = TvPillTone.CYAN,
                         onClick = {
-                            com.example.data.AppLogger.info("UI", "Bấm nút chuyển nhanh về Giao diện Điện thoại từ thanh đầu TV")
+                            com.example.data.AppLogger.info("UI", "TV header: Switch to Phone UI")
                             SettingsRepository.updateAppUiMode(com.example.data.AppUiMode.PHONE)
                         },
                         modifier = Modifier.testTag("tv_home_switch_phone_ui_pill")

@@ -107,7 +107,7 @@ fun SettingsScreen(
         } catch (e: Exception) {
             com.example.data.AppLogger.error(
                 "UI",
-                "Không mở được trình duyệt ngoài xem Điều khoản (${com.example.data.AppLogger.shortThrowable(e)})"
+                "Open Terms browser err: ${com.example.data.AppLogger.shortThrowable(e)}"
             )
             Toast.makeText(
                 context,
@@ -248,7 +248,7 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .gamepadClickable(cornerRadius = 12.dp) {
-                                com.example.data.AppLogger.info("UI", "Mở hộp thoại Nhật ký hệ thống")
+                                com.example.data.AppLogger.info("UI", "Open AppLog dialog")
                                 showAppLogDialog = true
                             }
                             .padding(horizontal = 14.dp, vertical = 12.dp)
@@ -542,7 +542,7 @@ fun SettingsScreen(
     if (showWebPortalDialog) {
         com.example.ui.components.WebDownloadPortalDialog(
             onDismiss = {
-                com.example.data.AppLogger.info("UI", "Đóng hộp thoại Mã QR & Chia sẻ (từ Cài đặt)")
+                com.example.data.AppLogger.info("UI", "Close QR/Share dialog")
                 showWebPortalDialog = false
             }
         )
@@ -552,7 +552,7 @@ fun SettingsScreen(
         com.example.ui.components.AppLogDialog(
             isEn = isEn,
             onDismiss = {
-                com.example.data.AppLogger.info("UI", "Đóng hộp thoại Nhật ký hệ thống")
+                com.example.data.AppLogger.info("UI", "Close AppLog dialog")
                 showAppLogDialog = false
             }
         )
@@ -563,7 +563,7 @@ fun SettingsScreen(
             isEn = config.isEnglishUI(),
             onOpenExternalBrowser = { launchExternalBrowserTerms() },
             onDismiss = {
-                com.example.data.AppLogger.info("UI", "Đóng hộp thoại Điều khoản sử dụng")
+                com.example.data.AppLogger.info("UI", "Close Terms dialog")
                 showFullTermsDialog = false
             }
         )
@@ -589,7 +589,7 @@ fun SettingsScreen(
                 ).show()
             },
             onDismiss = {
-                com.example.data.AppLogger.info("UI", "Hủy hộp thoại Đặt lại bố cục tay cầm mặc định")
+                com.example.data.AppLogger.info("UI", "Cancel reset gamepad layout")
                 showResetGamepadConfirmDialog = false
             },
             confirmButtonTestTag = "confirm_reset_gamepad_btn",

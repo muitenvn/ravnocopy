@@ -504,7 +504,7 @@ object GameLibraryRepository {
                         _isLoadingInitialCatalog.value = false
                         val tSnapEnd = android.os.SystemClock.elapsedRealtime()
                         PerformanceMonitor.recordInitMilestone(
-                            "GameLibraryRepository (Snapshot): xmlLoad=${tAfterPrefsAwait - t0}ms, snapshotLoad=${tSnapEnd - tParseStart}ms (tổng=${snapshot.games.size} game, khớpVânTay=${snapshot.fingerprint == expectedFingerprint})"
+                            "GameLib(Snapshot): xml=${tAfterPrefsAwait - t0}ms snap=${tSnapEnd - tParseStart}ms total=${snapshot.games.size} fpMatch=${snapshot.fingerprint == expectedFingerprint}"
                         )
 
                         // Nếu dấu vân tay thay đổi hoặc có game phát hiện sớm thì cập nhật ngầm
@@ -539,7 +539,7 @@ object GameLibraryRepository {
                         activeCatalogList = _games.value
                         val tMergeEnd = android.os.SystemClock.elapsedRealtime()
                         PerformanceMonitor.recordInitMilestone(
-                            "GameLibraryRepository (Rebuild): xmlLoad=${tAfterPrefsAwait - t0}ms, jsonParse=${tParseEnd - tParseStart}ms, merge=${tMergeEnd - tParseEnd}ms (tổng=${_games.value.size} game)"
+                            "GameLib(Rebuild): xml=${tAfterPrefsAwait - t0}ms parse=${tParseEnd - tParseStart}ms merge=${tMergeEnd - tParseEnd}ms total=${_games.value.size}"
                         )
                     }
                 } finally {

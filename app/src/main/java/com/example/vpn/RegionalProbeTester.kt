@@ -535,9 +535,7 @@ object RegionalProbeTester {
             val backupNames = sorted.drop(1).take(2).joinToString(" -> ") { it.displayName }
             AppLogger.info(
                 "PROBE",
-                "Vị trí: $country ${if (cityLower.isNotBlank()) "($cityLower)" else ""} • " +
-                    "Quốc gia Xbox gần nhất: [$nearestXboxCountries] • " +
-                    "Trạm đo: ${primary.displayName} (Dự phòng: $backupNames)"
+                "Loc=$country${if (cityLower.isNotBlank()) "($cityLower)" else ""} nearest=[$nearestXboxCountries] probe=${primary.displayName} backup=[$backupNames]"
             )
         }
         return sorted
@@ -632,7 +630,7 @@ object RegionalProbeTester {
             if (!tryAcquireHourlyQuota()) {
                 AppLogger.warn(
                     "PROBE",
-                    "Đã đạt trần cục bộ $LOCAL_DEVICE_HOURLY_CAP/$GLOBALPING_SERVICE_FREE_LIMIT_PER_HOUR lượt/giờ cho Globalping -> Bỏ qua gọi trạm"
+                    "Globalping local cap reached ($LOCAL_DEVICE_HOURLY_CAP/$GLOBALPING_SERVICE_FREE_LIMIT_PER_HOUR/h), skipping"
                 )
                 return null
             }
@@ -653,7 +651,7 @@ object RegionalProbeTester {
                 latestServerEstimate[server.id] = estimate
                 AppLogger.success(
                     "PROBE",
-                    "Ước lượng từ trạm ${probe.displayName} -> ${server.name}: ${rawRtt}ms (không gồm đoạn từ điện thoại tới trạm)"
+                    "Probe ${probe.displayName} -> ${server.name}: ${rawRtt}ms (probe-only)"
                 )
                 return estimate
             } else {
@@ -663,7 +661,7 @@ object RegionalProbeTester {
                     if (nextProbe != null) {
                         AppLogger.warn(
                             "PROBE",
-                            "Trạm ${probe.displayName} bận -> Thử trạm lân cận: ${nextProbe.displayName}"
+                            "Probe ${probe.displayName} busy -> fallback ${nextProbe.displayName}"
                         )
                     }
                 } else {
@@ -715,7 +713,7 @@ object RegionalProbeTester {
 
             if (code == 429 || code >= 500) {
                 remoteApiCooldownUntilMs.set(System.currentTimeMillis() + 60_000L)
-                AppLogger.warn("PROBE", "API Globalping trả mã $code -> Tạm ngắt 60s, dùng số đo TCP trực tiếp")
+                AppLogger.warn("PROBE", "Globalping HTTP $code -> 60s cooldown, fallback TCP")
                 return null
             }
             if (code == 422 || !postResp.isSuccessful) {

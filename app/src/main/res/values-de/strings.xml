@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">IP eingeben → Erweitert wählen</string>
     <string name="remote_pad_step_3_remote">10-stelligen Code eingeben</string>
     <string name="remote_pad_bottom_notice_remote">Verschlüsselter 10-Ziffern-Code · Läuft nach 15 Min. ab · 3 Fehler sperren 3 Min.</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">Datei export.</string>
+    <string name="log_export_title">Protokolle exportieren</string>
+    <string name="log_export_subtitle">Vollständige Logs · Kein Zeilenlimit</string>
+    <string name="log_export_all_btn">Alle Logs laden</string>
+    <string name="log_export_all_meta">%1$d Versionen · %2$d Sitzungen · %3$s</string>
+    <string name="log_export_tab_version">Nach Version</string>
+    <string name="log_export_tab_session">Nach Sitzung</string>
+    <string name="log_export_version_sessions">%1$d Sitzungen · %2$s</string>
+    <string name="log_export_current_badge">Aktuell</string>
+    <string name="log_export_empty">Noch keine gespeicherten Logs.</string>
+    <string name="log_export_back">Zurück zu Logs</string>
+    <string name="log_export_success">%1$d Zeilen exportiert (%2$s)</string>
+    <string name="log_export_failed">Log-Datei konnte nicht exportiert werden</string>
+    <string name="log_export_share_title">Ravno-Logdatei teilen</string>
 </resources>

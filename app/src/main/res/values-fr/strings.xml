@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">Appuyez sur Saisir IP → Avancé</string>
     <string name="remote_pad_step_3_remote">Saisir le code à 10 chiffres</string>
     <string name="remote_pad_bottom_notice_remote">Code chiffré 10 chiffres · Expire après 15 min · 3 erreurs bloquent 3 min</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">Exporter</string>
+    <string name="log_export_title">Exporter les journaux</string>
+    <string name="log_export_subtitle">Journaux complets · Sans limite</string>
+    <string name="log_export_all_btn">Tout exporter</string>
+    <string name="log_export_all_meta">%1$d versions · %2$d sessions · %3$s</string>
+    <string name="log_export_tab_version">Par version</string>
+    <string name="log_export_tab_session">Par session</string>
+    <string name="log_export_version_sessions">%1$d sessions · %2$s</string>
+    <string name="log_export_current_badge">Actuelle</string>
+    <string name="log_export_empty">Aucun fichier journal enregistré.</string>
+    <string name="log_export_back">Retour aux logs</string>
+    <string name="log_export_success">%1$d lignes exportées (%2$s)</string>
+    <string name="log_export_failed">Impossible d\'exporter le journal</string>
+    <string name="log_export_share_title">Partager le journal Ravno</string>
 </resources>

@@ -220,20 +220,20 @@ object VpnManager {
                 if (logSuccess) {
                     com.example.data.AppLogger.success(
                         "PING",
-                        "Đo ping ${server.name} (${server.countryCode}): ${meas.rttMs} ms"
+                        "Ping ${server.name} (${server.countryCode}): ${meas.rttMs}ms"
                     )
                 }
             }
             meas.isFallbackPortOnly -> {
                 com.example.data.AppLogger.warn(
                     "PING",
-                    "Đo ping ${server.name} (${server.countryCode}): chỉ mở cổng phụ :${meas.measuredPort} (${meas.rttMs} ms), cổng chính :${server.port} đóng"
+                    "Ping ${server.name} (${server.countryCode}): fallback :${meas.measuredPort} (${meas.rttMs}ms), primary :${server.port} closed"
                 )
             }
             else -> {
                 com.example.data.AppLogger.warn(
                     "PING",
-                    "Đo ping ${server.name} (${server.ip}:${server.port}): không phản hồi"
+                    "Ping ${server.name} (${server.ip}:${server.port}): timeout"
                 )
             }
         }
@@ -248,8 +248,8 @@ object VpnManager {
         lastObservedHasVpnTransport = initialNetStatus.hasVpnTransport
         lastStartupMaintenanceAtMs = System.currentTimeMillis()
         loadPersistedEngineAndSecurityPrefs(appCtx)
-        // Chế độ Bypass-only: luôn đảm bảo WebView sạch, không còn proxy override cũ sót lại từ phiên bản trước
-        clearWebViewProxy(force = true)
+        // Không gọi ProxyController.getInstance() đồng bộ trong onCreate để tránh ép nạp sớm Chromium WebView (~700ms trên luồng chính);
+        // CloudBrowserScreen đã tự gọi ensureWebViewProxyCleanIfNotProxyEngine() ngay khi mở trình duyệt.
         _state.value = _state.value.copy(
             engine = VpnEngine.SMART_BYPASS,
             isExternalSystemVpnDetected = isExternalSystemVpnActive(appCtx)
@@ -264,7 +264,7 @@ object VpnManager {
             if (!isVpnAlreadyActive) {
                 delay(750L)
             }
-            checkCurrentIp(reason = "khởi động", force = true)
+            checkCurrentIp(reason = "startup", force = false)
             ensureInitialOrGeoUpdatedOptimalServer(context = appCtx, force = false)
             if (_state.value.serverPings.isEmpty() && _state.value.serverMeasurements.isEmpty()) {
                 if (!isVpnAlreadyActive) {
@@ -274,7 +274,7 @@ object VpnManager {
                     autoPickBest = false,
                     context = appCtx,
                     forceRefresh = false,
-                    reason = "khởi động VpnManager.init"
+                    reason = "init"
                 )
             }
             delay(1_800L)
@@ -336,7 +336,7 @@ object VpnManager {
                                 }
                                 com.example.data.AppLogger.info(
                                     "VPN_NET",
-                                    "Phát hiện thay đổi mạng ($reason: tag=$newTag, vpn=$newHasVpn) -> kiểm tra lại IP và đánh giá lại máy chủ tối ưu"
+                                    "Net change ($reason tag=$newTag vpn=$newHasVpn) -> recheck IP & optimal server"
                                 )
                                 checkCurrentIp(reason = reason, force = true)
                                 ensureInitialOrGeoUpdatedOptimalServer(context = appCtx, force = true)
@@ -461,7 +461,7 @@ object VpnManager {
                     )
                     com.example.data.AppLogger.success(
                         "VPN_CATALOG",
-                        "Đã đồng bộ danh sách GitHub (${catalog.sourceLabel}): ${catalog.bypassServers.size} Bypass, ${catalog.proxyServers.size} Proxy seed, ${catalog.proxySources.size} nguồn Proxy"
+                        "GitHub sync (${catalog.sourceLabel}): bypass=${catalog.bypassServers.size} proxySeed=${catalog.proxyServers.size} src=${catalog.proxySources.size}"
                     )
                 } else {
                     _state.value = _state.value.copy(isSyncingRemoteCatalog = false)
@@ -630,7 +630,7 @@ object VpnManager {
 
                 com.example.data.AppLogger.success(
                     "VPN_AUTO",
-                    "Quét Proxy xong (${syncResult.sourcesSucceededCount} nguồn, kiểm tra ${syncResult.testedCandidateCount} ứng viên): đạt chuẩn TLS Xbox=${mergedLive.size} (mới +${syncResult.verifiedServers.size}, loại lỗi=${syncResult.filteredOutErrorCount})"
+                    "Proxy scan done (src=${syncResult.sourcesSucceededCount} tested=${syncResult.testedCandidateCount}): tlsOk=${mergedLive.size} (+${syncResult.verifiedServers.size} drop=${syncResult.filteredOutErrorCount})"
                 )
 
                 val shouldAutoConnect = pendingConnectAfterProxyScan &&
@@ -650,7 +650,7 @@ object VpnManager {
                 Log.w(TAG, "autoSyncPublicProxiesIfNeeded failed", e)
                 com.example.data.AppLogger.error(
                     "VPN_AUTO",
-                    "Quét Proxy thật thất bại — ${com.example.data.AppLogger.shortThrowable(e)}"
+                    "Proxy scan err: ${com.example.data.AppLogger.shortThrowable(e)}"
                 )
             } finally {
                 _state.value = _state.value.copy(
@@ -703,7 +703,7 @@ object VpnManager {
             Log.w(TAG, "Could not load persisted unlock records", e)
             com.example.data.AppLogger.error(
                 "VPN",
-                "Không đọc được lịch sử mở khóa vùng — ${com.example.data.AppLogger.shortThrowable(e)}"
+                "Load unlock records err: ${com.example.data.AppLogger.shortThrowable(e)}"
             )
         }
     }
@@ -731,7 +731,7 @@ object VpnManager {
             Log.w(TAG, "Could not persist unlock records", e)
             com.example.data.AppLogger.error(
                 "VPN",
-                "Không lưu được lịch sử mở khóa vùng — ${com.example.data.AppLogger.shortThrowable(e)}"
+                "Save unlock records err: ${com.example.data.AppLogger.shortThrowable(e)}"
             )
         }
     }
@@ -1002,7 +1002,7 @@ object VpnManager {
                 lastUnlockFailServerKey = ""
                 consecutiveUnlockFailCount = 0
                 sessionAutoUnlockSwitchCount = 0
-                com.example.data.AppLogger.success("UNLOCK", "Mở khóa vùng thành công: ${currentServer.name} (${currentServer.countryCode})")
+                com.example.data.AppLogger.success("UNLOCK", "Region unlocked: ${currentServer.name} (${currentServer.countryCode})")
                 saveServerUnlockRecord(currentServer, RegionUnlockStatus.UNLOCKED, currentServer.countryCode)
                 _state.value = _state.value.copy(
                     unlockFailPromptServer = null,
@@ -1030,7 +1030,7 @@ object VpnManager {
 
                 com.example.data.AppLogger.warn(
                     "UNLOCK",
-                    "Máy chủ không mở khóa được vùng (lần $count liên tiếp): ${currentServer.name} (${currentServer.ip}:${currentServer.port})"
+                    "Region unlock fail (#$count): ${currentServer.name} (${currentServer.ip}:${currentServer.port})"
                 )
                 saveServerUnlockRecord(currentServer, RegionUnlockStatus.FAILED, currentServer.countryCode)
                 val prunedLive = _state.value.liveVerifiedServers.filterNot {
@@ -1092,7 +1092,7 @@ object VpnManager {
                         sessionAutoUnlockSwitchCount++
                         com.example.data.AppLogger.info(
                             "UNLOCK",
-                            "Tự động đổi máy chủ Bypass (lượt $sessionAutoUnlockSwitchCount/$MAX_SESSION_AUTO_UNLOCK_SWITCHES) do ${currentServer.name} không mở khóa được -> chuyển nhanh sang dải mạng khác: ${suggestedSrv!!.name} (${suggestedSrv.ip}:${suggestedSrv.port}, ${suggestedPing}ms)"
+                            "Auto-switch Bypass ($sessionAutoUnlockSwitchCount/$MAX_SESSION_AUTO_UNLOCK_SWITCHES): ${currentServer.name} -> ${suggestedSrv!!.name} (${suggestedSrv.ip}:${suggestedSrv.port} ${suggestedPing}ms)"
                         )
                         lastUnlockFailServerKey = ""
                         consecutiveUnlockFailCount = 0
@@ -1113,7 +1113,7 @@ object VpnManager {
                             }
                             com.example.data.AppLogger.info(
                                 "UNLOCK",
-                                "Giữ nguyên máy chủ ${currentServer.name} vì người dùng đang chọn thủ công; gợi ý máy chủ đã đo thật: $suggestLabel"
+                                "Keep manual server ${currentServer.name}; suggested=$suggestLabel"
                             )
                         }
                         if (_state.value.unlockFailPromptServer?.addressPortKey == currentServer.addressPortKey) {
@@ -1160,6 +1160,8 @@ object VpnManager {
     const val PENALTY_PING_FALLBACK_PORT_ONLY = 1500.0
     /** Điểm phạt khi độ trễ cổng chính dao động mạnh (`measurement.isUnstable == true`) */
     const val PENALTY_PING_UNSTABLE = 45.0
+    /** Điểm phạt khi máy chủ chưa từng đo được RTT cổng chính (tránh lấy lịch sử vùng làm máy chủ chưa đo/đã chết thắng máy chủ đo thật đang sống) */
+    const val PENALTY_PING_UNMEASURED = 600.0
     /** Điểm phạt nhẹ khi máy chủ chưa xác minh mở khóa (`RegionUnlockStatus.UNTESTED`) so với `RegionUnlockStatus.UNLOCKED` */
     const val PENALTY_UNLOCK_UNTESTED = 12.0
 
@@ -1365,7 +1367,7 @@ object VpnManager {
         )
         com.example.data.AppLogger.error(
             "VPN_SECURITY",
-            "KILL-SWITCH kích hoạt (${violationType.name}): đã chặn và ngắt proxy ${offendingServer.name} ($serverKey) • chi tiết=$safeDetail"
+            "KILL-SWITCH (${violationType.name}): blocked ${offendingServer.name} ($serverKey) detail=$safeDetail"
         )
     }
 
@@ -1383,7 +1385,7 @@ object VpnManager {
         val updated = cur - normalized
         _state.value = _state.value.copy(securityBlockedServerKeys = updated)
         persistSecurityBlockedKeys(updated)
-        com.example.data.AppLogger.info("VPN_SECURITY", "Người dùng đã gỡ chặn bảo mật cho máy chủ $normalized")
+        com.example.data.AppLogger.info("VPN_SECURITY", "Unblocked server $normalized")
     }
 
     fun getLastSessionPingForServer(
@@ -1501,6 +1503,7 @@ object VpnManager {
         val reachabilityPenalty = when {
             isExplicitlyUnreachable -> PENALTY_PING_UNREACHABLE + (if (isDynamicLiveProxy(server)) 2000.0 else 0.0)
             measurement?.status == ServerPingStatus.MEASURED_FALLBACK_ONLY -> PENALTY_PING_FALLBACK_PORT_ONLY
+            !hasMeasuredRtt -> PENALTY_PING_UNMEASURED
             measurement?.isUnstable == true -> PENALTY_PING_UNSTABLE
             else -> 0.0
         }
@@ -2025,7 +2028,7 @@ object VpnManager {
 
                 com.example.data.AppLogger.info(
                     "PING",
-                    "Đợt đo #$myGeneration (lý do: $reason) • Bước 1: Thăm dò ${step1Targets.size}/${allServers.size} đại diện vùng (thời hạn ≤5s, tối đa ${PingTester.MAX_CONCURRENT_SOCKETS} socket mở đồng thời)"
+                    "Batch #$myGeneration ($reason) S1: probe ${step1Targets.size}/${allServers.size} (max 5s, ${PingTester.MAX_CONCURRENT_SOCKETS} sockets)"
                 )
 
                 runMeasurementStepWithDeadline(
@@ -2096,7 +2099,7 @@ object VpnManager {
                 if (step2Targets.isNotEmpty() && myGeneration == measurementGeneration.get() && !isInGameStreamActive) {
                     com.example.data.AppLogger.info(
                         "PING",
-                        "Đợt đo #$myGeneration • Bước 2: Đo kỹ ${step2Targets.size} máy chủ ứng viên & mục đang hiển thị (thời hạn ≤5s)"
+                        "Batch #$myGeneration S2: measure ${step2Targets.size} candidates (max 5s)"
                     )
                     runMeasurementStepWithDeadline(
                         generationId = myGeneration,
@@ -2123,7 +2126,7 @@ object VpnManager {
 
                 com.example.data.AppLogger.success(
                     "PING",
-                    "Hoàn tất đợt đo #$myGeneration: $primaryAliveCount cổng chính mở, $fallbackOnlyCount chỉ mở cổng phụ (:443/:80), $untestedCount chưa đo (đo lười khi cuộn)"
+                    "Batch #$myGeneration done: primary=$primaryAliveCount fallback=$fallbackOnlyCount untested=$untestedCount"
                 )
 
                 _state.value = _state.value.copy(
@@ -2211,7 +2214,7 @@ object VpnManager {
                         )
                         com.example.data.AppLogger.success(
                             "VPN",
-                            "Chọn máy chủ tối ưu (${best.countryCode} • $reasonVi): ${best.name}"
+                            "Auto-pick (${best.countryCode} • $reasonVi): ${best.name}"
                         )
                         withContext(Dispatchers.Main) {
                             selectServer(best, context ?: appContext, isManualSelection = false)
@@ -2231,7 +2234,7 @@ object VpnManager {
                 Log.w(TAG, "testAllServers interrupted", e)
                 com.example.data.AppLogger.error(
                     "PING",
-                    "Lỗi trong đợt đo #$myGeneration — ${com.example.data.AppLogger.shortThrowable(e)}"
+                    "Batch #$myGeneration err: ${com.example.data.AppLogger.shortThrowable(e)}"
                 )
             } finally {
                 if (myGeneration == measurementGeneration.get()) {
@@ -2341,7 +2344,7 @@ object VpnManager {
                     if (!stepCollected.containsKey(srv.id)) {
                         com.example.data.AppLogger.warn(
                             "PING",
-                            "Đo ping ${srv.name} (${srv.countryCode}): hết thời hạn bước (${stepDeadlineMs}ms)"
+                            "Ping ${srv.name} (${srv.countryCode}): step timeout (${stepDeadlineMs}ms)"
                         )
                     }
                 }
@@ -2647,8 +2650,8 @@ object VpnManager {
                 sessions = sessions
             )
             com.example.data.AppLogger.success(
-                "UPGRADE_1.3",
-                "Tự động chọn máy chủ tối ưu (${targetBest.countryCode} • $reasonText): ${targetBest.flag} ${targetBest.name}"
+                "VPN",
+                "Auto-pick (${targetBest.countryCode} • $reasonText): ${targetBest.name}"
             )
         }
         return if (shouldSwitch) targetBest else currentSrv
@@ -2789,7 +2792,7 @@ object VpnManager {
             Log.w(TAG, "Could not load persisted servers", e)
             com.example.data.AppLogger.error(
                 "VPN",
-                "Không đọc được danh sách máy chủ đã lưu — ${com.example.data.AppLogger.shortThrowable(e)}"
+                "Load saved servers err: ${com.example.data.AppLogger.shortThrowable(e)}"
             )
         }
     }
@@ -2827,7 +2830,7 @@ object VpnManager {
             Log.w(TAG, "Could not persist live verified servers", e)
             com.example.data.AppLogger.error(
                 "VPN",
-                "Không lưu được danh sách Proxy đã xác minh — ${com.example.data.AppLogger.shortThrowable(e)}"
+                "Save live proxies err: ${com.example.data.AppLogger.shortThrowable(e)}"
             )
         }
     }
@@ -2867,7 +2870,7 @@ object VpnManager {
             Log.w(TAG, "Could not persist servers", e)
             com.example.data.AppLogger.error(
                 "VPN",
-                "Không lưu được máy chủ đã chọn — ${com.example.data.AppLogger.shortThrowable(e)}"
+                "Save selected server err: ${com.example.data.AppLogger.shortThrowable(e)}"
             )
         }
     }
@@ -2922,7 +2925,7 @@ object VpnManager {
         isIpInvalidatedByNetworkChange = true
         lastRealGeoIp = null
         lastIpCheckTimestampMs = 0L
-        com.example.data.AppLogger.info("VPN", "Đánh dấu làm mới vị trí IP (lý do: $reason)")
+        com.example.data.AppLogger.info("VPN", "Invalidate GeoIP ($reason)")
         if (isInGameStreamActive || com.example.cloudplay.NetworkOptimizer.status.value.isLowLatencyStreamActive) {
             return
         }
@@ -2972,7 +2975,7 @@ object VpnManager {
                 !isServerSecurityBlocked(st.currentServer)
             ) {
                 applyMultiServerProxy(st.currentServer)
-                com.example.data.AppLogger.info("VPN_SECURITY", "Khôi phục Proxy trong app khi quay lại ứng dụng")
+                com.example.data.AppLogger.info("VPN_SECURITY", "Restore in-app proxy (foreground)")
             }
         }
         if (latencyMonitoringRequested && pingJob?.isActive != true) {
@@ -2990,7 +2993,7 @@ object VpnManager {
         if (hasValidIp && lastIpCheckTimestampMs > 0L && (now - lastIpCheckTimestampMs) < IP_FOREGROUND_COOLDOWN_MS) {
             return
         }
-        checkCurrentIp(reason = "quay lại foreground", force = true)
+        checkCurrentIp(reason = "foreground", force = true)
     }
 
     fun onAppBackground() {
@@ -2998,26 +3001,29 @@ object VpnManager {
         if (_state.value.engine == VpnEngine.PROXY_TUNNEL && isWebViewProxyOverrideActive) {
             isProxyPausedForBackground = true
             clearWebViewProxy()
-            com.example.data.AppLogger.info("VPN_SECURITY", "Tự động ngắt Proxy khi ứng dụng xuống nền (cách ly chỉ trong app)")
+            com.example.data.AppLogger.info("VPN_SECURITY", "Detach in-app proxy (background)")
         }
         pingJob?.cancel()
         pingJob = null
     }
 
-    fun checkCurrentIp(reason: String = "khởi động", force: Boolean = false) {
+    fun checkCurrentIp(reason: String = "startup", force: Boolean = false) {
         if (isInGameStreamActive || com.example.cloudplay.NetworkOptimizer.status.value.isLowLatencyStreamActive) {
             return
         }
         val now = System.currentTimeMillis()
-        if (!force &&
-            !isIpInvalidatedByNetworkChange &&
-            lastIpCheckTimestampMs > 0L &&
-            (now - lastIpCheckTimestampMs) < IP_FOREGROUND_COOLDOWN_MS &&
-            (_state.value.detectedGeoIp != null || lastRealGeoIp != null)
-        ) {
-            return
+        if (!force && !isIpInvalidatedByNetworkChange) {
+            if (ipCheckJob?.isActive == true) {
+                return
+            }
+            if (lastIpCheckTimestampMs > 0L &&
+                (now - lastIpCheckTimestampMs) < IP_FOREGROUND_COOLDOWN_MS &&
+                (_state.value.detectedGeoIp != null || lastRealGeoIp != null)
+            ) {
+                return
+            }
         }
-        com.example.data.AppLogger.info("VPN", "[VPN] Kiểm tra IP (lý do: $reason)")
+        com.example.data.AppLogger.info("VPN", "Check IP ($reason)")
         ipCheckJob?.cancel()
         ipCheckJob = scope.launch(Dispatchers.IO) {
             if (isInGameStreamActive || com.example.cloudplay.NetworkOptimizer.status.value.isLowLatencyStreamActive) {
@@ -3034,15 +3040,12 @@ object VpnManager {
                 lastIpCheckTimestampMs = System.currentTimeMillis()
                 com.example.data.AppLogger.success(
                     "VPN",
-                    "Kiểm tra IP xong: ${result.countryName} (${result.countryCode}) • hỗ trợ xCloud=${result.isXboxSupported}"
+                    "IP ok: ${result.countryCode} (${result.countryName}) xCloud=${result.isXboxSupported}"
                 )
                 updateSmartDecision(result)
             } else {
                 isIpInvalidatedByNetworkChange = false
-                com.example.data.AppLogger.warn(
-                    "VPN",
-                    "Kiểm tra IP thất bại (ngoại tuyến hoặc tất cả nguồn GeoIP không phản hồi)"
-                )
+                com.example.data.AppLogger.warn("VPN", "IP check failed (offline/GeoIP timeout)")
                 val offlineDecision = SmartVpnDecision(
                     checked = true,
                     needsVpn = false,
@@ -3171,7 +3174,7 @@ object VpnManager {
                     persistCustomServers(null, _state.value.customServers, bestInNearestCountry)
                     com.example.data.AppLogger.info(
                         "SmartSelect",
-                        "Tự động đổi máy chủ từ $prevCode sang vùng trong giới hạn khoảng cách (${bestInNearestCountry.countryCode}): ${bestInNearestCountry.name}"
+                        "Auto-switch $prevCode -> ${bestInNearestCountry.countryCode}: ${bestInNearestCountry.name}"
                     )
                 }
             }
@@ -3234,9 +3237,9 @@ object VpnManager {
         val appCtx = context.applicationContext
         if (isIpStaleForLaunch() && !com.example.cloudplay.NetworkOptimizer.status.value.isLowLatencyStreamActive) {
             if (!isIpInvalidatedByNetworkChange) {
-                invalidateIpForNetworkChange("trước khi vào game")
+                invalidateIpForNetworkChange("pre-launch")
             }
-            com.example.data.AppLogger.info("VPN", "[VPN] Kiểm tra IP (lý do: trước khi vào game)")
+            com.example.data.AppLogger.info("VPN", "Check IP (pre-launch)")
             ipCheckJob?.cancel()
             ipCheckJob = scope.launch {
                 val freshGeo = kotlinx.coroutines.withTimeoutOrNull(IP_PRE_LAUNCH_TIMEOUT_MS) {
@@ -3250,14 +3253,14 @@ object VpnManager {
                     lastIpCheckTimestampMs = System.currentTimeMillis()
                     com.example.data.AppLogger.success(
                         "VPN",
-                        "Kiểm tra IP trước khi vào game xong: ${freshGeo.countryName} (${freshGeo.countryCode}) • hỗ trợ xCloud=${freshGeo.isXboxSupported}"
+                        "Pre-launch IP ok: ${freshGeo.countryCode} xCloud=${freshGeo.isXboxSupported}"
                     )
                     updateSmartDecision(freshGeo)
                 } else {
                     isIpInvalidatedByNetworkChange = false
                     com.example.data.AppLogger.warn(
                         "VPN",
-                        "Kiểm tra IP trước khi vào game quá thời hạn (${IP_PRE_LAUNCH_TIMEOUT_MS}ms) -> áp dụng quyết định dự phòng"
+                        "Pre-launch IP timeout (${IP_PRE_LAUNCH_TIMEOUT_MS}ms) -> fallback"
                     )
                 }
                 applyLaunchNetworkDecision(appCtx)
@@ -3372,7 +3375,7 @@ object VpnManager {
         val isEn = com.example.data.SettingsRepository.config.value.isEnglishUI()
         com.example.data.AppLogger.info(
             "VPN",
-            "Bật kết nối (SMART_BYPASS): ${bypassTarget.name} (${bypassTarget.countryCode} • ${bypassTarget.ip}:${bypassTarget.port})"
+            "Connect SMART_BYPASS: ${bypassTarget.name} (${bypassTarget.countryCode} ${bypassTarget.ip}:${bypassTarget.port})"
         )
         _state.value = _state.value.copy(
             engine = VpnEngine.SMART_BYPASS,
@@ -3418,7 +3421,7 @@ object VpnManager {
             )
             com.example.data.AppLogger.success(
                 "VPN",
-                "Đã kích hoạt Smart Bypass: ${bypassTarget.name} (${bypassTarget.countryCode})"
+                "Smart Bypass active: ${bypassTarget.name} (${bypassTarget.countryCode})"
             )
 
             startLatencyMonitoring()
@@ -3442,11 +3445,8 @@ object VpnManager {
             smartVpnPhase = if (needsVpnToPlay()) SmartVpnPhase.IDLE else SmartVpnPhase.DIRECT_SUPPORTED_REGION,
             statusMessage = if (isEn) "Disconnected" else "Đã ngắt kết nối"
         )
-        com.example.data.AppLogger.info(
-            "VPN",
-            "Tắt VPN (${prevSrv.name}): ${prevMode.name} -> ${nextMode.name}"
-        )
-        checkCurrentIp(reason = "VPN bật-tắt", force = true)
+        com.example.data.AppLogger.info("VPN", "Disconnect (${prevSrv.name}): ${prevMode.name} -> ${nextMode.name}")
+        checkCurrentIp(reason = "vpn-toggle", force = true)
     }
 
     /**
@@ -3612,7 +3612,7 @@ object VpnManager {
         )
         com.example.data.AppLogger.success(
             "VPN",
-            "Tự động tắt VPN khi vào trận ($triggerSource) -> chuyển sang Mạng trực tiếp (Direct ISP)"
+            "Auto-disconnect VPN on game launch ($triggerSource) -> Direct ISP"
         )
 
         scope.launch(Dispatchers.IO) {
@@ -3637,7 +3637,7 @@ object VpnManager {
             activeSinglePingServer = null
             com.example.data.AppLogger.warn(
                 "PING",
-                "Hủy đo ping ${prevPingServer.name} (${prevPingServer.countryCode}) (đã chuyển sang ${server.name})"
+                "Cancel ping ${prevPingServer.name} (${prevPingServer.countryCode}) -> ${server.name}"
             )
         }
 
@@ -3660,16 +3660,16 @@ object VpnManager {
         } else {
             recordAutoSelectionMetadata(context ?: appContext)
         }
-        val modeLabel = if (isManualSelection) "Thủ công" else "Tự động"
+        val modeLabel = if (isManualSelection) "manual" else "auto"
         if (oldServer.id != server.id) {
             com.example.data.AppLogger.info(
                 "UI",
-                "Chọn server ($modeLabel): ${oldServer.name} (${oldServer.countryCode}) -> ${server.name} (${server.countryCode} • ${server.ip}:${server.port})"
+                "Server ($modeLabel): ${oldServer.name} (${oldServer.countryCode}) -> ${server.name} (${server.countryCode} ${server.ip}:${server.port})"
             )
         } else {
             com.example.data.AppLogger.info(
                 "UI",
-                "Chọn lại server ($modeLabel): ${server.name} (${server.countryCode} • ${server.ip}:${server.port})"
+                "Server reselect ($modeLabel): ${server.name} (${server.countryCode} ${server.ip}:${server.port})"
             )
         }
         persistCustomServers(context, _state.value.customServers, server)
@@ -3679,10 +3679,7 @@ object VpnManager {
             activeSinglePingServer = server
             activeSingleServerPingJob = scope.launch(Dispatchers.IO) {
                 try {
-                    com.example.data.AppLogger.info(
-                        "PING",
-                        "Đo ping ${server.name} (${server.countryCode}): bắt đầu"
-                    )
+                    com.example.data.AppLogger.info("PING", "Ping ${server.name} (${server.countryCode}): start")
                     val meas = if (server.kind == ServerKind.PROXY) {
                         val hs = PingTester.verifyRealProxyEndpoint(
                             host = server.ip,
@@ -3739,7 +3736,7 @@ object VpnManager {
 
     fun addCustomServer(server: ServerLocation) {
         if (GeoIpDetector.isPrivateOrLoopbackIp(server.ip)) {
-            com.example.data.AppLogger.error("UI", "Từ chối thêm máy chủ có IP nội bộ/loopback: ${server.ip}:${server.port}")
+            com.example.data.AppLogger.error("UI", "Reject private/loopback proxy IP: ${server.ip}:${server.port}")
             return
         }
         val resolvedCc = server.countryCode.trim().uppercase().ifBlank {
@@ -3762,7 +3759,7 @@ object VpnManager {
             unlockFailPromptServer = if (isProxyModeNow) null else _state.value.unlockFailPromptServer
         )
         persistCustomServers(appContext, updated, nextCurrent)
-        com.example.data.AppLogger.success("UI", "Thêm Proxy cá nhân: ${normalizedServer.name} (${normalizedServer.countryCode} • ${normalizedServer.ip}:${normalizedServer.port})")
+        com.example.data.AppLogger.success("UI", "Add custom proxy: ${normalizedServer.name} (${normalizedServer.countryCode} ${normalizedServer.ip}:${normalizedServer.port})")
         preCheckProxyRegion(normalizedServer)
     }
 
@@ -3782,7 +3779,7 @@ object VpnManager {
         }
         _state.value = _state.value.copy(customServers = updated, currentServer = newCurrent)
         persistCustomServers(appContext, updated, newCurrent)
-        com.example.data.AppLogger.info("UI", "Xóa Proxy cá nhân: ${removed?.name ?: serverId}")
+        com.example.data.AppLogger.info("UI", "Remove custom proxy: ${removed?.name ?: serverId}")
     }
 
     /**
@@ -3853,7 +3850,7 @@ object VpnManager {
                     Log.e(TAG, "Failed to clear WebView proxy", e)
                     com.example.data.AppLogger.error(
                         "VPN",
-                        "Không gỡ được Proxy khỏi WebView — ${com.example.data.AppLogger.shortThrowable(e)}"
+                        "Clear WebView proxy err: ${com.example.data.AppLogger.shortThrowable(e)}"
                     )
                 }
             } else {
@@ -3921,15 +3918,15 @@ object VpnManager {
                 activeStreamServerId = null
             )
             if (isIpInvalidatedByNetworkChange) {
-                checkCurrentIp(reason = "mạng đổi", force = true)
+                checkCurrentIp(reason = "net-change", force = true)
             }
         }
         com.example.data.AppLogger.info(
             "STREAM",
             if (active) {
-                "Bắt đầu phiên stream trên máy chủ: ${_state.value.currentServer.name} (Đã tạm dừng cập nhật nền để tối ưu tốc độ giải mã video)"
+                "Stream start: server=${_state.value.currentServer.name} (bg updates paused)"
             } else {
-                "Kết thúc phiên stream"
+                "Stream end"
             }
         )
     }

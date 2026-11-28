@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">IP 입력 → 고급 선택</string>
     <string name="remote_pad_step_3_remote">10자리 숫자 입력</string>
     <string name="remote_pad_bottom_notice_remote">종단간 암호화 10자리 숫자 코드 · 15분 후 만료 · 3회 오류 시 3분 잠금</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">파일 내보내기</string>
+    <string name="log_export_title">로그 파일 내보내기</string>
+    <string name="log_export_subtitle">전체 저장 로그 · 줄 수 제한 없음</string>
+    <string name="log_export_all_btn">전체 내보내기</string>
+    <string name="log_export_all_meta">%1$d개 버전 · %2$d개 세션 · %3$s</string>
+    <string name="log_export_tab_version">버전별</string>
+    <string name="log_export_tab_session">실행별</string>
+    <string name="log_export_version_sessions">%1$d개 세션 · %2$s</string>
+    <string name="log_export_current_badge">현재</string>
+    <string name="log_export_empty">저장된 로그 파일이 없습니다.</string>
+    <string name="log_export_back">로그로 돌아가기</string>
+    <string name="log_export_success">%1$d줄 내보냄 (%2$s)</string>
+    <string name="log_export_failed">로그 파일을 내보내지 못했습니다</string>
+    <string name="log_export_share_title">Ravno 로그 파일 공유</string>
 </resources>

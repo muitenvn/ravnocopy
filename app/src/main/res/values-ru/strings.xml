@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">Нажмите Ввести IP → Доп.</string>
     <string name="remote_pad_step_3_remote">Введите 10 цифр</string>
     <string name="remote_pad_bottom_notice_remote">Зашифрованный 10-значный цифровой код · Истекает через 15 мин · 3 ошибки — блок 3 мин</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">В файл</string>
+    <string name="log_export_title">Экспорт журналов</string>
+    <string name="log_export_subtitle">Полные логи · Без лимита строк</string>
+    <string name="log_export_all_btn">Скачать все логи</string>
+    <string name="log_export_all_meta">%1$d версий · %2$d сессий · %3$s</string>
+    <string name="log_export_tab_version">По версиям</string>
+    <string name="log_export_tab_session">По сессиям</string>
+    <string name="log_export_version_sessions">%1$d сессий · %2$s</string>
+    <string name="log_export_current_badge">Текущая</string>
+    <string name="log_export_empty">Сохранённых файлов журнала пока нет.</string>
+    <string name="log_export_back">Назад к логам</string>
+    <string name="log_export_success">Экспортировано %1$d строк (%2$s)</string>
+    <string name="log_export_failed">Не удалось экспортировать файл лога</string>
+    <string name="log_export_share_title">Поделиться файлом лога Ravno</string>
 </resources>

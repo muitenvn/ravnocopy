@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">Toca Ingresar IP → Avanzado</string>
     <string name="remote_pad_step_3_remote">Escribe el código de 10 dígitos</string>
     <string name="remote_pad_bottom_notice_remote">Código cifrado de 10 dígitos · Caduca en 15 min · 3 errores bloquean 3 min</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">Exportar</string>
+    <string name="log_export_title">Exportar registros</string>
+    <string name="log_export_subtitle">Registros completos · Sin límite</string>
+    <string name="log_export_all_btn">Exportar todo</string>
+    <string name="log_export_all_meta">%1$d versiones · %2$d sesiones · %3$s</string>
+    <string name="log_export_tab_version">Por versión</string>
+    <string name="log_export_tab_session">Por sesión</string>
+    <string name="log_export_version_sessions">%1$d sesiones · %2$s</string>
+    <string name="log_export_current_badge">Actual</string>
+    <string name="log_export_empty">Aún no hay archivos de registro.</string>
+    <string name="log_export_back">Volver a registros</string>
+    <string name="log_export_success">Exportadas %1$d líneas (%2$s)</string>
+    <string name="log_export_failed">No se pudo exportar el registro</string>
+    <string name="log_export_share_title">Compartir registro de Ravno</string>
 </resources>

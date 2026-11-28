@@ -336,18 +336,18 @@ fun CloudBrowserScreen(
             }
 
             if (targetOffset != null && webView.canGoBackOrForward(targetOffset)) {
-                pendingAppNavReason = "bấm Quay trở lại trò chơi (lùi lịch sử $targetOffset bước về ${com.example.data.AppLogger.safeUrlHostPath(historyTargetUrl)})"
+                pendingAppNavReason = "return-history($targetOffset -> ${com.example.data.AppLogger.safeUrlHostPath(historyTargetUrl)})"
                 com.example.data.AppLogger.info(
                     "RESET",
-                    "Quay trở lại trò chơi qua lịch sử WebView: offset=$targetOffset, đích=${com.example.data.AppLogger.safeUrlHostPath(historyTargetUrl)} | chế độ=${config.xboxWebUiMode.name}"
+                    "Return to game (history $targetOffset): ${com.example.data.AppLogger.safeUrlHostPath(historyTargetUrl)} mode=${config.xboxWebUiMode.name}"
                 )
                 webView.goBackOrForward(targetOffset)
             } else {
                 val targetUrl = if (lastXboxUrl.isNotBlank()) lastXboxUrl else initialUrl
-                pendingAppNavReason = "bấm Quay trở lại trò chơi (tải lại lastXboxUrl/initialUrl)"
+                pendingAppNavReason = "return-loadUrl"
                 com.example.data.AppLogger.info(
                     "RESET",
-                    "Quay trở lại trò chơi bằng loadUrl: đích=${com.example.data.AppLogger.safeUrlHostPath(targetUrl)} | chế độ=${config.xboxWebUiMode.name} | nguồn=${if (lastXboxUrl.isNotBlank()) "lastXboxUrl" else "initialUrl"}"
+                    "Return to game (loadUrl): ${com.example.data.AppLogger.safeUrlHostPath(targetUrl)} mode=${config.xboxWebUiMode.name} src=${if (lastXboxUrl.isNotBlank()) "lastXboxUrl" else "initialUrl"}"
                 )
                 webView.loadUrl(targetUrl)
             }
@@ -464,25 +464,25 @@ fun CloudBrowserScreen(
             val decisionSource = when {
                 oldHost in listOf("www.xbox.com", "xbox.com") && newHost == "play.xbox.com" &&
                     config.xboxWebUiMode == com.example.data.XboxWebUiMode.CLASSIC -> {
-                    "Xbox tự chuyển hướng máy chủ/JS (www.xbox.com -> play.xbox.com dù setting=CLASSIC; sự kiện=$callbackSource)"
+                    "xbox-redirect($callbackSource)"
                 }
                 oldHost == "play.xbox.com" && newHost in listOf("www.xbox.com", "xbox.com") -> {
                     if (config.xboxWebUiMode != com.example.data.XboxWebUiMode.CLASSIC) {
                         SettingsRepository.updateXboxWebUiMode(com.example.data.XboxWebUiMode.CLASSIC)
                     }
-                    "Chuyển từ play.xbox.com về www.xbox.com (${appReason ?: "Xbox Exit preview / chuyển hướng"}; sự kiện=$callbackSource)"
+                    "to-classic(${appReason ?: "exit-preview"} $callbackSource)"
                 }
                 appReason != null -> {
-                    "App điều hướng ($appReason; sự kiện=$callbackSource)"
+                    "app($appReason $callbackSource)"
                 }
                 else -> {
-                    "Điều hướng web ($callbackSource)"
+                    "web($callbackSource)"
                 }
             }
             pendingAppNavReason = null
             com.example.data.AppLogger.info(
                 "WEB-UI",
-                "Điều hướng chính: ${oldSafePath.ifBlank { "(khởi tạo)" }} -> $newSafePath | cài đặt=${config.xboxWebUiMode.name} | ua=$uaMode | thực tế=$actualSurface | nguồn=$decisionSource"
+                "Nav: ${oldSafePath.ifBlank { "(init)" }} -> $newSafePath | cfg=${config.xboxWebUiMode.name} ua=$uaMode actual=$actualSurface src=$decisionSource"
             )
         }
 
@@ -506,7 +506,7 @@ fun CloudBrowserScreen(
                     dismissedAtWebMarket = detectedMkt
                     com.example.data.AppLogger.info(
                         "WEB-UI",
-                        "Xbox đổi sang thị trường khác ($prevMkt -> $detectedMkt) sau khi tắt nhắc nhở -> hiện lại thanh nhắc giao diện mới"
+                        "Market changed ($prevMkt -> $detectedMkt) -> re-show New UI banner"
                     )
                 }
             }
@@ -530,7 +530,7 @@ fun CloudBrowserScreen(
                 val uaMode = if (config.forceDesktopUserAgent) "desktop" else "mobile"
                 com.example.data.AppLogger.info(
                     "WEB-UI",
-                    "Giữ nguyên lastXboxUrl ở CLASSIC ($prevLastSafe), bỏ qua ghi đè từ redirect giao diện mới: $newSafePath (ua=$uaMode)"
+                    "Keep CLASSIC lastXboxUrl ($prevLastSafe), ignore preview redirect: $newSafePath (ua=$uaMode)"
                 )
             }
             val isLaunchUrl = targetUrl.contains("/play/launch/", ignoreCase = true) ||
@@ -576,7 +576,7 @@ fun CloudBrowserScreen(
                     )
                     com.example.data.AppLogger.warn(
                         "WEB-UI",
-                        "Xbox đẩy ngược về play.xbox.com lần thứ $consecutiveClassicBounceCount liên tiếp (game=$gameKey) -> DỪNG tự thử lại và hiện nhắc nhở"
+                        "Bounce to play.xbox.com #$consecutiveClassicBounceCount (game=$gameKey) -> stop retry, show banner"
                     )
                 } else if (config.autoExitPreviewHandlerEnabled &&
                     !classicBounceLoopStopped &&
@@ -587,12 +587,12 @@ fun CloudBrowserScreen(
                     val retryClassicUrl = resolveTargetGameClassicUrl()
                     isAwaitingOrOnClassicSurface = true
                     lastClassicSwitchElapsedMs = nowElapsed
-                    pendingAppNavReason = "thử lại lần 2 sau khi Xbox đẩy ngược về play.xbox.com (game=$gameKey)"
+                    pendingAppNavReason = "retry-classic-2(game=$gameKey)"
                     lastXboxUrl = retryClassicUrl
                     currentMainFrameUrl = retryClassicUrl
                     com.example.data.AppLogger.info(
                         "WEB-UI",
-                        "Xbox đẩy ngược về play.xbox.com lần 1 (game=$gameKey) -> thử chuyển lại Giao diện cũ thêm 1 lần: ${com.example.data.AppLogger.safeUrlHostPath(retryClassicUrl)}"
+                        "Bounce to play.xbox.com #1 (game=$gameKey) -> retry Classic once: ${com.example.data.AppLogger.safeUrlHostPath(retryClassicUrl)}"
                     )
                     webViewInstance?.post {
                         if (!classicBounceLoopStopped) {
@@ -649,7 +649,7 @@ fun CloudBrowserScreen(
         currentMainFrameUrl = targetClassicUrl
         com.example.data.AppLogger.info(
             "WEB-UI",
-            "Chuyển từ Giao diện mới sang Giao diện cũ ($reason): đích=${com.example.data.AppLogger.safeUrlHostPath(targetClassicUrl)}"
+            "Switch New -> Classic ($reason): ${com.example.data.AppLogger.safeUrlHostPath(targetClassicUrl)}"
         )
         val wv = webViewInstance
         if (wv != null) {
@@ -697,7 +697,7 @@ fun CloudBrowserScreen(
 
         com.example.data.AppLogger.info(
             "WEB-UI",
-            "Tự động cắt phiên play.xbox.com & chuyển sang Giao diện cũ: đích=${com.example.data.AppLogger.safeUrlHostPath(targetClassicUrl)} | nguồn=$triggerReason | autoExit=${config.autoExitPreviewHandlerEnabled}"
+            "Commit exit-preview -> Classic: ${com.example.data.AppLogger.safeUrlHostPath(targetClassicUrl)} (src=$triggerReason autoExit=${config.autoExitPreviewHandlerEnabled})"
         )
 
         try {
@@ -715,7 +715,7 @@ fun CloudBrowserScreen(
         currentMainFrameUrl = targetClassicUrl
         activeSessionInitialUrl = targetClassicUrl
         suppressLoadingOverlayAfterExitPreview = true
-        pendingAppNavReason = "chuyển sang Giao diện cũ sau Exit preview ($triggerReason)"
+        pendingAppNavReason = "exit-preview-classic($triggerReason)"
         webViewSessionKey += 1
     }
 
@@ -737,10 +737,10 @@ fun CloudBrowserScreen(
                 )
                 com.example.data.AppLogger.info(
                     "WEB-UI",
-                    "LaunchedEffect(xboxWebUiMode): ${prevMode.name} -> ${config.xboxWebUiMode.name} | ua=$uaMode | cur=${com.example.data.AppLogger.safeUrlHostPath(curUrl)} -> adapted=${com.example.data.AppLogger.safeUrlHostPath(adapted)}"
+                    "UI mode change: ${prevMode.name} -> ${config.xboxWebUiMode.name} ua=$uaMode ${com.example.data.AppLogger.safeUrlHostPath(curUrl)} -> ${com.example.data.AppLogger.safeUrlHostPath(adapted)}"
                 )
                 if (adapted.isNotBlank() && !adapted.equals(curUrl, ignoreCase = true)) {
-                    pendingAppNavReason = "LaunchedEffect đổi cài đặt giao diện (${prevMode.name} -> ${config.xboxWebUiMode.name})"
+                    pendingAppNavReason = "mode-change(${prevMode.name}->${config.xboxWebUiMode.name})"
                     wv.loadUrl(adapted)
                 }
             }
@@ -775,13 +775,13 @@ fun CloudBrowserScreen(
                 (activity as? com.example.MainActivity)?.lockLandscapeOrientation()
                 com.example.data.AppLogger.info(
                     "UI",
-                    "Đang trong game (stream=${streamUiState.isStreamConnected}, autoBypass=${streamUiState.autoBypassTriggered}) -> khóa cứng màn hình ngang"
+                    "In-game (stream=${streamUiState.isStreamConnected} autoBypass=${streamUiState.autoBypassTriggered}) -> lock landscape"
                 )
             }
         } else {
             if (!isTvMode && !isRealTvHardware) {
                 (activity as? com.example.MainActivity)?.resetOrientation()
-                com.example.data.AppLogger.info("UI", "Ngoài luồng game -> mở khóa xoay màn hình tự do")
+                com.example.data.AppLogger.info("UI", "Not in-game -> unlock orientation")
             }
         }
     }
@@ -1184,7 +1184,7 @@ fun CloudBrowserScreen(
                                 val uaLabel = if (isDesktopUa) "desktop" else "mobile"
                                 com.example.data.AppLogger.info(
                                     "TOUCH",
-                                    "WebView nhận chạm vùng đầu trang: px=($pxX,$pxY)/${w}x${h} | handled=$handled | ua=$uaLabel | url=$curUrlSafe"
+                                    "Top touch: ($pxX,$pxY)/${w}x${h} handled=$handled ua=$uaLabel url=$curUrlSafe"
                                 )
                                 val relX = (event.x / w.toFloat()).coerceIn(0f, 1f)
                                 val relY = (event.y / h.toFloat()).coerceIn(0f, 1f)
@@ -1241,7 +1241,7 @@ fun CloudBrowserScreen(
                                         """.trimIndent()
                                         this.evaluateJavascript(probeJs) { jsRes ->
                                             val cleanRes = jsRes?.trim()?.removeSurrounding("\"")?.replace("\\\"", "\"") ?: "null"
-                                            com.example.data.AppLogger.info("TOUCH", "Kiểm tra DOM vùng chạm (+180ms): $cleanRes")
+                                            com.example.data.AppLogger.info("TOUCH", "Touch DOM (+180ms): $cleanRes")
                                         }
                                     } catch (_: Exception) {}
                                 }, 180L)
@@ -1343,7 +1343,7 @@ fun CloudBrowserScreen(
                             if (!SettingsRepository.config.value.autoExitPreviewHandlerEnabled) {
                                 com.example.data.AppLogger.info(
                                     "WEB-UI",
-                                    "Ghi nhận game đang xem trước khi thoát xem trước thủ công (autoExitPreview=OFF): savedGame=${com.example.data.AppLogger.safeUrlHostPath(exitPreviewSavedGameUrl)}, title=$exitPreviewSavedGameTitle"
+                                    "Saved game before manual exit-preview (autoExit=OFF): ${com.example.data.AppLogger.safeUrlHostPath(exitPreviewSavedGameUrl)} title=$exitPreviewSavedGameTitle"
                                 )
                             }
                             return@setExitPreviewSignalListener
@@ -1366,7 +1366,7 @@ fun CloudBrowserScreen(
                                 captureActiveGameContext()
                                 com.example.data.AppLogger.info(
                                     "WEB-UI",
-                                    "Người dùng bấm Thoát khỏi chế độ xem trước (Exit preview) trên play.xbox.com -> chờ đóng hộp thoại & hoàn tất opt-out (autoExit=${SettingsRepository.config.value.autoExitPreviewHandlerEnabled}, savedGame=${com.example.data.AppLogger.safeUrlHostPath(exitPreviewSavedGameUrl)}, title=$exitPreviewSavedGameTitle)"
+                                    "Exit preview clicked -> waiting opt-out (autoExit=${SettingsRepository.config.value.autoExitPreviewHandlerEnabled} game=${com.example.data.AppLogger.safeUrlHostPath(exitPreviewSavedGameUrl)})"
                                 )
                             }
                             "EXIT_PREVIEW_OPT_OUT_STARTED" -> {
@@ -1377,14 +1377,14 @@ fun CloudBrowserScreen(
                                 }
                                 com.example.data.AppLogger.info(
                                     "WEB-UI",
-                                    "Đã đóng/xác nhận hộp thoại Thoát xem trước -> đang chờ vòng xoay Xbox lưu xong trạng thái opt-out (~3.6s)"
+                                    "Exit preview confirmed -> awaiting Xbox opt-out (~3.6s)"
                                 )
                             }
                             "EXIT_PREVIEW_COMMIT" -> {
                                 if (exitPreviewSavedGameUrl.isBlank() || payloadUrl.isNotBlank()) {
                                     captureActiveGameContext()
                                 }
-                                commitExitPreviewToClassicUi("EXIT_PREVIEW_COMMIT từ XboxBridge (Giai đoạn 2 Skeleton)")
+                                commitExitPreviewToClassicUi("EXIT_PREVIEW_COMMIT(bridge)")
                             }
                         }
                     }
@@ -1409,12 +1409,12 @@ fun CloudBrowserScreen(
                                 )
                             )
                             hasDocumentStartScript = true
-                            com.example.data.AppLogger.info("WEBVIEW", "Đăng ký script DOCUMENT_START cho tên miền Xbox")
+                            com.example.data.AppLogger.info("WEBVIEW", "Registered DOCUMENT_START script")
                         } catch (e: Exception) {
                             android.util.Log.w("CloudBrowser", "Document start script not supported", e)
                             com.example.data.AppLogger.warn(
                                 "WEBVIEW",
-                                "Thiết bị không hỗ trợ DOCUMENT_START_SCRIPT, dùng dự phòng tiêm ở onPageStarted (${com.example.data.AppLogger.shortThrowable(e)})"
+                                "DOCUMENT_START unsupported, fallback onPageStarted: ${com.example.data.AppLogger.shortThrowable(e)}"
                             )
                         }
                     }
@@ -1434,7 +1434,7 @@ fun CloudBrowserScreen(
                                 val isMigrateStep = url.contains("/migrate", ignoreCase = true)
                                 // Chỉ cho phép cắt dự phòng sau >= 3800ms để không làm đứt Giai đoạn 1 (vòng xoay lưu opt-out ~3.2s)
                                 if (optElapsed in 3800L..16000L && !isMigrateStep) {
-                                    commitExitPreviewToClassicUi("onPageStarted sau opt-out (${com.example.data.AppLogger.safeUrlHostPath(url)})")
+                                    commitExitPreviewToClassicUi("onPageStarted(${com.example.data.AppLogger.safeUrlHostPath(url)})")
                                     return
                                 }
                             }
@@ -1453,7 +1453,7 @@ fun CloudBrowserScreen(
                                 val safeHp = com.example.data.AppLogger.safeUrlHostPath(url)
                                 if (safeHp != lastLoggedScriptInjectedHostPath) {
                                     lastLoggedScriptInjectedHostPath = safeHp
-                                    com.example.data.AppLogger.info("WEBVIEW", "Tiêm script tối ưu vào trang: $safeHp")
+                                    com.example.data.AppLogger.info("WEBVIEW", "Inject script: $safeHp")
                                 }
                             }
                         }
@@ -1468,7 +1468,7 @@ fun CloudBrowserScreen(
                                 val safeHp = com.example.data.AppLogger.safeUrlHostPath(url)
                                 if (safeHp != lastLoggedScriptInjectedHostPath) {
                                     lastLoggedScriptInjectedHostPath = safeHp
-                                    com.example.data.AppLogger.info("WEBVIEW", "Tiêm script tối ưu (onPageCommitVisible): $safeHp")
+                                    com.example.data.AppLogger.info("WEBVIEW", "Inject script (commit): $safeHp")
                                 }
                             }
                         }
@@ -1487,7 +1487,7 @@ fun CloudBrowserScreen(
                                 val safeHp = com.example.data.AppLogger.safeUrlHostPath(url)
                                 if (safeHp != lastLoggedScriptInjectedHostPath) {
                                     lastLoggedScriptInjectedHostPath = safeHp
-                                    com.example.data.AppLogger.info("WEBVIEW", "Tiêm script tối ưu (onPageFinished): $safeHp")
+                                    com.example.data.AppLogger.info("WEBVIEW", "Inject script (finish): $safeHp")
                                 }
                             }
                         }
@@ -1503,7 +1503,7 @@ fun CloudBrowserScreen(
                                     val optElapsed = android.os.SystemClock.elapsedRealtime() - exitPreviewOptOutStartedAtMs
                                     val isMigrateStep = targetUrl.contains("/migrate", ignoreCase = true)
                                     if (optElapsed in 3800L..16000L && !isMigrateStep) {
-                                        commitExitPreviewToClassicUi("shouldOverride sau opt-out (${com.example.data.AppLogger.safeUrlHostPath(targetUrl)})")
+                                        commitExitPreviewToClassicUi("shouldOverride(${com.example.data.AppLogger.safeUrlHostPath(targetUrl)})")
                                         return true
                                     }
                                 }
@@ -1532,7 +1532,7 @@ fun CloudBrowserScreen(
                                         exitPreviewOptOutStartedAtMs = 0L
                                         exitPreviewSavedGameUrl = ""
                                         exitPreviewSavedGameTitle = ""
-                                        pendingAppNavReason = "chuyển thẳng vào trang game Giao diện cũ khi rời play.xbox.com"
+                                        pendingAppNavReason = "redirect-game-classic"
                                         lastXboxUrl = directClassicGameUrl
                                         currentMainFrameUrl = directClassicGameUrl
                                         view?.loadUrl(directClassicGameUrl)
@@ -1562,7 +1562,7 @@ fun CloudBrowserScreen(
                                 val optElapsed = android.os.SystemClock.elapsedRealtime() - exitPreviewOptOutStartedAtMs
                                 val isMigrateStep = url.contains("/migrate", ignoreCase = true)
                                 if (optElapsed in 3800L..16000L && !isMigrateStep) {
-                                    commitExitPreviewToClassicUi("historyUpdate sau opt-out (${com.example.data.AppLogger.safeUrlHostPath(url)})")
+                                    commitExitPreviewToClassicUi("historyUpdate(${com.example.data.AppLogger.safeUrlHostPath(url)})")
                                     return
                                 }
                             }
@@ -1578,7 +1578,7 @@ fun CloudBrowserScreen(
                             android.util.Log.w("CloudBrowser", "Render process fallback handled gracefully: didCrash=$didCrash")
                             com.example.data.AppLogger.error(
                                 "WEBVIEW",
-                                "Tiến trình dựng hình WebView bị dừng bất ngờ (didCrash=$didCrash)"
+                                "Renderer gone (didCrash=$didCrash)"
                             )
                             return true
                         }
@@ -1592,7 +1592,7 @@ fun CloudBrowserScreen(
                                 android.util.Log.w("CloudBrowser", "Page error: $desc")
                                 com.example.data.AppLogger.error(
                                     "WEBVIEW",
-                                    "Lỗi tải trang chính ($safeHp): mã=$code, lý do=$desc"
+                                    "Page err ($safeHp): code=$code desc=$desc"
                                 )
                                 val isProxyErr = desc.contains("ERR_PROXY", ignoreCase = true) ||
                                     desc.contains("ERR_TUNNEL", ignoreCase = true)
@@ -1619,7 +1619,7 @@ fun CloudBrowserScreen(
                                 val safeHp = com.example.data.AppLogger.safeUrlHostPath(reqUrl)
                                 com.example.data.AppLogger.error(
                                     "WEBVIEW",
-                                    "Lỗi HTTP $statusCode khi tải ${if (isMainFrame) "trang chính" else "API phiên chơi"} ($safeHp)"
+                                    "HTTP $statusCode (${if (isMainFrame) "main" else "session-api"}): $safeHp"
                                 )
                             }
                         }
@@ -1634,7 +1634,7 @@ fun CloudBrowserScreen(
                             val errCode = error?.primaryError ?: -1
                             com.example.data.AppLogger.error(
                                 "WEBVIEW",
-                                "Từ chối chứng chỉ SSL không hợp lệ ($safeUrl, code=$errCode)"
+                                "SSL cert rejected ($safeUrl code=$errCode)"
                             )
                         }
                     }
@@ -1669,7 +1669,7 @@ fun CloudBrowserScreen(
                                     val cleanMsg = com.example.data.AppLogger.sanitizeMessage(rawMsg).take(220)
                                     com.example.data.AppLogger.warn(
                                         "WEB-UI",
-                                        "Lỗi JS trên trang ($srcSafe:${consoleMessage.lineNumber()}): $cleanMsg"
+                                        "JS err ($srcSafe:${consoleMessage.lineNumber()}): $cleanMsg"
                                     )
                                 }
                             }
@@ -1704,11 +1704,11 @@ fun CloudBrowserScreen(
                     )
                     val initUaMode = if (config.forceDesktopUserAgent) "desktop" else "mobile"
                     if (pendingAppNavReason == null) {
-                        pendingAppNavReason = "khởi tạo WebView (initialUrl=${com.example.data.AppLogger.safeUrlHostPath(activeSessionInitialUrl)}, chế độ=${config.xboxWebUiMode.name}, ua=$initUaMode)"
+                        pendingAppNavReason = "init(${com.example.data.AppLogger.safeUrlHostPath(activeSessionInitialUrl)} mode=${config.xboxWebUiMode.name} ua=$initUaMode)"
                     }
                     com.example.data.AppLogger.info(
                         "WEB-UI",
-                        "Khởi tạo WebView (phiên #$webViewSessionKey): initialUrl=${com.example.data.AppLogger.safeUrlHostPath(activeSessionInitialUrl)} -> formatted=${com.example.data.AppLogger.safeUrlHostPath(formattedInitialUrl)} | chế độ=${config.xboxWebUiMode.name} | ua=$initUaMode | thị trường=$effectiveLocale"
+                        "Init WebView (#$webViewSessionKey): ${com.example.data.AppLogger.safeUrlHostPath(formattedInitialUrl)} mode=${config.xboxWebUiMode.name} ua=$initUaMode mkt=$effectiveLocale"
                     )
                     VpnManager.ensureWebViewProxyCleanIfNotProxyEngine()
                     loadUrl(formattedInitialUrl, customHeaders)
@@ -1727,7 +1727,7 @@ fun CloudBrowserScreen(
                         view.settings.userAgentString = desiredUa
                         com.example.data.AppLogger.info(
                             "WEB-UI",
-                            "Cập nhật User-Agent của WebView đang chạy: ua=${if (wantDesktopUa) "desktop" else "mobile"} | chế độ=${config.xboxWebUiMode.name}"
+                            "Update WebView UA: ua=${if (wantDesktopUa) "desktop" else "mobile"} mode=${config.xboxWebUiMode.name}"
                         )
                     }
                 }
@@ -1841,10 +1841,10 @@ fun CloudBrowserScreen(
                             VpnManager.dismissUnlockFailPrompt()
                             val baseForReset = currentMainFrameUrl.ifBlank { initialUrl }
                             val enUsUrl = SettingsRepository.formatXboxUrlWithLocale(baseForReset, "en-US")
-                            pendingAppNavReason = "bấm Quay về thị trường en-US trên biểu ngữ"
+                            pendingAppNavReason = "banner-reset-en-US"
                             com.example.data.AppLogger.info(
                                 "RESET",
-                                "Đặt lại thị trường Xbox về en-US: từ=${com.example.data.AppLogger.safeUrlHostPath(baseForReset)} -> đích=${com.example.data.AppLogger.safeUrlHostPath(enUsUrl)} | chế độ=${config.xboxWebUiMode.name}"
+                                "Reset market -> en-US: ${com.example.data.AppLogger.safeUrlHostPath(baseForReset)} -> ${com.example.data.AppLogger.safeUrlHostPath(enUsUrl)} mode=${config.xboxWebUiMode.name}"
                             )
                             webViewInstance?.loadUrl(enUsUrl)
                         },
@@ -1884,7 +1884,7 @@ fun CloudBrowserScreen(
                     isClassicBounceBannerDismissed = true
                     classicBounceLoopStopped = false
                     consecutiveClassicBounceCount = 1
-                    switchWebViewToClassicUi("người dùng bấm Thử lại trên thanh nhắc giao diện cũ")
+                    switchWebViewToClassicUi("banner-retry")
                 },
                 onContinueNewUi = {
                     isClassicBounceBannerDismissed = true
@@ -1892,17 +1892,14 @@ fun CloudBrowserScreen(
                     consecutiveClassicBounceCount = 0
                     lastAppliedUiMode = com.example.data.XboxWebUiMode.NEW_UI
                     SettingsRepository.updateXboxWebUiMode(com.example.data.XboxWebUiMode.NEW_UI)
-                    com.example.data.AppLogger.info(
-                        "WEB-UI",
-                        "Người dùng chọn tiếp tục dùng Giao diện mới (play.xbox.com) từ thanh nhắc"
-                    )
+                    com.example.data.AppLogger.info("WEB-UI", "Banner: keep New UI")
                 },
                 onDismiss = {
                     isClassicBounceBannerDismissed = true
                     dismissedAtWebMarket = lastSeenWebMarketLocale
                     com.example.data.AppLogger.info(
                         "WEB-UI",
-                        "Người dùng tắt thanh nhắc giao diện mới cho lần chuyển hướng hiện tại (thị trường=${lastSeenWebMarketLocale.ifBlank { "default" }})"
+                        "Banner: dismiss New UI prompt (mkt=${lastSeenWebMarketLocale.ifBlank { "default" }})"
                     )
                 },
                 modifier = Modifier
@@ -2060,16 +2057,16 @@ fun CloudBrowserScreen(
                 }
             },
             onOpenSettings = {
-                com.example.data.AppLogger.info("UI", "Mở bảng Tùy chỉnh nhanh Hiển thị & Điều khiển trong game")
+                com.example.data.AppLogger.info("UI", "Open Quick Settings")
                 showQuickSettingsDialog = true
             },
             onNavigateHome = onNavigateBackToDashboard,
             onReloadPage = {
                 val curWvUrl = webViewInstance?.url ?: currentMainFrameUrl
-                pendingAppNavReason = "bấm Tải lại trang từ HUD (reload trực tiếp URL hiện tại)"
+                pendingAppNavReason = "hud-reload"
                 com.example.data.AppLogger.info(
                     "RESET",
-                    "Tải lại trang WebView từ HUD: urlHiệnTại=${com.example.data.AppLogger.safeUrlHostPath(curWvUrl)} | chế độ=${config.xboxWebUiMode.name} | nguồn=webView.reload()"
+                    "HUD reload: ${com.example.data.AppLogger.safeUrlHostPath(curWvUrl)} mode=${config.xboxWebUiMode.name}"
                 )
                 webViewInstance?.reload()
             },
@@ -2107,15 +2104,15 @@ fun CloudBrowserScreen(
             onToggleWifiSpeedFirst = { enabled -> SettingsRepository.updateWifiSpeedFirstPriority(enabled) },
             gameProfile = gameProfile,
             onOpenTranslator = {
-                com.example.data.AppLogger.info("UI", "Mở hộp thoại Dịch tự động từ HUD trong game")
+                com.example.data.AppLogger.info("UI", "Open Translator (HUD)")
                 showTranslatorDialog = true
             },
             onToggleOrientation = {
                 if (isInActiveGameStream && !isRealTvHardware) {
-                    com.example.data.AppLogger.info("UI", "Đang trong game -> đảo chiều khóa cứng màn hình ngang từ HUD")
+                    com.example.data.AppLogger.info("UI", "HUD flip landscape side")
                     (activity as? com.example.MainActivity)?.flipLockedLandscapeSide()
                 } else {
-                    com.example.data.AppLogger.info("UI", "Bấm Xoay ngang/dọc màn hình từ HUD")
+                    com.example.data.AppLogger.info("UI", "HUD toggle orientation")
                     (activity as? com.example.MainActivity)?.toggleOrientation()
                 }
             },
@@ -2148,10 +2145,10 @@ fun CloudBrowserScreen(
                         effectiveLocale,
                         uiMode
                     )
-                    pendingAppNavReason = "chuyển nhanh sang Giao diện mới (NEW_UI) từ HUD"
+                    pendingAppNavReason = "hud-new-ui"
                     com.example.data.AppLogger.info(
                         "WEB-UI",
-                        "Chuyển nhanh Giao diện web Xbox: chế độ=${uiMode.name} | từ=${com.example.data.AppLogger.safeUrlHostPath(rawCur)} -> đích=${com.example.data.AppLogger.safeUrlHostPath(target)}"
+                        "Quick UI switch: mode=${uiMode.name} ${com.example.data.AppLogger.safeUrlHostPath(rawCur)} -> ${com.example.data.AppLogger.safeUrlHostPath(target)}"
                     )
                     webViewInstance?.loadUrl(target)
                 }
@@ -2252,17 +2249,17 @@ fun CloudBrowserScreen(
                     val rawCur = webViewInstance?.url ?: currentMainFrameUrl.ifBlank { lastXboxUrl }
                     SettingsRepository.updateXboxWebUiMode(uiMode)
                     if (uiMode == com.example.data.XboxWebUiMode.CLASSIC) {
-                        switchWebViewToClassicUi("bấm chọn Giao diện cũ (CLASSIC) trong Cài đặt nhanh")
+                        switchWebViewToClassicUi("quick-settings-classic")
                     } else {
                         val target = SettingsRepository.formatXboxUrlWithLocale(
                             rawCur,
                             effectiveLocale,
                             uiMode
                         )
-                        pendingAppNavReason = "bấm chọn Giao diện mới (NEW_UI) trong Cài đặt nhanh"
+                        pendingAppNavReason = "quick-settings-new-ui"
                         com.example.data.AppLogger.info(
                             "WEB-UI",
-                            "Chọn nhanh Giao diện web Xbox trong HUD: chế độ=${uiMode.name} | từ=${com.example.data.AppLogger.safeUrlHostPath(rawCur)} -> đích=${com.example.data.AppLogger.safeUrlHostPath(target)}"
+                            "HUD UI switch: mode=${uiMode.name} ${com.example.data.AppLogger.safeUrlHostPath(rawCur)} -> ${com.example.data.AppLogger.safeUrlHostPath(target)}"
                         )
                         webViewInstance?.loadUrl(target)
                     }
@@ -2275,7 +2272,7 @@ fun CloudBrowserScreen(
                     com.example.cloudplay.ZeroLagScreenRecorder.toggleRecording(context, webViewInstance)
                 },
                 onDismiss = {
-                    com.example.data.AppLogger.info("UI", "Đóng bảng Tùy chỉnh nhanh Hiển thị & Điều khiển trong game")
+                    com.example.data.AppLogger.info("UI", "Close Quick Settings")
                     showQuickSettingsDialog = false
                 }
             )

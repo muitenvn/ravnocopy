@@ -314,10 +314,9 @@ class StreamController(private val context: Context) {
         if (ping > 0) {
             sessionPingSum += ping
             sessionPingCount += 1
-            if (sessionPingSamples.size >= 60) {
-                sessionPingSamples.removeAt(0)
+            if (sessionPingSamples.size < 3600) {
+                sessionPingSamples.add(ping)
             }
-            sessionPingSamples.add(ping)
         }
         if (t.fps > 0) {
             sessionFpsSum += t.fps
@@ -419,7 +418,7 @@ class StreamController(private val context: Context) {
         }
         val avgJbDelay = ((rawAvgJbDelay * 10.0).toInt()) / 10.0
         val samplesSnapshot = if (sessionPingSamples.isNotEmpty()) {
-            sessionPingSamples.takeLast(60)
+            downsamplePingTimeline(sessionPingSamples, maxPoints = 60)
         } else if (avgPing > 0) {
             listOf(avgPing)
         } else {
@@ -450,7 +449,7 @@ class StreamController(private val context: Context) {
             avgPingMs = avgPing,
             avgFps = avgFps,
             avgDecodeMs = avgDecode,
-            isSlowDecode = avgDecode > 18.0,
+            isSlowDecode = avgDecode > 12.0,
             isThermalHot = sessionThermalHot,
             pingSamples = samplesSnapshot,
             framesDropped = sessionMaxFramesDropped,
@@ -462,6 +461,50 @@ class StreamController(private val context: Context) {
             framesDecoded = sessionMaxFramesDecoded
         )
         com.example.data.SessionHistoryRepository.recordSession(record)
+    }
+
+    internal fun downsamplePingTimeline(samples: List<Int>, maxPoints: Int = 60): List<Int> {
+        if (samples.size <= maxPoints) return samples.toList()
+        if (maxPoints <= 2) {
+            return listOf(samples.minOrNull() ?: samples.first(), samples.maxOrNull() ?: samples.last())
+        }
+        val result = MutableList(maxPoints) { 0 }
+        val bucketSize = samples.size.toDouble() / maxPoints.toDouble()
+        var minIdx = 0
+        var maxIdx = 0
+        var globalMin = Int.MAX_VALUE
+        var globalMax = Int.MIN_VALUE
+        for (i in samples.indices) {
+            val v = samples[i]
+            if (v < globalMin) {
+                globalMin = v
+                minIdx = i
+            }
+            if (v > globalMax) {
+                globalMax = v
+                maxIdx = i
+            }
+        }
+        for (b in 0 until maxPoints) {
+            val start = (b * bucketSize).toInt().coerceIn(0, samples.lastIndex)
+            val endExclusive = ((b + 1) * bucketSize).toInt().coerceIn(start + 1, samples.size)
+            var sum = 0L
+            for (i in start until endExclusive) {
+                sum += samples[i]
+            }
+            result[b] = (sum / (endExclusive - start)).toInt()
+        }
+        val minBucket = (minIdx / bucketSize).toInt().coerceIn(0, maxPoints - 1)
+        val maxBucket = (maxIdx / bucketSize).toInt().coerceIn(0, maxPoints - 1)
+        if (minBucket != maxBucket) {
+            result[minBucket] = globalMin
+            result[maxBucket] = globalMax
+        } else {
+            result[minBucket] = globalMin
+            val altBucket = if (maxBucket + 1 < maxPoints) maxBucket + 1 else (maxBucket - 1).coerceAtLeast(0)
+            result[altBucket] = globalMax
+        }
+        return result
     }
 
     fun onUrlChanged(url: String) {

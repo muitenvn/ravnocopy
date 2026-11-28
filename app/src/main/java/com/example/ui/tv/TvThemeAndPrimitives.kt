@@ -459,7 +459,7 @@ internal fun TvLeftNavigationRail(
                         }
                     },
                     onClick = {
-                        com.example.data.AppLogger.info("UI", "Chuyển nhanh về Giao diện Điện thoại từ thanh điều hướng TV")
+                        com.example.data.AppLogger.info("UI", "TV rail: Switch to Phone UI")
                         com.example.data.SettingsRepository.updateAppUiMode(com.example.data.AppUiMode.PHONE)
                     }
                 )

@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">Chọn Nhập IP → Nâng cao</string>
     <string name="remote_pad_step_3_remote">Nhập mã 10 số</string>
     <string name="remote_pad_bottom_notice_remote">Mã 10 chữ số mã hóa hai đầu · Tự hết hạn sau 15 phút · Sai 3 lần khóa 3 phút</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">Xuất file</string>
+    <string name="log_export_title">Xuất file nhật ký</string>
+    <string name="log_export_subtitle">Đầy đủ log đã lưu · Không giới hạn dòng</string>
+    <string name="log_export_all_btn">Tải hết tất cả</string>
+    <string name="log_export_all_meta">%1$d phiên bản · %2$d phiên mở · %3$s</string>
+    <string name="log_export_tab_version">Theo phiên bản</string>
+    <string name="log_export_tab_session">Theo phiên mở</string>
+    <string name="log_export_version_sessions">%1$d phiên mở · %2$s</string>
+    <string name="log_export_current_badge">Hiện tại</string>
+    <string name="log_export_empty">Chưa có file nhật ký nào được lưu.</string>
+    <string name="log_export_back">Quay lại log</string>
+    <string name="log_export_success">Đã xuất %1$d dòng (%2$s)</string>
+    <string name="log_export_failed">Không thể xuất file nhật ký</string>
+    <string name="log_export_share_title">Chia sẻ file nhật ký Ravno</string>
 </resources>

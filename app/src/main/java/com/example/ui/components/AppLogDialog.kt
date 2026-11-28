@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,8 +26,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -44,9 +47,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import com.example.R
 import com.example.data.AppLogLevel
 import com.example.data.AppLogger
 import com.example.data.PerformanceMonitor
@@ -60,7 +65,6 @@ import com.example.ui.theme.WarningAmber
 import com.example.ui.theme.XboxCardBorder
 import com.example.ui.theme.XboxNeonGreen
 import com.example.ui.theme.XboxSurface
-import com.example.ui.theme.XboxSurfaceVariant
 import com.example.vpn.VpnManager
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -72,6 +76,11 @@ fun AppLogDialog(
     val context = LocalContext.current
     val logs by AppLogger.logs.collectAsState()
     var selectedFilter by remember { mutableStateOf("ALL") }
+    var showExportMode by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = showExportMode) {
+        showExportMode = false
+    }
 
     val (errorCount, warnCount) = remember(logs) {
         var errs = 0
@@ -91,12 +100,13 @@ fun AppLogDialog(
             "PROBE" -> reversed.filter { it.tag == "PROBE" || it.tag == "PING" }
             "VPN" -> reversed.filter { it.tag == "VPN" || it.tag == "UNLOCK" || it.tag == "SMARTSELECT" }
             "STREAM" -> reversed.filter { it.tag == "STREAM" }
-            "PERF" -> reversed.filter { it.tag == "PERF" }
+            "PERF" -> reversed.filter { it.tag == "PERF" || it.tag == "PERF-INIT" }
             else -> reversed
         }
     }
 
     val closeFocusRequester = remember { FocusRequester() }
+    val exportFocusRequester = remember { FocusRequester() }
     val copyFocusRequester = remember { FocusRequester() }
     val clearFocusRequester = remember { FocusRequester() }
     val retestFocusRequester = remember { FocusRequester() }
@@ -131,13 +141,15 @@ fun AppLogDialog(
     }
 
     val retestPingAction: () -> Unit = {
-        AppLogger.info("UI", "Bấm nút Đo ping lại (trong Nhật ký hệ thống)")
+        AppLogger.info("UI", "Retest ping from log")
         VpnManager.testAllServers(
             autoPickBest = false,
             context = context,
-            reason = "bấm nút Đo ping lại (trong Nhật ký hệ thống)"
+            reason = "log-retest"
         )
     }
+
+    val appVerLabel = "v${AppLogger.currentAppVersionName}"
 
     AdaptivePopupFrame(
         onDismissRequest = onDismiss,
@@ -145,15 +157,21 @@ fun AppLogDialog(
         defaultFocusRequester = closeFocusRequester,
         wideWidthFraction = 0.94f,
         portraitWidthFraction = 0.94f,
-        onPreviousTab = {
-            val curIdx = filterKeys.indexOf(selectedFilter).coerceAtLeast(0)
-            selectedFilter = filterKeys[(curIdx - 1 + filterKeys.size) % filterKeys.size]
-        },
-        onNextTab = {
-            val curIdx = filterKeys.indexOf(selectedFilter).coerceAtLeast(0)
-            selectedFilter = filterKeys[(curIdx + 1) % filterKeys.size]
-        },
-        onBackPress = onDismiss
+        onPreviousTab = if (!showExportMode) {
+            {
+                val curIdx = filterKeys.indexOf(selectedFilter).coerceAtLeast(0)
+                selectedFilter = filterKeys[(curIdx - 1 + filterKeys.size) % filterKeys.size]
+            }
+        } else null,
+        onNextTab = if (!showExportMode) {
+            {
+                val curIdx = filterKeys.indexOf(selectedFilter).coerceAtLeast(0)
+                selectedFilter = filterKeys[(curIdx + 1) % filterKeys.size]
+            }
+        } else null,
+        onBackPress = {
+            if (showExportMode) showExportMode = false else onDismiss()
+        }
     ) {
         @Composable
         fun HeaderSection() {
@@ -166,46 +184,73 @@ fun AppLogDialog(
                         .size(iconBoxSize)
                         .clip(RoundedCornerShape(btnCorner))
                         .background(
-                            if (errorCount > 0) JapanRed.copy(alpha = 0.20f)
+                            if (showExportMode) DirectCyan.copy(alpha = 0.16f)
+                            else if (errorCount > 0) JapanRed.copy(alpha = 0.20f)
                             else XboxNeonGreen.copy(alpha = 0.16f)
                         )
                         .border(
                             borderThin,
-                            if (errorCount > 0) JapanRed.copy(alpha = 0.75f)
+                            if (showExportMode) DirectCyan.copy(alpha = 0.65f)
+                            else if (errorCount > 0) JapanRed.copy(alpha = 0.75f)
                             else XboxNeonGreen.copy(alpha = 0.55f),
                             RoundedCornerShape(btnCorner)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Terminal,
+                        imageVector = if (showExportMode) Icons.Default.Download else Icons.Default.Terminal,
                         contentDescription = null,
-                        tint = if (errorCount > 0) JapanRed else XboxNeonGreen,
+                        tint = if (showExportMode) DirectCyan else if (errorCount > 0) JapanRed else XboxNeonGreen,
                         modifier = Modifier.size(iconSize)
                     )
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(rDp(2f))) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(rDp(6f))
+                    ) {
+                        Text(
+                            text = if (showExportMode) {
+                                stringResource(R.string.log_export_title)
+                            } else if (isEn) {
+                                "System Activity Log"
+                            } else {
+                                "Nhật ký hệ thống (App Log)"
+                            },
+                            color = TextPrimary,
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = rSp(15f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        Text(
+                            text = appVerLabel,
+                            color = DirectCyan,
+                            fontFamily = JetBrainsMonoFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = rSp(9.5f),
+                            modifier = Modifier
+                                .background(DirectCyan.copy(alpha = 0.14f), RoundedCornerShape(rDp(4f)))
+                                .padding(horizontal = rDp(5f), vertical = rDp(1.5f))
+                        )
+                    }
                     Text(
-                        text = if (isEn) "System Activity Log" else "Nhật ký hệ thống (App Log)",
-                        color = TextPrimary,
-                        fontFamily = SpaceGroteskFontFamily,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = rSp(15f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = if (isEn) {
-                            "${logs.size}/${AppLogger.MAX_LOGS} events • $errorCount errors, $warnCount warnings"
+                        text = if (showExportMode) {
+                            stringResource(R.string.log_export_subtitle)
+                        } else if (isEn) {
+                            "${logs.size}/${AppLogger.MAX_LOGS} events · $errorCount errors, $warnCount warnings"
                         } else {
-                            "${logs.size}/${AppLogger.MAX_LOGS} bản ghi • $errorCount lỗi, $warnCount cảnh báo"
+                            "${logs.size}/${AppLogger.MAX_LOGS} bản ghi · $errorCount lỗi, $warnCount cảnh báo"
                         },
                         color = when {
+                            showExportMode -> TextSecondary
                             errorCount > 0 -> JapanRed
                             warnCount > 0 -> WarningAmber
                             else -> TextSecondary
                         },
-                        fontWeight = if (errorCount > 0 || warnCount > 0) FontWeight.Bold else FontWeight.Normal,
+                        fontWeight = if (!showExportMode && (errorCount > 0 || warnCount > 0)) FontWeight.Bold else FontWeight.Normal,
                         fontSize = rSp(10.5f),
                         lineHeight = rSp(13.5f),
                         maxLines = 1,
@@ -344,14 +389,14 @@ fun AppLogDialog(
                                 if (isError || isWarn) {
                                     Box(
                                         modifier = Modifier
-                                            .size(width = rDp(4f), height = rDp(40f))
+                                            .size(width = rDp(4f), height = rDp(36f))
                                             .background(badgeColor)
                                     )
                                 }
                                 Column(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .padding(horizontal = rDp(8f), vertical = rDp(5.5f)),
+                                        .padding(horizontal = rDp(8f), vertical = rDp(5f)),
                                     verticalArrangement = Arrangement.spacedBy(rDp(2f))
                                 ) {
                                     Row(
@@ -362,10 +407,10 @@ fun AppLogDialog(
                                             text = entry.timestamp,
                                             color = if (isError) Color(0xFFFF8A80) else TextSecondary,
                                             fontFamily = JetBrainsMonoFontFamily,
-                                            fontSize = rSp(9.5f)
+                                            fontSize = rSp(9.2f)
                                         )
                                         Text(
-                                            text = "${entry.tag}•${entry.level.name}",
+                                            text = "${entry.level.shortCode}/${entry.tag}",
                                             color = badgeColor,
                                             fontFamily = JetBrainsMonoFontFamily,
                                             fontSize = rSp(8.5f),
@@ -388,8 +433,8 @@ fun AppLogDialog(
                                         color = msgColor,
                                         fontFamily = JetBrainsMonoFontFamily,
                                         fontWeight = if (isError) FontWeight.Bold else FontWeight.Normal,
-                                        fontSize = rSp(10.5f),
-                                        maxLines = 10,
+                                        fontSize = rSp(10.2f),
+                                        maxLines = 8,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 }
@@ -402,89 +447,32 @@ fun AppLogDialog(
 
         @Composable
         fun ActionButtonsSection() {
-            Column(verticalArrangement = Arrangement.spacedBy(gapSmall)) {
+            if (showExportMode) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(gapSmall)
                 ) {
                     AdaptiveFlatActionButton(
-                        onClick = copyLogsAction,
+                        onClick = { showExportMode = false },
                         isPrimary = false,
                         containerColor = XboxSurface,
                         contentColor = DirectCyan,
                         borderColor = DirectCyan.copy(alpha = 0.65f),
                         focusedBorderColor = DirectCyan,
-                        focusRequester = copyFocusRequester,
                         modifier = Modifier
                             .weight(1f)
-                            .testTag("copy_app_log_btn")
+                            .testTag("export_back_to_logs_btn")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ContentCopy,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = null,
                             tint = DirectCyan,
                             modifier = Modifier.size(rDp(14f))
                         )
                         Spacer(modifier = Modifier.width(rDp(4f)))
                         Text(
-                            text = if (isEn) "Copy Log" else "Sao chép",
+                            text = stringResource(R.string.log_export_back),
                             color = DirectCyan,
-                            fontSize = rSp(11f),
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    AdaptiveFlatActionButton(
-                        onClick = { AppLogger.clear() },
-                        isPrimary = false,
-                        containerColor = XboxSurface,
-                        contentColor = JapanRed,
-                        borderColor = JapanRed.copy(alpha = 0.65f),
-                        focusedBorderColor = JapanRed,
-                        focusRequester = clearFocusRequester,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("clear_app_log_btn")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = null,
-                            tint = JapanRed,
-                            modifier = Modifier.size(rDp(14f))
-                        )
-                        Spacer(modifier = Modifier.width(rDp(4f)))
-                        Text(
-                            text = if (isEn) "Clear" else "Xóa log",
-                            color = JapanRed,
-                            fontSize = rSp(11f),
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(gapSmall)
-                ) {
-                    AdaptiveFlatActionButton(
-                        onClick = retestPingAction,
-                        isPrimary = false,
-                        containerColor = XboxSurface,
-                        contentColor = XboxNeonGreen,
-                        borderColor = XboxNeonGreen.copy(alpha = 0.6f),
-                        focusedBorderColor = XboxNeonGreen,
-                        focusRequester = retestFocusRequester,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("retest_ping_from_log_btn")
-                    ) {
-                        Text(
-                            text = if (isEn) "Run Ping Test" else "Đo ping lại",
-                            color = XboxNeonGreen,
                             fontSize = rSp(11f),
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
@@ -510,6 +498,146 @@ fun AppLogDialog(
                         )
                     }
                 }
+                return
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(gapSmall)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(gapSmall)
+                ) {
+                    AdaptiveFlatActionButton(
+                        onClick = { showExportMode = true },
+                        isPrimary = false,
+                        containerColor = Color(0xFF16352A),
+                        contentColor = XboxNeonGreen,
+                        borderColor = XboxNeonGreen.copy(alpha = 0.7f),
+                        focusedBorderColor = XboxNeonGreen,
+                        focusRequester = exportFocusRequester,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("export_app_log_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = null,
+                            tint = XboxNeonGreen,
+                            modifier = Modifier.size(rDp(14f))
+                        )
+                        Spacer(modifier = Modifier.width(rDp(4f)))
+                        Text(
+                            text = stringResource(R.string.log_export_btn),
+                            color = XboxNeonGreen,
+                            fontSize = rSp(11f),
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    AdaptiveFlatActionButton(
+                        onClick = copyLogsAction,
+                        isPrimary = false,
+                        containerColor = XboxSurface,
+                        contentColor = DirectCyan,
+                        borderColor = DirectCyan.copy(alpha = 0.65f),
+                        focusedBorderColor = DirectCyan,
+                        focusRequester = copyFocusRequester,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("copy_app_log_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            tint = DirectCyan,
+                            modifier = Modifier.size(rDp(14f))
+                        )
+                        Spacer(modifier = Modifier.width(rDp(4f)))
+                        Text(
+                            text = if (isEn) "Copy" else "Sao chép",
+                            color = DirectCyan,
+                            fontSize = rSp(11f),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(gapSmall)
+                ) {
+                    AdaptiveFlatActionButton(
+                        onClick = retestPingAction,
+                        isPrimary = false,
+                        containerColor = XboxSurface,
+                        contentColor = XboxNeonGreen,
+                        borderColor = XboxNeonGreen.copy(alpha = 0.55f),
+                        focusedBorderColor = XboxNeonGreen,
+                        focusRequester = retestFocusRequester,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("retest_ping_from_log_btn")
+                    ) {
+                        Text(
+                            text = if (isEn) "Ping Test" else "Đo ping lại",
+                            color = XboxNeonGreen,
+                            fontSize = rSp(10.5f),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    AdaptiveFlatActionButton(
+                        onClick = { AppLogger.clear() },
+                        isPrimary = false,
+                        containerColor = XboxSurface,
+                        contentColor = JapanRed,
+                        borderColor = JapanRed.copy(alpha = 0.65f),
+                        focusedBorderColor = JapanRed,
+                        focusRequester = clearFocusRequester,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("clear_app_log_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteOutline,
+                            contentDescription = null,
+                            tint = JapanRed,
+                            modifier = Modifier.size(rDp(13f))
+                        )
+                        Spacer(modifier = Modifier.width(rDp(3f)))
+                        Text(
+                            text = if (isEn) "Clear" else "Xóa log",
+                            color = JapanRed,
+                            fontSize = rSp(10.5f),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    AdaptiveFlatActionButton(
+                        onClick = onDismiss,
+                        isPrimary = true,
+                        gamepadHint = "B",
+                        focusRequester = closeFocusRequester,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("close_app_log_btn")
+                    ) {
+                        Text(
+                            text = if (isEn) "Close" else "Đóng",
+                            color = Color(0xFF04150B),
+                            fontSize = rSp(11f),
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1
+                        )
+                    }
+                }
             }
         }
 
@@ -518,28 +646,46 @@ fun AppLogDialog(
             rightWeight = 1.25f,
             leftColumn = {
                 HeaderSection()
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(gapSmall),
-                    verticalArrangement = Arrangement.spacedBy(gapSmall)
-                ) {
-                    filters.forEach { (key, label) ->
-                        FilterChipItem(key = key, label = label)
+                if (!showExportMode) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(gapSmall),
+                        verticalArrangement = Arrangement.spacedBy(gapSmall)
+                    ) {
+                        filters.forEach { (key, label) ->
+                            FilterChipItem(key = key, label = label)
+                        }
                     }
                 }
                 ActionButtonsSection()
             },
             rightColumn = {
-                LogListContainer(minH = winH * 0.66f, maxH = winH * 0.78f)
+                if (showExportMode) {
+                    AppLogExportPanel(
+                        refreshKey = logs.size,
+                        minH = winH * 0.66f,
+                        maxH = winH * 0.78f
+                    )
+                } else {
+                    LogListContainer(minH = winH * 0.66f, maxH = winH * 0.78f)
+                }
             },
             portraitColumn = {
                 HeaderSection()
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(gapSmall)) {
-                    items(filters) { (key, label) ->
-                        FilterChipItem(key = key, label = label)
+                if (showExportMode) {
+                    AppLogExportPanel(
+                        refreshKey = logs.size,
+                        minH = winH * 0.40f,
+                        maxH = winH * 0.56f
+                    )
+                } else {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(gapSmall)) {
+                        items(filters) { (key, label) ->
+                            FilterChipItem(key = key, label = label)
+                        }
                     }
+                    LogListContainer(minH = winH * 0.34f, maxH = winH * 0.48f)
                 }
-                LogListContainer(minH = winH * 0.34f, maxH = winH * 0.48f)
                 ActionButtonsSection()
             }
         )

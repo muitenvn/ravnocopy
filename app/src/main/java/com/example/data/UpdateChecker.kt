@@ -434,7 +434,8 @@ object UpdateChecker {
         context: Context,
         currentVersion: String,
         resolvedLatestVersion: String,
-        openDialogIfNewer: Boolean
+        openDialogIfNewer: Boolean,
+        sourceTag: String = "cache"
     ): Boolean {
         val cleanLatest = normalizeVersionString(resolvedLatestVersion)
         if (cleanLatest.isBlank() || parseNumericParts(cleanLatest).isEmpty()) return false
@@ -467,6 +468,7 @@ object UpdateChecker {
 
         lastSuccessfulCheckRealtimeMs = System.currentTimeMillis()
         if (isNewerVersion(currentVersion, cleanLatest)) {
+            AppLogger.info("UPDATE", "Update available v$currentVersion -> v$cleanLatest ($sourceTag)")
             _state.value = UpdateCheckState.UpdateAvailable(
                 currentVersion = currentVersion,
                 latestVersion = cleanLatest,
@@ -481,6 +483,7 @@ object UpdateChecker {
                 _showUpdateDialog.value = true
             }
         } else {
+            AppLogger.success("UPDATE", "Up to date v$currentVersion ($sourceTag)")
             _state.value = UpdateCheckState.UpToDate(currentVersion = currentVersion)
         }
         return true
@@ -511,7 +514,7 @@ object UpdateChecker {
     fun checkNowManual(context: Context) {
         if (!isChecking.compareAndSet(false, true)) return
         dismissedVersionInSession = ""
-        AppLogger.info("UI", "Bấm kiểm tra cập nhật ứng dụng thủ công")
+        AppLogger.info("UI", "Manual update check")
         _state.value = UpdateCheckState.Checking
         val appContext = context.applicationContext
         scope.launch {
@@ -522,7 +525,7 @@ object UpdateChecker {
                 if (now - lastSuccessfulCheckRealtimeMs in 1..MANUAL_RAPID_TAP_REUSE_MS && cachedLatest.isNotBlank()) {
                     delay(220L)
                     val currentVersion = getCurrentVersionName(appContext)
-                    if (applyCachedOrResolvedVersionState(appContext, currentVersion, cachedLatest, openDialogIfNewer = true)) {
+                    if (applyCachedOrResolvedVersionState(appContext, currentVersion, cachedLatest, openDialogIfNewer = true, sourceTag = "recent-cache")) {
                         return@launch
                     }
                 }
@@ -552,13 +555,15 @@ object UpdateChecker {
             val responseCode = connection.responseCode
             if (responseCode == HttpURLConnection.HTTP_NOT_MODIFIED && cachedLatest.isNotBlank()) {
                 sp.edit().putLong(KEY_LAST_CHECK_MS, System.currentTimeMillis()).apply()
-                if (applyCachedOrResolvedVersionState(context, currentVersion, cachedLatest, openDialogIfNewer = true)) {
+                if (applyCachedOrResolvedVersionState(context, currentVersion, cachedLatest, openDialogIfNewer = true, sourceTag = "304")) {
                     return
                 }
             }
             if (responseCode !in 200..299) {
-                val redirectVer = fetchLatestVersionViaWebRedirect().ifBlank { cachedLatest }
-                if (!applyCachedOrResolvedVersionState(context, currentVersion, redirectVer, openDialogIfNewer = true)) {
+                val webVer = fetchLatestVersionViaWebRedirect()
+                val redirectVer = webVer.ifBlank { cachedLatest }
+                val src = if (webVer.isNotBlank()) "web-redirect" else "cache-http$responseCode"
+                if (!applyCachedOrResolvedVersionState(context, currentVersion, redirectVer, openDialogIfNewer = true, sourceTag = src)) {
                     handleCheckFailure(currentVersion, isManual)
                 }
                 return
@@ -569,8 +574,10 @@ object UpdateChecker {
             val json = JSONObject(responseBody)
             val latestVersion = normalizeVersionString(json.optString("tag_name", ""))
             if (latestVersion.isBlank() || parseNumericParts(latestVersion).isEmpty()) {
-                val redirectVer = fetchLatestVersionViaWebRedirect().ifBlank { cachedLatest }
-                if (!applyCachedOrResolvedVersionState(context, currentVersion, redirectVer, openDialogIfNewer = true)) {
+                val webVer = fetchLatestVersionViaWebRedirect()
+                val redirectVer = webVer.ifBlank { cachedLatest }
+                val src = if (webVer.isNotBlank()) "web-redirect" else "cache-empty-tag"
+                if (!applyCachedOrResolvedVersionState(context, currentVersion, redirectVer, openDialogIfNewer = true, sourceTag = src)) {
                     handleCheckFailure(currentVersion, isManual)
                 }
                 return
@@ -650,7 +657,7 @@ object UpdateChecker {
 
             lastSuccessfulCheckRealtimeMs = System.currentTimeMillis()
             if (newerAvailable) {
-                AppLogger.info("UPDATE", "Phát hiện bản cập nhật mới: v$currentVersion -> v$latestVersion")
+                AppLogger.info("UPDATE", "Update available v$currentVersion -> v$latestVersion")
                 _state.value = UpdateCheckState.UpdateAvailable(
                     currentVersion = currentVersion,
                     latestVersion = latestVersion,
@@ -665,15 +672,17 @@ object UpdateChecker {
                     _showUpdateDialog.value = true
                 }
             } else {
-                AppLogger.success("UPDATE", "Ứng dụng đang ở phiên bản mới nhất (v$currentVersion)")
+                AppLogger.success("UPDATE", "Up to date v$currentVersion")
                 _state.value = UpdateCheckState.UpToDate(currentVersion = currentVersion)
             }
         } catch (ce: CancellationException) {
             throw ce
         } catch (e: Throwable) {
-            val redirectVer = fetchLatestVersionViaWebRedirect().ifBlank { cachedLatest }
-            if (!applyCachedOrResolvedVersionState(context, currentVersion, redirectVer, openDialogIfNewer = true)) {
-                AppLogger.error("UPDATE", "Lỗi kiểm tra cập nhật (${AppLogger.shortThrowable(e)})")
+            val webVer = fetchLatestVersionViaWebRedirect()
+            val redirectVer = webVer.ifBlank { cachedLatest }
+            val src = if (webVer.isNotBlank()) "web-redirect" else "cache-fallback"
+            if (!applyCachedOrResolvedVersionState(context, currentVersion, redirectVer, openDialogIfNewer = true, sourceTag = src)) {
+                AppLogger.error("UPDATE", "Check failed (${AppLogger.shortThrowable(e)})")
                 handleCheckFailure(currentVersion, isManual)
             }
         } finally {
@@ -742,7 +751,7 @@ object UpdateChecker {
     fun skipToNextMirror() {
         if (_downloadState.value is ApkDownloadState.Downloading) {
             skipCurrentMirrorRequested = true
-            AppLogger.info("UI", "Bấm chuyển sang máy chủ tải cập nhật kế tiếp")
+            AppLogger.info("UI", "Skip to next update mirror")
             try {
                 activeDownloadConnection?.disconnect()
             } catch (_: Throwable) {}
@@ -778,11 +787,11 @@ object UpdateChecker {
         val targetApkFile = File(updatesDir, "CloudPlay-Xbox-v${updateInfo.latestVersion}.apk")
 
         val modeDesc = when {
-            preferredMirrorId == "github_direct" -> "Tải thường (Trực tiếp GitHub)"
-            preferredMirrorId == "auto" -> "Tải nhanh qua máy chủ phụ (Tự động đổi khi lỗi)"
-            else -> "Tải qua máy chủ phụ ($preferredMirrorId)"
+            preferredMirrorId == "github_direct" -> "direct"
+            preferredMirrorId == "auto" -> "auto-mirror"
+            else -> preferredMirrorId
         }
-        AppLogger.info("UI", "Bắt đầu tải bản cập nhật v${updateInfo.latestVersion}: $modeDesc")
+        AppLogger.info("UPDATE", "Start APK dl v${updateInfo.latestVersion} mode=$modeDesc")
 
         downloadJob?.cancel()
         downloadJob = scope.launch {
@@ -849,7 +858,7 @@ object UpdateChecker {
                         if (!node.isDirectGitHub) {
                             sp.edit().putString(KEY_LAST_WORKING_MIRROR_ID, node.id).apply()
                         }
-                        AppLogger.success("UPDATE", "Tải và xác thực thành công APK qua ${node.name} ($attemptNum/${candidates.size})")
+                        AppLogger.success("UPDATE", "APK verified via ${node.name} ($attemptNum/${candidates.size})")
                         break
                     } catch (ce: CancellationException) {
                         targetApkFile.delete()
@@ -861,12 +870,12 @@ object UpdateChecker {
                         if (nextNodeName != null) {
                             AppLogger.warn(
                                 "UPDATE",
-                                "Máy chủ tải ${node.name} lỗi (${err.message ?: err.javaClass.simpleName}) -> tự động chuyển sang $nextNodeName (${idx + 2}/${candidates.size})"
+                                "Mirror ${node.name} failed (${err.message ?: err.javaClass.simpleName}) -> $nextNodeName (${idx + 2}/${candidates.size})"
                             )
                         } else {
                             AppLogger.error(
                                 "UPDATE",
-                                "Máy chủ tải cuối cùng ${node.name} lỗi (${err.message ?: err.javaClass.simpleName})"
+                                "Last mirror ${node.name} failed (${err.message ?: err.javaClass.simpleName})"
                             )
                         }
                     }
@@ -884,7 +893,7 @@ object UpdateChecker {
                 throw ce
             } catch (e: Throwable) {
                 targetApkFile.delete()
-                AppLogger.error("UPDATE", "Không thể tải bản cập nhật qua tất cả các cổng (${AppLogger.shortThrowable(e)})")
+                AppLogger.error("UPDATE", "All mirrors failed (${AppLogger.shortThrowable(e)})")
                 _downloadState.value = ApkDownloadState.DownloadError(
                     messageVi = "Tất cả máy chủ phụ và cổng tải trực tiếp đều đang bận hoặc lỗi mạng. Bạn hãy thử chọn một máy chủ phụ khác hoặc bấm 'Mở trang GitHub'.",
                     messageEn = "All mirrors and direct download nodes are busy or unreachable. Please pick another mirror or tap 'Open GitHub Page'."
@@ -1038,7 +1047,7 @@ object UpdateChecker {
             }
             context.startActivity(installIntent)
         } catch (e: Throwable) {
-            AppLogger.error("UPDATE", "Lỗi mở trình cài đặt APK (${AppLogger.shortThrowable(e)})")
+            AppLogger.error("UPDATE", "Installer launch failed (${AppLogger.shortThrowable(e)})")
         }
     }
 

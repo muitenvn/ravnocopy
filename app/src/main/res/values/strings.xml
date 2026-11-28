@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">Tap Enter IP → Advanced</string>
     <string name="remote_pad_step_3_remote">Enter 10-digit code</string>
     <string name="remote_pad_bottom_notice_remote">End-to-end encrypted 10-digit code · Auto-expires in 15 min · 3 wrong tries locks 3 min</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">Export File</string>
+    <string name="log_export_title">Export Activity Logs</string>
+    <string name="log_export_subtitle">Full saved logs · No line limit</string>
+    <string name="log_export_all_btn">Export All Logs</string>
+    <string name="log_export_all_meta">%1$d versions · %2$d sessions · %3$s</string>
+    <string name="log_export_tab_version">By Version</string>
+    <string name="log_export_tab_session">By Session</string>
+    <string name="log_export_version_sessions">%1$d sessions · %2$s</string>
+    <string name="log_export_current_badge">Current</string>
+    <string name="log_export_empty">No saved log files yet.</string>
+    <string name="log_export_back">Back to Logs</string>
+    <string name="log_export_success">Exported %1$d lines (%2$s)</string>
+    <string name="log_export_failed">Could not export log file</string>
+    <string name="log_export_share_title">Share Ravno Log File</string>
 </resources>

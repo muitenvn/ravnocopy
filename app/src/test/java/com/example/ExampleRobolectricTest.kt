@@ -275,7 +275,7 @@ class ExampleRobolectricTest {
         com.example.data.AppLogger.clear()
         com.example.data.AppLogger.info("PROBE", "Test probe log entry")
         assertTrue(com.example.data.AppLogger.logs.value.any { it.message.contains("Test probe log entry") })
-        assertTrue(com.example.data.AppLogger.exportAsText().contains("[PROBE] Test probe log entry"))
+        assertTrue(com.example.data.AppLogger.exportAsText().contains("I/PROBE Test probe log entry"))
 
         val server = VpnManager.getAllServers().first()
         val pingMap = mapOf(server.id to 64)
@@ -1645,38 +1645,122 @@ class ServerSelectionScoringUnitTest {
     }
 
     @Test
-    fun persistentAppLogger_savesReloadsAcrossRestartsRedactsSecretsAndClearsFile() {
+    fun persistentAppLogger_savesReloadsAcrossRestartsRedactsSecretsAndExportsByVersionAndSession() {
         val tempDir = java.nio.file.Files.createTempDirectory("cloudplay_logger_test").toFile()
         try {
             com.example.data.AppLogger.clear()
-            com.example.data.AppLogger.initWithDirectory(tempDir, pidOverride = 1111, forceReinit = true)
-            com.example.data.AppLogger.info("VPN", "[VPN] Kiểm tra IP (lý do: VPN bật-tắt)")
+            com.example.data.AppLogger.initWithDirectory(
+                tempDir,
+                pidOverride = 1111,
+                forceReinit = true,
+                appVersionName = "1.3.209",
+                appVersionCode = 209L
+            )
+            com.example.data.AppLogger.info("VPN", "Check IP (vpn-toggle)")
             com.example.data.AppLogger.info("AUTH", "Authorization: Bearer super_secret_token_999")
             com.example.data.AppLogger.flushDiskWritesForTest()
 
             val logFile = java.io.File(tempDir, com.example.data.AppLogger.PERSISTENT_LOG_FILE_NAME)
             assertTrue("Persistent log file must exist in filesDir", logFile.exists())
             val diskText = logFile.readText(Charsets.UTF_8)
-            assertTrue("Disk log must include process start marker for PID 1111", diskText.contains("=== Khởi động tiến trình mới:") && diskText.contains("PID 1111"))
-            assertTrue("Disk log must include IP check reason", diskText.contains("[VPN] Kiểm tra IP (lý do: VPN bật-tắt)"))
+            assertTrue("Disk log must include version & PID 1111 marker", diskText.contains("=== START v1.3.209 (209)") && diskText.contains("PID 1111"))
+            assertTrue("Disk log must include IP check event", diskText.contains("I/VPN Check IP (vpn-toggle)"))
             org.junit.Assert.assertFalse("Disk log must never store raw Bearer token", diskText.contains("super_secret_token_999"))
             assertTrue("Disk log must store redacted token marker", diskText.contains("[REDACTED]"))
 
-            // Mô phỏng đóng và mở lại app ở tiến trình mới (PID 2222): nạp lại log cũ + ghi dòng tiến trình mới
-            com.example.data.AppLogger.initWithDirectory(tempDir, pidOverride = 2222, forceReinit = true)
+            // Simulate upgrading to v1.3.210 in a new process (PID 2222)
+            com.example.data.AppLogger.initWithDirectory(
+                tempDir,
+                pidOverride = 2222,
+                forceReinit = true,
+                appVersionName = "1.3.210",
+                appVersionCode = 210L
+            )
+            com.example.data.AppLogger.info("UPDATE", "Up to date v1.3.210")
             com.example.data.AppLogger.flushDiskWritesForTest()
+
             val exported = com.example.data.AppLogger.exportAsText()
-            assertTrue("Reloaded logs must retain previous session entries", exported.contains("[VPN] Kiểm tra IP (lý do: VPN bật-tắt)"))
+            assertTrue("Exported RAM text must include current version header", exported.contains("v1.3.210 (210)"))
+            assertTrue("Reloaded logs must retain previous session entries", exported.contains("Check IP (vpn-toggle)"))
             assertTrue("Reloaded logs must contain both PID 1111 and PID 2222 markers", exported.contains("PID 1111") && exported.contains("PID 2222"))
 
-            // Xóa log phải xóa cả trong RAM lẫn file trong filesDir
+            // Verify version grouping & streaming exports (All, By Version, By Session)
+            val versions = com.example.data.AppLogger.listStoredVersions()
+            assertEquals("Must list both stored versions", 2, versions.size)
+            val allOut = java.io.ByteArrayOutputStream()
+            val allRes = com.example.data.AppLogger.writeAllLogsToStream(allOut, includePerfSummary = false)
+            val allText = allOut.toString(Charsets.UTF_8.name())
+            assertEquals(2, allRes.sessionCount)
+            assertTrue(allText.contains("PID 1111") && allText.contains("PID 2222"))
+
+            val v209Out = java.io.ByteArrayOutputStream()
+            com.example.data.AppLogger.writeVersionLogsToStream("1.3.209", v209Out, includePerfSummary = false)
+            val v209Text = v209Out.toString(Charsets.UTF_8.name())
+            assertTrue(v209Text.contains("PID 1111"))
+            org.junit.Assert.assertFalse(v209Text.contains("PID 2222"))
+
+            val sessions = com.example.data.AppLogger.listStoredSessions()
+            val currentSession = sessions.first { it.isCurrentSession }
+            val sessOut = java.io.ByteArrayOutputStream()
+            com.example.data.AppLogger.writeSessionLogsToStream(currentSession, sessOut, includePerfSummary = false)
+            val sessText = sessOut.toString(Charsets.UTF_8.name())
+            assertTrue(sessText.contains("PID 2222") && sessText.contains("Up to date v1.3.210"))
+            org.junit.Assert.assertFalse(sessText.contains("PID 1111"))
+
+            // Clear must delete RAM buffer, rolling file, and versioned session archive
             com.example.data.AppLogger.clear()
             com.example.data.AppLogger.flushDiskWritesForTest()
             assertTrue("In-memory logs must be empty after clear()", com.example.data.AppLogger.logs.value.isEmpty())
             org.junit.Assert.assertFalse("Persistent log file must be deleted on clear()", logFile.exists())
+            assertTrue("Versioned session directory must be empty after clear()", com.example.data.AppLogger.listStoredSessions().isEmpty())
         } finally {
             tempDir.deleteRecursively()
         }
+    }
+
+    @Test
+    fun serverScoring_measuredLiveServerBeatsUnmeasuredServerWithCountryHistory() {
+        val liveServer = VpnManager.getAllServers().first { it.countryCode == "KR" }
+        val unmeasuredJpServer = VpnManager.getAllServers().first { it.countryCode == "JP" }
+        val liveMeas = com.example.vpn.EndpointPingMeasurement(
+            rttMs = 115,
+            minRttMs = 110,
+            maxRttMs = 120,
+            configuredPort = liveServer.port,
+            measuredPort = liveServer.port,
+            resolvedIp = liveServer.ip,
+            measurementType = com.example.vpn.PingMeasurementType.TCP_PRIMARY_PORT,
+            status = com.example.vpn.ServerPingStatus.MEASURED_PRIMARY,
+            isUnstable = false
+        )
+        val jpHistoryStats = com.example.data.SessionHistoryRepository.RegionSessionStats(
+            sampleCount = 3,
+            avgRttMs = 98,
+            weightedFreezePerMin = 0.0,
+            weightedFrameDropPercent = 0.2
+        )
+        val liveScore = VpnManager.calculateServerSelectionScore(
+            server = liveServer,
+            measurement = liveMeas,
+            fallbackPingMs = 115,
+            unlockStatus = com.example.vpn.RegionUnlockStatus.UNLOCKED,
+            sessionStats = null,
+            autoBypassEnabled = true,
+            distanceKm = 3600
+        )
+        val unmeasuredScore = VpnManager.calculateServerSelectionScore(
+            server = unmeasuredJpServer,
+            measurement = null,
+            fallbackPingMs = null,
+            unlockStatus = com.example.vpn.RegionUnlockStatus.UNLOCKED,
+            sessionStats = jpHistoryStats,
+            autoBypassEnabled = true,
+            distanceKm = 4200
+        )
+        assertTrue(
+            "Measured live server ($liveScore) must beat unmeasured server borrowing country history ($unmeasuredScore)",
+            liveScore < unmeasuredScore
+        )
     }
 }
 

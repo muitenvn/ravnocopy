@@ -1,7 +1,9 @@
 package com.example.ui.tabs
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -433,19 +435,21 @@ internal fun SessionDetailDialog(
                             color = TextSecondary,
                             fontSize = rSp(10.8f)
                         )
+                        val isSlowDecodeEffective = session.isSlowDecode ||
+                            session.avgDecodeMs > LagDiagnosticConfig.SLOW_DECODE_MIN_MS
                         val statusText = when {
-                            session.isThermalHot && session.isSlowDecode ->
+                            session.isThermalHot && isSlowDecodeEffective ->
                                 if (isEn) "Device Hot • Slow Decode" else "Máy nóng • Giải mã chậm"
                             session.isThermalHot ->
                                 if (isEn) "Device Hot" else "Máy nóng"
-                            session.isSlowDecode ->
+                            isSlowDecodeEffective ->
                                 if (isEn) "Slow Decode (>12ms)" else "Giải mã chậm (>12ms)"
                             else ->
                                 if (isEn) "Cool & Smooth" else "Mát & Ổn định"
                         }
                         val statusColor = when {
                             session.isThermalHot -> JapanRed
-                            session.isSlowDecode -> WarningAmber
+                            isSlowDecodeEffective -> WarningAmber
                             else -> XboxNeonGreen
                         }
                         Text(
@@ -577,15 +581,30 @@ internal fun SessionDetailDialog(
             },
             portraitColumn = {
                 HeaderRow()
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = winH * 0.64f)
-                        .verticalScroll(portraitScroll),
-                    verticalArrangement = Arrangement.spacedBy(gapMed)
                 ) {
-                    VerdictAndLagDiagnostics()
-                    MetricsAndStatusBlock()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(portraitScroll)
+                            .padding(bottom = gapMed),
+                        verticalArrangement = Arrangement.spacedBy(gapMed)
+                    ) {
+                        VerdictAndLagDiagnostics()
+                        MetricsAndStatusBlock()
+                    }
+                    if (portraitScroll.canScrollForward) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .height(rDp(2f))
+                                .background(DirectCyan.copy(alpha = 0.55f))
+                        )
+                    }
                 }
                 ActionButtonsBlock()
             }

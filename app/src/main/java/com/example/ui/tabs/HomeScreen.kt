@@ -229,7 +229,7 @@ fun HomeScreen(
                             .background(XboxNeonGreen.copy(alpha = 0.12f), bannerShape)
                             .border(1.dp, XboxNeonGreen.copy(alpha = 0.5f), bannerShape)
                             .gamepadClickable(cornerRadius = 10.dp) {
-                                com.example.data.AppLogger.info("UI", "Bấm thanh thông báo bản cập nhật mới từ Trang chủ")
+                                com.example.data.AppLogger.info("UI", "Home update banner clicked")
                                 com.example.data.UpdateChecker.openUpdateDialog()
                             }
                             .padding(horizontal = 12.dp)

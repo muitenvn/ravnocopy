@@ -173,13 +173,14 @@ internal fun SummaryStatTile(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 Text(
                     text = label,
                     color = TextSecondary,
-                    fontSize = 11.5.sp,
-                    maxLines = 1,
+                    fontSize = 11.sp,
+                    lineHeight = 13.5.sp,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .weight(1f)

@@ -246,10 +246,7 @@ internal fun TvInGameFloatingHud(
                 showRemotePadDialog = false
             } else {
                 isHudExpanded = !isHudExpanded
-                AppLogger.info(
-                    "UI",
-                    "Menu nổi TV (View + Menu 0,6s): isHudExpanded=$isHudExpanded"
-                )
+                AppLogger.info("UI", "TV HUD toggle: expanded=$isHudExpanded")
             }
         }
     }

@@ -199,7 +199,7 @@ object NetworkOptimizer {
             Log.e(TAG, "Failed to initialize NetworkOptimizer", e)
             com.example.data.AppLogger.error(
                 "NET",
-                "Lỗi khởi tạo NetworkOptimizer (${com.example.data.AppLogger.shortThrowable(e)})"
+                "NetOpt init err: ${com.example.data.AppLogger.shortThrowable(e)}"
             )
         }
     }
@@ -250,7 +250,7 @@ object NetworkOptimizer {
         } catch (e: Exception) {
             com.example.data.AppLogger.error(
                 "NET",
-                "Lỗi gắn kết mạng tiến trình (${com.example.data.AppLogger.shortThrowable(e)})"
+                "Bind process net err: ${com.example.data.AppLogger.shortThrowable(e)}"
             )
         }
     }
@@ -295,7 +295,7 @@ object NetworkOptimizer {
         } catch (e: Exception) {
             com.example.data.AppLogger.error(
                 "NET",
-                "Lỗi khóa Wi-Fi Low-Latency khi stream=$active (${com.example.data.AppLogger.shortThrowable(e)})"
+                "WiFi low-latency lock err (stream=$active): ${com.example.data.AppLogger.shortThrowable(e)}"
             )
         }
     }
@@ -518,10 +518,10 @@ object NetworkOptimizer {
             val profileChanged = prevStatus.activeProfileName != updatedStatus.activeProfileName
             _status.value = updatedStatus
             if (typeChanged || vpnChanged || profileChanged) {
-                val vpnBadge = if (updatedStatus.hasVpnTransport) "VPN=Bật" else "VPN=Tắt"
+                val vpnBadge = if (updatedStatus.hasVpnTransport) "vpn=on" else "vpn=off"
                 com.example.data.AppLogger.info(
                     "NET",
-                    "Mạng/Hồ sơ đổi: ${prevStatus.physicalType.label} -> ${updatedStatus.physicalType.label} ($vpnBadge, ${updatedStatus.activeProfileName})"
+                    "Net: ${prevStatus.physicalType.name} -> ${updatedStatus.physicalType.name} ($vpnBadge, ${updatedStatus.activeProfileName})"
                 )
             }
             AdaptiveQualityManager.onNetworkStatusChanged(updatedStatus)
@@ -601,7 +601,7 @@ object NetworkOptimizer {
                 lastTelemetryErrorLoggedAtMs = now
                 com.example.data.AppLogger.error(
                     "NET",
-                    "Lỗi phân tích gói telemetry WebRTC (${com.example.data.AppLogger.shortThrowable(e)})"
+                    "WebRTC telemetry parse err: ${com.example.data.AppLogger.shortThrowable(e)}"
                 )
             }
         }

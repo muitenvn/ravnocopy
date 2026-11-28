@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">แตะ กรอก IP → ขั้นสูง</string>
     <string name="remote_pad_step_3_remote">กรอกตัวเลข 10 หลัก</string>
     <string name="remote_pad_bottom_notice_remote">รหัสตัวเลข 10 หลักเข้ารหัสปลายทาง · หมดอายุใน 15 นาที · ผิด 3 ครั้งล็อก 3 นาที</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">ส่งออกไฟล์</string>
+    <string name="log_export_title">ส่งออกไฟล์บันทึก</string>
+    <string name="log_export_subtitle">บันทึกครบทั้งหมด · ไม่จำกัดบรรทัด</string>
+    <string name="log_export_all_btn">ดาวน์โหลดทั้งหมด</string>
+    <string name="log_export_all_meta">%1$d เวอร์ชัน · %2$d เซสชัน · %3$s</string>
+    <string name="log_export_tab_version">ตามเวอร์ชัน</string>
+    <string name="log_export_tab_session">ตามการเปิดแอป</string>
+    <string name="log_export_version_sessions">%1$d เซสชัน · %2$s</string>
+    <string name="log_export_current_badge">ปัจจุบัน</string>
+    <string name="log_export_empty">ยังไม่มีไฟล์บันทึกที่จัดเก็บไว้</string>
+    <string name="log_export_back">กลับไปที่บันทึก</string>
+    <string name="log_export_success">ส่งออกแล้ว %1$d บรรทัด (%2$s)</string>
+    <string name="log_export_failed">ไม่สามารถส่งออกไฟล์บันทึกได้</string>
+    <string name="log_export_share_title">แชร์ไฟล์บันทึก Ravno</string>
 </resources>

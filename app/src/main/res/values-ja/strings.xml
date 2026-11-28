@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">IP入力 → 詳細 を選択</string>
     <string name="remote_pad_step_3_remote">10桁の数字を入力</string>
     <string name="remote_pad_bottom_notice_remote">暗号化10桁数字コード · 15分で自動失効 · 3回誤入力で3分ロック</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">ファイル出力</string>
+    <string name="log_export_title">ログをファイル出力</string>
+    <string name="log_export_subtitle">保存済み全ログ · 行数制限なし</string>
+    <string name="log_export_all_btn">すべて出力</string>
+    <string name="log_export_all_meta">%1$dバージョン · %2$dセッション · %3$s</string>
+    <string name="log_export_tab_version">バージョン別</string>
+    <string name="log_export_tab_session">起動別</string>
+    <string name="log_export_version_sessions">%1$dセッション · %2$s</string>
+    <string name="log_export_current_badge">現在</string>
+    <string name="log_export_empty">保存されたログファイルがありません。</string>
+    <string name="log_export_back">ログに戻る</string>
+    <string name="log_export_success">%1$d行を出力しました (%2$s)</string>
+    <string name="log_export_failed">ログファイルを出力できませんでした</string>
+    <string name="log_export_share_title">Ravnoログファイルを共有</string>
 </resources>

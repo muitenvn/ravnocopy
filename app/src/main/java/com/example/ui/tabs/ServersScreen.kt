@@ -894,7 +894,7 @@ fun ServersScreen(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(XboxNeonGreen, RoundedCornerShape(10.dp))
                                 .gamepadClickable(enabled = !isTestingAll, cornerRadius = 10.dp) {
-                                    com.example.data.AppLogger.info("UI", "Bấm nút Chọn tối ưu (trên tab Máy chủ)")
+                                    com.example.data.AppLogger.info("UI", "Servers: Auto-pick best")
                                     android.widget.Toast.makeText(
                                         context,
                                         config.tr("Đang đo ping và chọn máy chủ tối ưu...", "Measuring ping & selecting best server..."),
@@ -950,7 +950,7 @@ fun ServersScreen(
                                 .background(XboxSurfaceVariant, RoundedCornerShape(10.dp))
                                 .border(1.dp, XboxCardBorder, RoundedCornerShape(10.dp))
                                 .gamepadClickable(enabled = !isTestingAll, cornerRadius = 10.dp) {
-                                    com.example.data.AppLogger.info("UI", "Bấm nút Đo ping (trên tab Máy chủ)")
+                                    com.example.data.AppLogger.info("UI", "Servers: Ping test")
                                     testAllServers(
                                         autoPickBest = false,
                                         forceRefresh = true,
@@ -1092,7 +1092,7 @@ fun ServersScreen(
                                 enabled = !isBusy,
                                 cornerRadius = 999.dp
                             ) {
-                                com.example.data.AppLogger.info("UI", "Bấm nút Tải danh sách GitHub (trên tab Máy chủ)")
+                                com.example.data.AppLogger.info("UI", "Servers: Sync GitHub catalog")
                                 VpnManager.syncRemoteCatalogIfNeeded(context = context, force = true)
                             }
                             .padding(horizontal = 12.dp, vertical = 7.dp)

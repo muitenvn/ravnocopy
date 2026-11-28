@@ -78,23 +78,19 @@ object PerformanceMonitor {
      */
     fun recordInitMilestone(message: String) {
         val ts = synchronized(initTimeFormat) { initTimeFormat.format(java.util.Date()) }
-        val formatted = "[$ts] [PERF-INIT] [INFO] $message"
+        val formatted = "$ts I/PERF-INIT $message"
         if (initMilestoneHistory.size < 32) {
             initMilestoneHistory.add(formatted)
         }
         AppLogger.info("PERF-INIT", message)
     }
 
-    /**
-     * Ghi nhận 1 dòng duy nhất [PERF-INIT] cho thời gian chạy MainActivity.onCreate
-     * và 1 dòng cho thời điểm khung hình đầu tiên (First Frame) được vẽ xong.
-     */
     fun recordStartupInitSummary(
         totalOnCreateMs: Long,
         breakdown: String,
         onCreateStartElapsedMs: Long
     ) {
-        recordInitMilestone("MainActivity.onCreate: tổng=${totalOnCreateMs}ms ($breakdown)")
+        recordInitMilestone("onCreate=${totalOnCreateMs}ms ($breakdown)")
         if (!firstFrameLogged) {
             try {
                 Choreographer.getInstance().postFrameCallback {
@@ -102,9 +98,7 @@ object PerformanceMonitor {
                         firstFrameLogged = true
                         val firstFrameElapsed =
                             (nowElapsedMs() - onCreateStartElapsedMs).coerceAtLeast(0L)
-                        recordInitMilestone(
-                            "Khung hình đầu tiên (First Frame): +${firstFrameElapsed}ms từ đầu onCreate"
-                        )
+                        recordInitMilestone("FirstFrame=+${firstFrameElapsed}ms")
                     }
                 }
             } catch (_: Throwable) {
@@ -112,11 +106,6 @@ object PerformanceMonitor {
         }
     }
 
-    /**
-     * Ghi nhận 1 lần duy nhất cho mỗi tab trong suốt vòng đời tiến trình:
-     * bóc tách rõ 4 giai đoạn: commit (outer composition), subcompose+layout (LazyColumn/Grid/BoxWithConstraints measure+layout),
-     * draw (ghi RenderNode/Canvas), và khung đầu (withFrameNanos kế tiếp).
-     */
     fun recordFirstTabCompositionIfNeeded(
         scenario: PerfScenario,
         composeCommitMs: Long,
@@ -132,7 +121,7 @@ object PerformanceMonitor {
             val drawPhaseMs = (effDrawMs - effLayoutMs).coerceAtLeast(0L)
             val renderSyncWaitMs = (firstFrameMs - effDrawMs).coerceAtLeast(0L)
             recordInitMilestone(
-                "Dựng lần đầu [${scenario.code}]: commit=${composeCommitMs}ms, subcompose+layout=+${subcomposeLayoutPhaseMs}ms (tổng ${effLayoutMs}ms), draw=+${drawPhaseMs}ms (tổng ${effDrawMs}ms), đồng bộ GPU/khung kế=+${renderSyncWaitMs}ms -> khung đầu=${firstFrameMs}ms | RAM=${usedMb}/${maxMb}MB"
+                "FirstRender [${scenario.code}] commit=${composeCommitMs}ms layout=+${subcomposeLayoutPhaseMs}ms draw=+${drawPhaseMs}ms gpu=+${renderSyncWaitMs}ms total=${firstFrameMs}ms mem=${usedMb}/${maxMb}MB"
             )
         }
     }
@@ -169,7 +158,7 @@ object PerformanceMonitor {
                         val (usedMb, maxMb) = readHeapMb()
                         String.format(
                             Locale.US,
-                            "Khựng luồng chính tại [%s]: %.1f ms (>100ms) | vẽ lại=+%d (tích lũy=%d) | RAM=%d/%d MB",
+                            "Freeze [%s] %.1fms recomp=+%d(%d) mem=%d/%dMB",
                             scenCode,
                             frameMs,
                             deltaRecomp,
@@ -242,7 +231,7 @@ object PerformanceMonitor {
         synchronized(lock) {
             if (!isForegroundActive) return
             isForegroundActive = false
-            summaryLine = flushCurrentWindowLocked(nowElapsedMs(), reason = "ẩn ứng dụng")
+            summaryLine = flushCurrentWindowLocked(nowElapsedMs(), reason = "BG")
         }
         try {
             Choreographer.getInstance().removeFrameCallback(frameCallback)
@@ -261,7 +250,7 @@ object PerformanceMonitor {
             if (currentScenario == nextScenario) return
             val nowMs = nowElapsedMs()
             if (isForegroundActive) {
-                summaryLine = flushCurrentWindowLocked(nowMs, reason = "chuyển sang ${nextScenario.code}")
+                summaryLine = flushCurrentWindowLocked(nowMs, reason = "to:${nextScenario.code}")
             }
             currentScenario = nextScenario
             resetWindowLocked(nowMs, preserveFrameAnchor = isForegroundActive)
@@ -302,7 +291,8 @@ object PerformanceMonitor {
         val maxFrameMs = windowMaxFrameNanos / 1_000_000.0
         val recomp = activeWindowRecompositions[scen]?.getAndSet(0) ?: 0
         val scrolls = activeWindowScrollEvents[scen]?.getAndSet(0) ?: 0
-        val isTabTransition = reason.startsWith("chuyển sang ")
+        val isTabTransition = reason.startsWith("to:")
+        val targetLabel = reason.removePrefix("to:")
 
         if (!isTabTransition && frames < MIN_WINDOW_FRAMES && durationMs < MIN_WINDOW_DURATION_MS && frozen == 0L) {
             return null
@@ -325,12 +315,12 @@ object PerformanceMonitor {
 
         val jankPct = if (frames > 0L) (jank * 100.0) / frames else 0.0
         val (usedMb, maxMb) = readHeapMb()
-        val scrollPart = if (scrolls > 0) " | cuộn=$scrolls" else ""
+        val scrollPart = if (scrolls > 0) " scr=$scrolls" else ""
         return String.format(
             Locale.US,
-            "[%s -> %s] %.1fs | khung=%d | chậm(>17ms)=%d (%.1f%%) | giật(>34ms)=%d | đơ(>100ms)=%d | trễ nhất=%.1fms | vẽ lại=%d%s | RAM=%d/%dMB",
+            "[%s->%s] %.1fs f=%d jank=%d(%.1f%%) slow=%d frz=%d max=%.1fms rec=%d%s mem=%d/%dMB",
             scen.code,
-            reason,
+            targetLabel,
             durationMs / 1000.0,
             frames,
             jank,
@@ -404,7 +394,7 @@ object PerformanceMonitor {
         val initLines = ArrayList<String>()
         val seenMilestoneBodies = HashSet<String>()
         for (line in initMilestoneHistory) {
-            val body = line.substringAfter("[INFO] ", line).trim()
+            val body = line.substringAfter("PERF-INIT ", line).trim()
             if (seenMilestoneBodies.add(body)) {
                 initLines.add(line)
             }
@@ -414,16 +404,13 @@ object PerformanceMonitor {
                 if (entry.tag == "PERF-INIT") {
                     val body = entry.message.trim()
                     if (seenMilestoneBodies.add(body)) {
-                        initLines.add("[${entry.timestamp}] [${entry.tag}] [${entry.level.name}] ${entry.message}")
+                        initLines.add("${entry.timestamp} ${entry.level.shortCode}/${entry.tag} ${entry.message}")
                     }
                 }
             }
         }
         if (initLines.isNotEmpty()) {
-            sb.appendLine(
-                if (isEn) "--- Startup & First-Render Milestones [PERF-INIT] (${initLines.size}) ---"
-                else "--- Mốc khởi động & dựng lần đầu [PERF-INIT] (${initLines.size}) ---"
-            )
+            sb.appendLine("--- Startup & First-Render [PERF-INIT] (${initLines.size}) ---")
             for (line in initLines) {
                 sb.appendLine(line)
             }
@@ -431,12 +418,9 @@ object PerformanceMonitor {
 
         val perfLogs = allLoggerEntries.filter { it.tag == "PERF" }
         if (perfLogs.isNotEmpty()) {
-            sb.appendLine(
-                if (isEn) "--- Recent [PERF] Events (${perfLogs.size}) ---"
-                else "--- Dòng nhật ký [PERF] gần đây (${perfLogs.size}) ---"
-            )
+            sb.appendLine("--- Recent [PERF] (${perfLogs.size}) ---")
             for (entry in perfLogs) {
-                sb.appendLine("[${entry.timestamp}] [${entry.tag}] [${entry.level.name}] ${entry.message}")
+                sb.appendLine("${entry.timestamp} ${entry.level.shortCode}/${entry.tag} ${entry.message}")
             }
         }
         return sb.toString().trimEnd()

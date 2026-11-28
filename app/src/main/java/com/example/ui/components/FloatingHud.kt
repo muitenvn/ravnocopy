@@ -173,7 +173,7 @@ fun FloatingHud(
     LaunchedEffect(hudMode, showExitConfirmDialog) {
         onHudOpenStateChanged(hudMode != HudMode.MINIMIZED || showExitConfirmDialog)
         if (prevLoggedHudMode != hudMode) {
-            AppLogger.info("UI", "Menu nhanh trong game (HUD): ${prevLoggedHudMode.name} -> ${hudMode.name}")
+            AppLogger.info("UI", "HUD: ${prevLoggedHudMode.name} -> ${hudMode.name}")
             prevLoggedHudMode = hudMode
         }
     }
@@ -222,7 +222,7 @@ fun FloatingHud(
                 thermalStatus = powerManager.currentThermalStatus
                 powerManager.addThermalStatusListener(context.mainExecutor, thermalListener)
             } catch (e: Exception) {
-                AppLogger.error("SYSTEM", "Lỗi đăng ký theo dõi nhiệt độ máy (${AppLogger.shortThrowable(e)})")
+                AppLogger.error("SYSTEM", "Thermal listener err: ${AppLogger.shortThrowable(e)}")
             }
         }
 
@@ -248,7 +248,7 @@ fun FloatingHud(
             val stickyIntent = context.registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
             updateBatteryFromIntent(stickyIntent)
         } catch (e: Exception) {
-            AppLogger.error("SYSTEM", "Lỗi đăng ký theo dõi pin (${AppLogger.shortThrowable(e)})")
+            AppLogger.error("SYSTEM", "Battery receiver err: ${AppLogger.shortThrowable(e)}")
         }
 
         onDispose {
@@ -878,7 +878,7 @@ fun FloatingHud(
                                         isDanger = true,
                                         onClick = {
                                             markUserInteraction()
-                                            AppLogger.info("UI", "Mở hộp thoại xác nhận Thoát game từ HUD")
+                                            AppLogger.info("UI", "HUD exit dialog opened")
                                             showExitConfirmDialog = true
                                         },
                                         modifier = Modifier
@@ -917,12 +917,12 @@ fun FloatingHud(
             confirmText = stringResource(R.string.btn_confirm_exit),
             dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
-                AppLogger.info("UI", "Xác nhận Thoát game từ HUD -> về Trang chủ")
+                AppLogger.info("UI", "HUD exit confirmed -> Home")
                 showExitConfirmDialog = false
                 onNavigateHome()
             },
             onDismiss = {
-                AppLogger.info("UI", "Hủy hộp thoại Thoát game từ HUD")
+                AppLogger.info("UI", "HUD exit canceled")
                 showExitConfirmDialog = false
             },
             dialogTestTag = "hud_exit_confirm_dialog",

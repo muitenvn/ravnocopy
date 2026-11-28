@@ -272,4 +272,19 @@
     <string name="remote_pad_step_2_remote">点击输入 IP → 高级</string>
     <string name="remote_pad_step_3_remote">输入 10 位数字码</string>
     <string name="remote_pad_bottom_notice_remote">端到端加密 10 位数字码 · 15 分钟自动过期 · 错 3 次锁定 3 分钟</string>
+    <!-- Log File Export -->
+    <string name="log_export_btn">导出文件</string>
+    <string name="log_export_title">导出日志文件</string>
+    <string name="log_export_subtitle">完整已存日志 · 不限行数</string>
+    <string name="log_export_all_btn">下载全部日志</string>
+    <string name="log_export_all_meta">%1$d 个版本 · %2$d 次启动 · %3$s</string>
+    <string name="log_export_tab_version">按版本</string>
+    <string name="log_export_tab_session">按启动记录</string>
+    <string name="log_export_version_sessions">%1$d 次启动 · %2$s</string>
+    <string name="log_export_current_badge">当前</string>
+    <string name="log_export_empty">暂无已保存的日志文件。</string>
+    <string name="log_export_back">返回日志</string>
+    <string name="log_export_success">已导出 %1$d 行 (%2$s)</string>
+    <string name="log_export_failed">无法导出日志文件</string>
+    <string name="log_export_share_title">分享 Ravno 日志文件</string>
 </resources>
